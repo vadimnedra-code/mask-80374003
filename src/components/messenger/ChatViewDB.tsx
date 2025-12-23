@@ -178,7 +178,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shadow-soft">
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shadow-soft pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -339,7 +339,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
 
       {/* Input Area */}
       {!selectedFile && !isRecording && (
-        <div className="p-3 bg-card border-t border-border">
+        <div className="p-3 bg-card border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex items-end gap-2">
             <div className="relative">
               <button

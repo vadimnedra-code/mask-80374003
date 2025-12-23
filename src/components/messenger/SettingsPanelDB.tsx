@@ -46,9 +46,9 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-background animate-slide-in-right lg:relative lg:animate-none">
+    <div className="fixed inset-0 z-50 bg-background animate-slide-in-right lg:relative lg:animate-none flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-border bg-card">
+      <div className="flex items-center gap-4 p-4 border-b border-border bg-card pt-[max(1rem,env(safe-area-inset-top))]">
         <button
           onClick={onClose}
           className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
@@ -58,7 +58,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
         <h1 className="text-xl font-semibold">Настройки</h1>
       </div>
 
-      <div className="overflow-y-auto h-[calc(100%-65px)] scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-thin pb-[env(safe-area-inset-bottom)]">
         {/* Profile Section */}
         <div className="p-6 flex flex-col items-center border-b border-border bg-card">
           <Avatar

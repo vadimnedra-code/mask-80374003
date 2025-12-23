@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatList } from '@/components/messenger/ChatListDB';
 import { ChatViewDB } from '@/components/messenger/ChatViewDB';
@@ -16,7 +16,7 @@ import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const Messenger = () => {
+const Messenger = forwardRef<HTMLDivElement, Record<string, never>>(function Messenger(_, ref) {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
@@ -82,7 +82,7 @@ const Messenger = () => {
 
   if (authLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-background">
+      <div className="h-full w-full flex items-center justify-center bg-background">
         <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
@@ -149,7 +149,7 @@ const Messenger = () => {
   const isInCall = callState.status !== 'idle' && callParticipant;
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-background">
+    <div className="h-full w-full overflow-hidden bg-background flex flex-col">
       {/* Incoming Call Dialog */}
       {incomingCall && !isInCall && (
         <IncomingCallDialog
@@ -193,7 +193,7 @@ const Messenger = () => {
       )}
 
       {/* Main Layout */}
-      <div className="flex h-full">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar - Chat List */}
         <div
           className={cn(
@@ -283,6 +283,6 @@ const Messenger = () => {
       </div>
     </div>
   );
-};
+});
 
 export default Messenger;
