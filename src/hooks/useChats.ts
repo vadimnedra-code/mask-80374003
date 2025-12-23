@@ -73,7 +73,7 @@ export const useChats = () => {
       (chatsData || []).map(async (chat) => {
         const { data: participants } = await supabase
           .from('chat_participants')
-          .select('user_id, profiles(display_name, avatar_url, status, last_seen)')
+          .select('user_id, profiles_public(display_name, avatar_url, status, last_seen)')
           .eq('chat_id', chat.id);
 
         const { data: lastMessages } = await supabase
@@ -94,10 +94,10 @@ export const useChats = () => {
           ...chat,
           participants: (participants || []).map((p: any) => ({
             user_id: p.user_id,
-            display_name: p.profiles?.display_name || 'Unknown',
-            avatar_url: p.profiles?.avatar_url,
-            status: p.profiles?.status || 'offline',
-            last_seen: p.profiles?.last_seen,
+            display_name: p.profiles_public?.display_name || 'Unknown',
+            avatar_url: p.profiles_public?.avatar_url,
+            status: p.profiles_public?.status || 'offline',
+            last_seen: p.profiles_public?.last_seen,
           })),
           lastMessage: lastMessages?.[0],
           unreadCount: unreadCount || 0,
