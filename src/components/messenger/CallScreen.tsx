@@ -134,14 +134,24 @@ export const CallScreen = ({
   // Connect remote stream to video/audio elements
   useEffect(() => {
     if (remoteStream) {
-      const tracks = remoteStream.getTracks().map((t) => t.kind).join(', ');
-      console.log('Remote stream received with tracks:', tracks);
+      const videoTracks = remoteStream.getVideoTracks();
+      const audioTracks = remoteStream.getAudioTracks();
+      console.log('Remote stream received - video tracks:', videoTracks.length, 'audio tracks:', audioTracks.length);
+      videoTracks.forEach((t, i) => console.log(`  Video track ${i}: enabled=${t.enabled}, muted=${t.muted}, readyState=${t.readyState}`));
+      audioTracks.forEach((t, i) => console.log(`  Audio track ${i}: enabled=${t.enabled}, muted=${t.muted}, readyState=${t.readyState}`));
 
       if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
+        // Ensure we're setting a fresh stream reference
+        if (remoteVideoRef.current.srcObject !== remoteStream) {
+          remoteVideoRef.current.srcObject = remoteStream;
+          console.log('Set remote video srcObject');
+        }
       }
       if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
+        if (remoteAudioRef.current.srcObject !== remoteStream) {
+          remoteAudioRef.current.srcObject = remoteStream;
+          console.log('Set remote audio srcObject');
+        }
       }
 
       // Attempt playback (may require user gesture on mobile)
@@ -182,9 +192,10 @@ export const CallScreen = ({
   };
 
   const isVideoCall = callType === 'video';
-  const hasRemoteVideo = remoteStream && remoteStream.getVideoTracks().length > 0;
+  const hasRemoteVideo = remoteStream && remoteStream.getVideoTracks().some(t => t.readyState === 'live');
   const hasLocalVideo = localStream && localStream.getVideoTracks().length > 0 && !isVideoOff;
-  const showRemoteVideo = isVideoCall && hasRemoteVideo && callStatus === 'active';
+  // Show remote video as soon as we have it, even while connecting
+  const showRemoteVideo = isVideoCall && hasRemoteVideo && (callStatus === 'active' || callStatus === 'connecting');
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0b141a]">
