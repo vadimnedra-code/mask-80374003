@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Settings, Edit, Menu, UserPlus } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Search, Settings, Edit, Menu, UserPlus, Trash2 } from 'lucide-react';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
 import { Avatar } from './Avatar';
@@ -16,6 +16,7 @@ interface ChatListProps {
   onNewChat: () => void;
   onOpenSearch?: () => void;
   onStartChatWithUser?: (userId: string) => Promise<void>;
+  onDeleteChat?: (chatId: string) => Promise<void>;
   loading?: boolean;
 }
 
@@ -27,10 +28,15 @@ export const ChatList = ({
   onNewChat,
   onOpenSearch,
   onStartChatWithUser,
+  onDeleteChat,
   loading 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [creatingChatWithUserId, setCreatingChatWithUserId] = useState<string | null>(null);
+  const [swipedChatId, setSwipedChatId] = useState<string | null>(null);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const touchStartX = useRef<number>(0);
+  const touchCurrentX = useRef<number>(0);
   const { user } = useAuth();
   const { users, searchUsers } = useUsers();
 
@@ -61,6 +67,47 @@ export const ChatList = ({
       setSearchQuery('');
     } finally {
       setCreatingChatWithUserId(null);
+    }
+  };
+
+  const handleTouchStart = (chatId: string, e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchCurrentX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (chatId: string, e: React.TouchEvent) => {
+    touchCurrentX.current = e.touches[0].clientX;
+    const diff = touchStartX.current - touchCurrentX.current;
+    
+    if (diff > 50) {
+      setSwipedChatId(chatId);
+    } else if (diff < -30) {
+      setSwipedChatId(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Keep the swiped state if it was set
+  };
+
+  const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDeleteChat || deletingChatId) return;
+    
+    setDeletingChatId(chatId);
+    try {
+      await onDeleteChat(chatId);
+      setSwipedChatId(null);
+    } finally {
+      setDeletingChatId(null);
+    }
+  };
+
+  const handleChatClick = (chatId: string) => {
+    if (swipedChatId === chatId) {
+      setSwipedChatId(null);
+    } else {
+      onSelectChat(chatId);
     }
   };
 
@@ -179,50 +226,78 @@ export const ChatList = ({
               filteredChats.map((chat) => {
                 const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
                 const isSelected = chat.id === selectedChatId;
+                const isSwiped = swipedChatId === chat.id;
+                const isDeleting = deletingChatId === chat.id;
                 const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
                 const avatarUrl = chat.is_group 
                   ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
                   : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
 
                 return (
-                  <button
-                    key={chat.id}
-                    onClick={() => onSelectChat(chat.id)}
-                    className={cn(
-                      'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200',
-                      isSelected && 'bg-accent'
-                    )}
-                  >
-                    <Avatar
-                      src={avatarUrl || ''}
-                      alt={displayName || 'Chat'}
-                      size="lg"
-                      status={otherParticipant?.status as 'online' | 'offline' | 'away'}
-                    />
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium truncate">{displayName}</span>
-                        {chat.lastMessage && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(chat.lastMessage.created_at), { 
-                              addSuffix: false, 
-                              locale: ru 
-                            })}
-                          </span>
+                  <div key={chat.id} className="relative overflow-hidden">
+                    {/* Delete button background */}
+                    <div 
+                      className={cn(
+                        "absolute right-0 top-0 bottom-0 flex items-center justify-center bg-destructive transition-all duration-200",
+                        isSwiped ? "w-20 opacity-100" : "w-0 opacity-0"
+                      )}
+                    >
+                      <button
+                        onClick={(e) => handleDeleteChat(chat.id, e)}
+                        disabled={isDeleting}
+                        className="w-full h-full flex items-center justify-center text-destructive-foreground"
+                      >
+                        {isDeleting ? (
+                          <div className="w-5 h-5 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-5 h-5" />
                         )}
-                      </div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-sm text-muted-foreground truncate pr-2">
-                          {chat.lastMessage?.content || 'Нет сообщений'}
-                        </p>
-                        {chat.unreadCount > 0 && (
-                          <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
-                            {chat.unreadCount}
-                          </span>
-                        )}
-                      </div>
+                      </button>
                     </div>
-                  </button>
+                    
+                    {/* Chat item */}
+                    <button
+                      onClick={() => handleChatClick(chat.id)}
+                      onTouchStart={(e) => handleTouchStart(chat.id, e)}
+                      onTouchMove={(e) => handleTouchMove(chat.id, e)}
+                      onTouchEnd={handleTouchEnd}
+                      className={cn(
+                        'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200 bg-card relative',
+                        isSelected && 'bg-accent',
+                        isSwiped && '-translate-x-20'
+                      )}
+                    >
+                      <Avatar
+                        src={avatarUrl || ''}
+                        alt={displayName || 'Chat'}
+                        size="lg"
+                        status={otherParticipant?.status as 'online' | 'offline' | 'away'}
+                      />
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium truncate">{displayName}</span>
+                          {chat.lastMessage && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(chat.lastMessage.created_at), { 
+                                addSuffix: false, 
+                                locale: ru 
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <p className="text-sm text-muted-foreground truncate pr-2">
+                            {chat.lastMessage?.content || 'Нет сообщений'}
+                          </p>
+                          {chat.unreadCount > 0 && (
+                            <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
+                              {chat.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
                 );
               })
             )}
