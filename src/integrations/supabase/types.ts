@@ -283,6 +283,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      append_call_ice_candidate: {
+        Args: { _call_id: string; _candidate: Json }
+        Returns: undefined
+      }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       is_chat_participant: {
         Args: { _chat_id: string; _user_id: string }
