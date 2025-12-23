@@ -18,7 +18,7 @@ const Messenger = () => {
   const [activeCall, setActiveCall] = useState<{ participantName: string; avatarUrl: string; type: 'voice' | 'video' } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
-  const { chats, loading: chatsLoading } = useChats();
+  const { chats, loading: chatsLoading, createChat } = useChats();
   const { updateStatus } = useProfile(user?.id);
   const navigate = useNavigate();
 
@@ -116,6 +116,21 @@ const Messenger = () => {
             onSelectChat={setSelectedChatId}
             onOpenSettings={() => setShowSettings(true)}
             onNewChat={() => setShowNewChat(true)}
+            onStartChatWithUser={async (userId) => {
+              // Check if chat already exists
+              const existingChat = chats.find(
+                (c) => !c.is_group && c.participants.some((p) => p.user_id === userId)
+              );
+              if (existingChat) {
+                setSelectedChatId(existingChat.id);
+                return;
+              }
+              // Create new chat directly
+              const { data, error } = await createChat([userId]);
+              if (!error && data) {
+                setSelectedChatId(data.id);
+              }
+            }}
             loading={chatsLoading}
           />
         </div>
