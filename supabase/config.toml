@@ -1,1 +1,4 @@
 project_id = "wenxswpqgbzwaowdjdqc"
+
+[functions.send-voip-push]
+verify_jwt = true

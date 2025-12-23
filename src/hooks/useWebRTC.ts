@@ -441,6 +441,28 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       
       setCallState(prev => ({ ...prev, status: 'ringing' }));
       
+      // Send VoIP push notification to callee
+      try {
+        const { data: callerProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        await supabase.functions.invoke('send-voip-push', {
+          body: {
+            callee_id: calleeId,
+            caller_id: user.id,
+            caller_name: callerProfile?.display_name || 'Неизвестный',
+            call_id: call.id,
+            is_video: callType === 'video',
+          },
+        });
+        console.log('VoIP push sent');
+      } catch (pushError) {
+        console.log('VoIP push not sent (may not be configured):', pushError);
+      }
+      
       // Subscribe to call updates
       subscribeToCall(call.id, true);
       
