@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'PASSWORD_RECOVERY') {
           // Use setTimeout to avoid Supabase deadlock
           setTimeout(() => {
-            window.location.href = '/auth?mode=reset';
+            window.location.href = `/auth?mode=reset${window.location.hash ?? ''}`;
           }, 0);
         }
       }

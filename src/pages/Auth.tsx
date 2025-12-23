@@ -67,9 +67,10 @@ const Auth = () => {
   // Check if we're in password reset mode (user clicked reset link in email)
   useEffect(() => {
     const mode = searchParams.get('mode');
+    const type = searchParams.get('type');
     const isRecoveryHash = typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
 
-    if (mode === 'reset' || isRecoveryHash) {
+    if (mode === 'reset' || type === 'recovery' || isRecoveryHash) {
       setAuthMode('reset-password');
     }
   }, [searchParams]);
