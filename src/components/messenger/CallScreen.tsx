@@ -17,6 +17,7 @@ import { ConnectionQualityIndicator } from './ConnectionQualityIndicator';
 import { cn } from '@/lib/utils';
 import { PeerConnectionState } from '@/hooks/useWebRTC';
 import { useConnectionStats } from '@/hooks/useConnectionStats';
+import { useCallSounds } from '@/hooks/useCallSounds';
 
 interface CallScreenProps {
   participantName: string;
@@ -54,13 +55,47 @@ export const CallScreen = ({
   onSwitchCamera
 }: CallScreenProps) => {
   const connectionStats = useConnectionStats(peerConnection);
+  const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
   const [callDuration, setCallDuration] = useState(0);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const previousStatus = useRef(callStatus);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+
+  // Handle call status changes for sounds
+  useEffect(() => {
+    // Start dialing sound when calling/ringing
+    if (callStatus === 'calling' || callStatus === 'ringing') {
+      startDialingSound();
+    }
+    
+    // Play connected sound when call becomes active
+    if (callStatus === 'active' && previousStatus.current !== 'active') {
+      stopAllSounds();
+      playConnectedSound();
+    }
+    
+    previousStatus.current = callStatus;
+    
+    return () => {
+      if (callStatus === 'calling' || callStatus === 'ringing') {
+        stopAllSounds();
+      }
+    };
+  }, [callStatus, startDialingSound, stopAllSounds, playConnectedSound]);
+
+  // Play ended sound when component unmounts during active call
+  useEffect(() => {
+    return () => {
+      if (previousStatus.current === 'active') {
+        playEndedSound();
+      }
+      stopAllSounds();
+    };
+  }, [playEndedSound, stopAllSounds]);
 
   const tryPlayRemoteMedia = useCallback(async () => {
     // Mobile browsers often block autoplay with audio until user gesture.

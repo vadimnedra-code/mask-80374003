@@ -1,7 +1,10 @@
+import { useEffect } from 'react';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
 import { IncomingCall } from '@/hooks/useIncomingCalls';
+import { useCallSounds } from '@/hooks/useCallSounds';
+import { useCallNotifications } from '@/hooks/useCallNotifications';
 
 interface IncomingCallDialogProps {
   call: IncomingCall;
@@ -11,7 +14,42 @@ interface IncomingCallDialogProps {
 
 export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDialogProps) => {
   const isVideoCall = call.call_type === 'video';
-  
+  const { startRingtoneSound, stopAllSounds, playConnectedSound } = useCallSounds();
+  const { showIncomingCallNotification, closeNotification } = useCallNotifications();
+
+  // Start ringtone when dialog appears
+  useEffect(() => {
+    startRingtoneSound();
+    
+    // Show notification if page is not focused
+    if (document.hidden) {
+      showIncomingCallNotification(
+        call.caller_name || 'Неизвестный',
+        call.caller_avatar || '',
+        isVideoCall,
+        onAccept,
+        onReject
+      );
+    }
+
+    return () => {
+      stopAllSounds();
+      closeNotification();
+    };
+  }, [call, isVideoCall, onAccept, onReject, showIncomingCallNotification, closeNotification, startRingtoneSound, stopAllSounds]);
+
+  const handleAccept = () => {
+    stopAllSounds();
+    closeNotification();
+    playConnectedSound();
+    onAccept();
+  };
+
+  const handleReject = () => {
+    stopAllSounds();
+    closeNotification();
+    onReject();
+  };
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#0b141a] animate-fade-in">
       {/* Background gradient */}
@@ -59,7 +97,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
           {/* Decline */}
           <div className="flex flex-col items-center gap-2">
             <button
-              onClick={onReject}
+              onClick={handleReject}
               className="flex items-center justify-center w-16 h-16 rounded-full bg-[#f15c6d] shadow-lg hover:bg-[#e04b5c] hover:scale-105 transition-all"
             >
               <PhoneOff className="w-7 h-7 text-white" />
@@ -70,7 +108,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
           {/* Accept */}
           <div className="flex flex-col items-center gap-2">
             <button
-              onClick={onAccept}
+              onClick={handleAccept}
               className="flex items-center justify-center w-16 h-16 rounded-full bg-[#00a884] shadow-lg hover:bg-[#00997a] hover:scale-105 transition-all"
             >
               {isVideoCall ? (
