@@ -29,22 +29,25 @@ const Messenger = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Update online status
+  // Update online status - run once on mount and cleanup on unmount
   useEffect(() => {
-    if (user) {
-      updateStatus('online');
+    if (!user) return;
+    
+    // Set online status once
+    updateStatus('online');
 
-      const handleBeforeUnload = () => {
-        updateStatus('offline');
-      };
+    const handleBeforeUnload = () => {
+      updateStatus('offline');
+    };
 
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        updateStatus('offline');
-      };
-    }
-  }, [user, updateStatus]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      updateStatus('offline');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   if (authLoading) {
     return (
