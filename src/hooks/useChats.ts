@@ -149,10 +149,57 @@ export const useChats = () => {
     };
   }, [user]);
 
+  const findExistingDirectChat = async (otherUserId: string): Promise<string | null> => {
+    if (!user) return null;
+
+    // Get all chats where current user participates
+    const { data: myChats } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('user_id', user.id);
+
+    if (!myChats || myChats.length === 0) return null;
+
+    // For each chat, check if it's a 1-on-1 with the target user
+    for (const { chat_id } of myChats) {
+      // Check if it's not a group chat
+      const { data: chatData } = await supabase
+        .from('chats')
+        .select('is_group')
+        .eq('id', chat_id)
+        .single();
+
+      if (chatData?.is_group) continue;
+
+      // Get all participants of this chat
+      const { data: participants } = await supabase
+        .from('chat_participants')
+        .select('user_id')
+        .eq('chat_id', chat_id);
+
+      if (!participants || participants.length !== 2) continue;
+
+      const participantIds = participants.map(p => p.user_id);
+      if (participantIds.includes(user.id) && participantIds.includes(otherUserId)) {
+        return chat_id;
+      }
+    }
+
+    return null;
+  };
+
   const createChat = async (participantIds: string[], groupName?: string, groupAvatar?: string) => {
     if (!user) return { error: new Error('Not authenticated') };
 
     const isGroup = participantIds.length > 1;
+
+    // For 1-on-1 chats, check if one already exists
+    if (!isGroup && participantIds.length === 1) {
+      const existingChatId = await findExistingDirectChat(participantIds[0]);
+      if (existingChatId) {
+        return { data: { id: existingChatId }, error: null };
+      }
+    }
 
     // Create chat with created_by set to current user
     const { data: chat, error: chatError } = await supabase
@@ -192,5 +239,5 @@ export const useChats = () => {
     return { data: chat, error: null };
   };
 
-  return { chats, loading, createChat, refetch: fetchChats };
+  return { chats, loading, createChat, findExistingDirectChat, refetch: fetchChats };
 };
