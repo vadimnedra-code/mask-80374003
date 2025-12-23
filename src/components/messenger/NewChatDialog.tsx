@@ -50,13 +50,20 @@ export const NewChatDialog = ({ onClose, onChatCreated }: NewChatDialogProps) =>
   const handleCreateChat = async () => {
     if (selectedUsers.length === 0) return;
 
-    // Check if chat already exists (for 1-on-1)
+    // Check if 1-on-1 chat already exists with this user
     if (selectedUsers.length === 1) {
-      const existingChat = chats.find(
-        (c) =>
-          !c.is_group &&
-          c.participants.some((p) => p.user_id === selectedUsers[0])
-      );
+      const otherUserId = selectedUsers[0];
+      
+      // Find existing 1-on-1 chat where participants are exactly current user and selected user
+      const existingChat = chats.find((c) => {
+        if (c.is_group) return false;
+        
+        // For 1-on-1 chat, should have exactly 2 participants
+        if (c.participants.length !== 2) return false;
+        
+        const participantIds = c.participants.map(p => p.user_id);
+        return participantIds.includes(user!.id) && participantIds.includes(otherUserId);
+      });
 
       if (existingChat) {
         onChatCreated(existingChat.id);
