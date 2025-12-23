@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Phone, 
   PhoneOff, 
@@ -44,24 +44,62 @@ export const CallScreen = ({
 }: CallScreenProps) => {
   const [callDuration, setCallDuration] = useState(0);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+  const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+
+  const tryPlayRemoteMedia = useCallback(async () => {
+    // Mobile browsers often block autoplay with audio until user gesture.
+    // We try anyway and show a "tap to enable" overlay on failure.
+    try {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.muted = false;
+        remoteVideoRef.current.volume = 1;
+        await remoteVideoRef.current.play();
+      }
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.volume = 1;
+        await remoteAudioRef.current.play();
+      }
+      setNeedsTapToPlay(false);
+      console.log('Remote media playback started');
+    } catch (err) {
+      console.log('Remote media autoplay blocked. Waiting for user gesture.', err);
+      setNeedsTapToPlay(true);
+    }
+  }, []);
 
   // Connect local stream to video element
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.muted = true;
+      localVideoRef.current.play().catch(() => {
+        // muted should still autoplay; ignore
+      });
       console.log('Local video connected');
     }
   }, [localStream]);
 
-  // Connect remote stream to video element
+  // Connect remote stream to video/audio elements
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-      console.log('Remote video connected');
+    if (remoteStream) {
+      const tracks = remoteStream.getTracks().map((t) => t.kind).join(', ');
+      console.log('Remote stream received with tracks:', tracks);
+
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+      }
+
+      // Attempt playback (may require user gesture on mobile)
+      tryPlayRemoteMedia();
     }
-  }, [remoteStream]);
+  }, [remoteStream, tryPlayRemoteMedia]);
 
   useEffect(() => {
     if (callStatus !== 'active') {
@@ -103,6 +141,9 @@ export const CallScreen = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0b141a]">
       {/* Remote Video / Background */}
+      {/* Hidden remote audio element to ensure audio plays even if video rendering is blocked */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+
       {showRemoteVideo ? (
         <div className="absolute inset-0">
           <video
@@ -128,6 +169,18 @@ export const CallScreen = ({
           <span className="text-white text-sm font-medium">{formatDuration(callDuration)}</span>
         )}
       </div>
+
+      {/* Tap-to-play overlay (mobile autoplay restrictions) */}
+      {needsTapToPlay && callStatus === 'active' && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <button
+            onClick={tryPlayRemoteMedia}
+            className="px-5 py-3 rounded-full bg-white text-[#0b141a] font-medium shadow-lg"
+          >
+            Нажмите, чтобы включить звук
+          </button>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
@@ -205,7 +258,13 @@ export const CallScreen = ({
         <div className="flex items-center justify-center gap-6 mb-6">
           {/* Speaker */}
           <button 
-            onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+            onClick={() => {
+              setIsSpeakerOn(!isSpeakerOn);
+              // Best-effort volume control (routing to speaker is not controllable in most mobile browsers)
+              if (remoteVideoRef.current) remoteVideoRef.current.volume = 1;
+              if (remoteAudioRef.current) remoteAudioRef.current.volume = 1;
+              tryPlayRemoteMedia();
+            }}
             className={cn(
               "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all",
               isSpeakerOn ? "bg-white" : "bg-white/20"
