@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatList } from '@/components/messenger/ChatListDB';
 import { ChatViewDB } from '@/components/messenger/ChatViewDB';
@@ -23,6 +23,8 @@ const Messenger = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [callParticipant, setCallParticipant] = useState<{ name: string; avatar: string } | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const { chats, loading: chatsLoading, createChat } = useChats();
@@ -30,6 +32,14 @@ const Messenger = () => {
   const navigate = useNavigate();
   
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
+
+  const handleRemoteStream = useCallback((stream: MediaStream) => {
+    setRemoteStream(stream);
+  }, []);
+
+  const handleLocalStream = useCallback((stream: MediaStream) => {
+    setLocalStream(stream);
+  }, []);
   
   const { 
     callState, 
@@ -37,16 +47,23 @@ const Messenger = () => {
     acceptCall, 
     rejectCall, 
     endCall, 
-    toggleMute 
+    toggleMute,
+    toggleVideo,
   } = useWebRTC({
     onCallEnded: () => {
       setCallParticipant(null);
+      setLocalStream(null);
+      setRemoteStream(null);
       toast.info('Звонок завершён');
     },
     onCallRejected: () => {
       setCallParticipant(null);
+      setLocalStream(null);
+      setRemoteStream(null);
       toast.info('Звонок отклонён');
     },
+    onRemoteStream: handleRemoteStream,
+    onLocalStream: handleLocalStream,
   });
 
   // Redirect if not authenticated
@@ -101,14 +118,18 @@ const Messenger = () => {
     try {
       await startCall(otherParticipant.user_id, selectedChat.id, type);
     } catch (error) {
-      toast.error('Не удалось начать звонок. Проверьте доступ к микрофону.');
+      toast.error('Не удалось начать звонок. Проверьте доступ к микрофону и камере.');
       setCallParticipant(null);
+      setLocalStream(null);
+      setRemoteStream(null);
     }
   };
 
   const handleEndCall = () => {
     endCall();
     setCallParticipant(null);
+    setLocalStream(null);
+    setRemoteStream(null);
   };
 
   const handleAcceptIncomingCall = async () => {
@@ -123,8 +144,10 @@ const Messenger = () => {
       await acceptCall(incomingCall.id);
       clearIncomingCall();
     } catch (error) {
-      toast.error('Не удалось принять звонок. Проверьте доступ к микрофону.');
+      toast.error('Не удалось принять звонок. Проверьте доступ к микрофону и камере.');
       setCallParticipant(null);
+      setLocalStream(null);
+      setRemoteStream(null);
       clearIncomingCall();
     }
   };
@@ -163,8 +186,12 @@ const Messenger = () => {
           callType={callState.callType}
           callStatus={callState.status as 'calling' | 'ringing' | 'connecting' | 'active'}
           isMuted={callState.isMuted}
+          isVideoOff={callState.isVideoOff}
+          localStream={localStream}
+          remoteStream={remoteStream}
           onEndCall={handleEndCall}
           onToggleMute={toggleMute}
+          onToggleVideo={toggleVideo}
         />
       )}
 
