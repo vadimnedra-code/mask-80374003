@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -62,7 +62,6 @@ const Auth = () => {
 
   const { signIn, signUp, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Check if we're in password reset mode (user clicked reset link in email)
   useEffect(() => {
@@ -98,17 +97,9 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: 'Ошибка входа',
-              description: 'Неверный email или пароль',
-              variant: 'destructive',
-            });
+            toast.error('Неверный email или пароль');
           } else {
-            toast({
-              title: 'Ошибка входа',
-              description: error.message,
-              variant: 'destructive',
-            });
+            toast.error(error.message);
           }
         } else {
           navigate('/');
@@ -130,32 +121,17 @@ const Auth = () => {
         const { error } = await signUp(email, password, displayName);
         if (error) {
           if (error.message.includes('already registered')) {
-            toast({
-              title: 'Ошибка регистрации',
-              description: 'Пользователь с таким email уже существует',
-              variant: 'destructive',
-            });
+            toast.error('Пользователь с таким email уже существует');
           } else {
-            toast({
-              title: 'Ошибка регистрации',
-              description: error.message,
-              variant: 'destructive',
-            });
+            toast.error(error.message);
           }
         } else {
-          toast({
-            title: 'Добро пожаловать!',
-            description: 'Регистрация прошла успешно',
-          });
+          toast.success('Регистрация прошла успешно');
           navigate('/');
         }
       }
     } catch (err) {
-      toast({
-        title: 'Ошибка',
-        description: 'Что-то пошло не так. Попробуйте позже.',
-        variant: 'destructive',
-      });
+      toast.error('Что-то пошло не так. Попробуйте позже.');
     } finally {
       setLoading(false);
     }
@@ -182,24 +158,13 @@ const Auth = () => {
 
       const { error } = await resetPassword(email);
       if (error) {
-        toast({
-          title: 'Ошибка',
-          description: error.message,
-          variant: 'destructive',
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          title: 'Письмо отправлено',
-          description: 'Проверьте почту для сброса пароля',
-        });
+        toast.success('Проверьте почту для сброса пароля');
         setResetEmailSent(true);
       }
     } catch (err) {
-      toast({
-        title: 'Ошибка',
-        description: 'Что-то пошло не так. Попробуйте позже.',
-        variant: 'destructive',
-      });
+      toast.error('Что-то пошло не так. Попробуйте позже.');
     } finally {
       setLoading(false);
     }
@@ -228,24 +193,13 @@ const Auth = () => {
       const { error } = await signInWithPhone(formattedPhone);
       
       if (error) {
-        toast({
-          title: 'Ошибка',
-          description: error.message,
-          variant: 'destructive',
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          title: 'Код отправлен',
-          description: 'Введите код из SMS',
-        });
+        toast.success('Введите код из SMS');
         setAuthMode('phone-otp');
       }
     } catch (err) {
-      toast({
-        title: 'Ошибка',
-        description: 'Что-то пошло не так. Попробуйте позже.',
-        variant: 'destructive',
-      });
+      toast.error('Что-то пошло не так. Попробуйте позже.');
     } finally {
       setLoading(false);
     }
@@ -274,24 +228,13 @@ const Auth = () => {
       const { error } = await verifyOtp(formattedPhone, otp, isNewUser ? displayName : undefined);
       
       if (error) {
-        toast({
-          title: 'Ошибка',
-          description: 'Неверный код. Попробуйте снова.',
-          variant: 'destructive',
-        });
+        toast.error('Неверный код. Попробуйте снова.');
       } else {
-        toast({
-          title: 'Добро пожаловать!',
-          description: 'Вход выполнен успешно',
-        });
+        toast.success('Вход выполнен успешно');
         navigate('/');
       }
     } catch (err) {
-      toast({
-        title: 'Ошибка',
-        description: 'Что-то пошло не так. Попробуйте позже.',
-        variant: 'destructive',
-      });
+      toast.error('Что-то пошло не так. Попробуйте позже.');
     } finally {
       setLoading(false);
     }
@@ -325,24 +268,13 @@ const Auth = () => {
 
       const { error } = await updatePassword(password);
       if (error) {
-        toast({
-          title: 'Ошибка',
-          description: error.message,
-          variant: 'destructive',
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          title: 'Пароль изменён',
-          description: 'Вы можете войти с новым паролем',
-        });
+        toast.success('Пароль изменён');
         navigate('/');
       }
     } catch (err) {
-      toast({
-        title: 'Ошибка',
-        description: 'Что-то пошло не так. Попробуйте позже.',
-        variant: 'destructive',
-      });
+      toast.error('Что-то пошло не так. Попробуйте позже.');
     } finally {
       setLoading(false);
     }
