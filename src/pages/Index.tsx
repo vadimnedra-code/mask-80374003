@@ -48,6 +48,8 @@ const Index = () => {
           isVideoOff={isVideoOff}
           localStream={null}
           remoteStream={null}
+          peerConnectionState={null}
+          error={null}
           onEndCall={handleEndCall}
           onToggleMute={() => setIsMuted(!isMuted)}
           onToggleVideo={() => setIsVideoOff(!isVideoOff)}

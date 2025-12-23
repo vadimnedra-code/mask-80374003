@@ -168,6 +168,8 @@ const Messenger = () => {
           isVideoOff={callState.isVideoOff}
           localStream={callState.localStream}
           remoteStream={callState.remoteStream}
+          peerConnectionState={callState.peerConnectionState}
+          error={callState.error}
           onEndCall={handleEndCall}
           onToggleMute={toggleMute}
           onToggleVideo={toggleVideo}

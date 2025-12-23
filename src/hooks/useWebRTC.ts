@@ -2,6 +2,13 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+export interface PeerConnectionState {
+  iceConnectionState: string;
+  iceGatheringState: string;
+  connectionState: string;
+  signalingState: string;
+}
+
 export interface CallState {
   callId: string | null;
   status: 'idle' | 'calling' | 'ringing' | 'connecting' | 'active' | 'ended';
@@ -11,6 +18,8 @@ export interface CallState {
   callType: 'voice' | 'video';
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
+  peerConnectionState: PeerConnectionState | null;
+  error: string | null;
 }
 
 interface UseWebRTCOptions {
@@ -71,6 +80,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     callType: 'voice',
     localStream: null,
     remoteStream: null,
+    peerConnectionState: null,
+    error: null,
   });
   
   const peerConnection = useRef<RTCPeerConnection | null>(null);
@@ -123,6 +134,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       callType: 'voice',
       localStream: null,
       remoteStream: null,
+      peerConnectionState: null,
+      error: null,
     });
     
     isCleaningUp.current = false;
@@ -166,6 +179,20 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     pendingCandidates.current = [];
   }, []);
 
+  const updatePeerConnectionState = useCallback(() => {
+    if (peerConnection.current) {
+      setCallState(prev => ({
+        ...prev,
+        peerConnectionState: {
+          iceConnectionState: peerConnection.current?.iceConnectionState || 'N/A',
+          iceGatheringState: peerConnection.current?.iceGatheringState || 'N/A',
+          connectionState: peerConnection.current?.connectionState || 'N/A',
+          signalingState: peerConnection.current?.signalingState || 'N/A',
+        },
+      }));
+    }
+  }, []);
+
   const setupPeerConnection = useCallback((callId: string, callType: 'voice' | 'video') => {
     console.log('Setting up peer connection for call:', callId, 'type:', callType);
     
@@ -206,10 +233,12 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     
     pc.onicegatheringstatechange = () => {
       console.log('ICE gathering state:', pc.iceGatheringState);
+      updatePeerConnectionState();
     };
     
     pc.oniceconnectionstatechange = () => {
       console.log('ICE connection state:', pc.iceConnectionState);
+      updatePeerConnectionState();
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log('ICE connected!');
         setCallState(prev => ({ ...prev, status: 'active' }));
@@ -222,6 +251,12 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     
     pc.onconnectionstatechange = () => {
       console.log('Connection state:', pc.connectionState);
+      updatePeerConnectionState();
+    };
+    
+    pc.onsignalingstatechange = () => {
+      console.log('Signaling state:', pc.signalingState);
+      updatePeerConnectionState();
     };
     
     // Handle incoming remote stream - CRITICAL
@@ -365,6 +400,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         callType,
         localStream: stream,
         remoteStream: null,
+        peerConnectionState: null,
+        error: null,
       });
       
       // Setup peer connection
@@ -439,6 +476,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         callType,
         localStream: stream,
         remoteStream: null,
+        peerConnectionState: null,
+        error: null,
       });
       
       // Setup peer connection
