@@ -71,10 +71,18 @@ export const useChats = () => {
     // Get participants for each chat
     const chatsWithDetails: ChatWithDetails[] = await Promise.all(
       (chatsData || []).map(async (chat) => {
-        const { data: participants } = await supabase
+        // Get participants first
+        const { data: participantsData } = await supabase
           .from('chat_participants')
-          .select('user_id, profiles_public(display_name, avatar_url, status, last_seen)')
+          .select('user_id')
           .eq('chat_id', chat.id);
+
+        // Then get profiles for each participant
+        const participantUserIds = (participantsData || []).map(p => p.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles_public')
+          .select('user_id, display_name, avatar_url, status, last_seen')
+          .in('user_id', participantUserIds);
 
         const { data: lastMessages } = await supabase
           .from('messages')
@@ -90,15 +98,21 @@ export const useChats = () => {
           .eq('is_read', false)
           .neq('sender_id', user.id);
 
+        // Map participants with their profiles
+        const profilesMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+        
         return {
           ...chat,
-          participants: (participants || []).map((p: any) => ({
-            user_id: p.user_id,
-            display_name: p.profiles_public?.display_name || 'Unknown',
-            avatar_url: p.profiles_public?.avatar_url,
-            status: p.profiles_public?.status || 'offline',
-            last_seen: p.profiles_public?.last_seen,
-          })),
+          participants: participantUserIds.map((userId) => {
+            const profile = profilesMap.get(userId);
+            return {
+              user_id: userId,
+              display_name: profile?.display_name || 'Unknown',
+              avatar_url: profile?.avatar_url,
+              status: profile?.status || 'offline',
+              last_seen: profile?.last_seen,
+            };
+          }),
           lastMessage: lastMessages?.[0],
           unreadCount: unreadCount || 0,
         };
