@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,9 +32,22 @@ const otpSchema = z.object({
   otp: z.string().length(6, 'Код должен содержать 6 цифр'),
 });
 
-type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp';
+const resetPasswordSchema = z.object({
+  email: z.string().email('Введите корректный email'),
+});
+
+const newPasswordSchema = z.object({
+  password: z.string().min(6, 'Пароль должен содержать минимум 6 символов'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Пароли не совпадают',
+  path: ['confirmPassword'],
+});
+
+type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password';
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState<AuthMode>('email-login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,9 +59,17 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { signIn, signUp, signInWithPhone, verifyOtp } = useAuth();
+  const { signIn, signUp, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if we're in password reset mode (user clicked reset link in email)
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'reset') {
+      setAuthMode('reset-password');
+    }
+  }, [searchParams]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +145,94 @@ const Auth = () => {
           });
           navigate('/');
         }
+      }
+    } catch (err) {
+      toast({
+        title: 'Ошибка',
+        description: 'Что-то пошло не так. Попробуйте позже.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setLoading(true);
+
+    try {
+      const validation = resetPasswordSchema.safeParse({ email });
+      if (!validation.success) {
+        const fieldErrors: Record<string, string> = {};
+        validation.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await resetPassword(email);
+      if (error) {
+        toast({
+          title: 'Ошибка',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Письмо отправлено',
+          description: 'Проверьте почту для сброса пароля',
+        });
+        setAuthMode('email-login');
+      }
+    } catch (err) {
+      toast({
+        title: 'Ошибка',
+        description: 'Что-то пошло не так. Попробуйте позже.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setLoading(true);
+
+    try {
+      const validation = newPasswordSchema.safeParse({ password, confirmPassword });
+      if (!validation.success) {
+        const fieldErrors: Record<string, string> = {};
+        validation.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await updatePassword(password);
+      if (error) {
+        toast({
+          title: 'Ошибка',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Пароль изменён',
+          description: 'Вы можете войти с новым паролем',
+        });
+        navigate('/');
       }
     } catch (err) {
       toast({
@@ -234,6 +343,18 @@ const Auth = () => {
     setOtp('');
   };
 
+  const getTitle = () => {
+    switch (authMode) {
+      case 'email-login': return 'Войдите в свой аккаунт';
+      case 'email-signup': return 'Создайте новый аккаунт';
+      case 'phone-login': return 'Войти по номеру телефона';
+      case 'phone-otp': return 'Введите код из SMS';
+      case 'forgot-password': return 'Восстановление пароля';
+      case 'reset-password': return 'Новый пароль';
+      default: return '';
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {/* Background effects */}
@@ -251,12 +372,7 @@ const Auth = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Mask
           </h1>
-          <p className="text-muted-foreground mt-2">
-            {authMode === 'email-login' && 'Войдите в свой аккаунт'}
-            {authMode === 'email-signup' && 'Создайте новый аккаунт'}
-            {authMode === 'phone-login' && 'Войти по номеру телефона'}
-            {authMode === 'phone-otp' && 'Введите код из SMS'}
-          </p>
+          <p className="text-muted-foreground mt-2">{getTitle()}</p>
         </div>
 
         {/* Email Login/Signup Form */}
@@ -301,7 +417,18 @@ const Auth = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password">Пароль</Label>
+                {authMode === 'email-login' && (
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('forgot-password')}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Забыли пароль?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
@@ -377,6 +504,125 @@ const Auth = () => {
             >
               <Phone className="w-5 h-5 mr-2" />
               Войти по номеру телефона
+            </Button>
+          </form>
+        )}
+
+        {/* Forgot Password Form */}
+        {authMode === 'forgot-password' && (
+          <form onSubmit={handleForgotPasswordSubmit} className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <p className="text-sm text-muted-foreground text-center">
+              Введите email, на который зарегистрирован аккаунт. Мы отправим ссылку для сброса пароля.
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@mail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <>
+                  Отправить ссылку
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={resetToEmailLogin}
+              className="w-full"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Вернуться к входу
+            </Button>
+          </form>
+        )}
+
+        {/* Reset Password Form (after clicking email link) */}
+        {authMode === 'reset-password' && (
+          <form onSubmit={handleResetPasswordSubmit} className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <p className="text-sm text-muted-foreground text-center">
+              Введите новый пароль для вашего аккаунта.
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Новый пароль</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-12 rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                />
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <>
+                  Сохранить пароль
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
             </Button>
           </form>
         )}
