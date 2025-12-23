@@ -29,6 +29,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Handle password recovery event - redirect to password reset page
+        if (event === 'PASSWORD_RECOVERY') {
+          // Use setTimeout to avoid Supabase deadlock
+          setTimeout(() => {
+            window.location.href = '/auth?mode=reset';
+          }, 0);
+        }
       }
     );
 
