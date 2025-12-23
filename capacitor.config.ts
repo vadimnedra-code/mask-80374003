@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.1ade546d83ee4e13a7e7565e69fa0b77',
+  appId: 'com.mask.messenger',
   appName: 'mask',
   webDir: 'dist',
   server: {
