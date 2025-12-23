@@ -239,5 +239,51 @@ export const useChats = () => {
     return { data: chat, error: null };
   };
 
-  return { chats, loading, createChat, findExistingDirectChat, refetch: fetchChats };
+  const deleteChat = async (chatId: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    try {
+      // Delete messages first
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('chat_id', chatId);
+
+      if (messagesError) {
+        console.error('Error deleting messages:', messagesError);
+        return { error: messagesError };
+      }
+
+      // Delete chat participants
+      const { error: participantsError } = await supabase
+        .from('chat_participants')
+        .delete()
+        .eq('chat_id', chatId);
+
+      if (participantsError) {
+        console.error('Error deleting participants:', participantsError);
+        return { error: participantsError };
+      }
+
+      // Delete the chat itself
+      const { error: chatError } = await supabase
+        .from('chats')
+        .delete()
+        .eq('id', chatId);
+
+      if (chatError) {
+        console.error('Error deleting chat:', chatError);
+        return { error: chatError };
+      }
+
+      // Update local state
+      setChats(prev => prev.filter(c => c.id !== chatId));
+      return { error: null };
+    } catch (err) {
+      console.error('Unexpected error deleting chat:', err);
+      return { error: err };
+    }
+  };
+
+  return { chats, loading, createChat, findExistingDirectChat, deleteChat, refetch: fetchChats };
 };

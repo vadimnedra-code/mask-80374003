@@ -25,7 +25,7 @@ const Messenger = () => {
   const [callParticipant, setCallParticipant] = useState<{ name: string; avatar: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
-  const { chats, loading: chatsLoading, createChat } = useChats();
+  const { chats, loading: chatsLoading, createChat, deleteChat } = useChats();
   const { updateStatus } = useProfile(user?.id);
   const navigate = useNavigate();
   
@@ -230,6 +230,17 @@ const Messenger = () => {
               } catch (err) {
                 console.error('Unexpected error:', err);
                 toast.error('Произошла ошибка');
+              }
+            }}
+            onDeleteChat={async (chatId) => {
+              const { error } = await deleteChat(chatId);
+              if (error) {
+                toast.error('Не удалось удалить чат');
+              } else {
+                if (selectedChatId === chatId) {
+                  setSelectedChatId(null);
+                }
+                toast.success('Чат удалён');
               }
             }}
             loading={chatsLoading}
