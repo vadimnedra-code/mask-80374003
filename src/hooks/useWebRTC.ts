@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { VIDEO_QUALITY_CONSTRAINTS, VideoQuality } from '@/hooks/useConnectionStats';
 
 export interface PeerConnectionState {
   iceConnectionState: string;
@@ -641,6 +642,65 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     }
   }, [callState.callType]);
 
+  const changeVideoQuality = useCallback(async (quality: VideoQuality) => {
+    const stream = localStreamRef.current;
+    if (!stream || callState.callType !== 'video') return;
+    
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) return;
+    
+    try {
+      // For 'auto', use medium as default
+      const targetQuality = quality === 'auto' ? 'medium' : quality;
+      const constraints = VIDEO_QUALITY_CONSTRAINTS[targetQuality];
+      
+      console.log('Changing video quality to:', quality, constraints);
+      
+      // Apply constraints to the existing track
+      await videoTrack.applyConstraints(constraints);
+      
+      console.log('Video quality changed successfully');
+      
+      // Log the new settings
+      const settings = videoTrack.getSettings();
+      console.log('New video settings:', {
+        width: settings.width,
+        height: settings.height,
+        frameRate: settings.frameRate,
+      });
+    } catch (err) {
+      console.error('Error changing video quality:', err);
+      
+      // If applyConstraints fails, try to get a new track with the desired constraints
+      try {
+        const targetQuality = quality === 'auto' ? 'medium' : quality;
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: VIDEO_QUALITY_CONSTRAINTS[targetQuality],
+        });
+        
+        const newVideoTrack = newStream.getVideoTracks()[0];
+        
+        // Replace track in peer connection
+        const sender = peerConnection.current?.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(newVideoTrack);
+        }
+        
+        // Stop old track
+        videoTrack.stop();
+        
+        // Update local stream
+        stream.removeTrack(videoTrack);
+        stream.addTrack(newVideoTrack);
+        
+        setCallState(prev => ({ ...prev, localStream: stream }));
+        console.log('Video quality changed via new track');
+      } catch (innerErr) {
+        console.error('Error getting new video track:', innerErr);
+      }
+    }
+  }, [callState.callType]);
+
   return {
     callState,
     peerConnection: peerConnection.current,
@@ -651,6 +711,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     toggleMute,
     toggleVideo,
     switchCamera,
+    changeVideoQuality,
     cleanup,
   };
 };

@@ -16,7 +16,7 @@ import { CallDiagnostics } from './CallDiagnostics';
 import { ConnectionQualityIndicator } from './ConnectionQualityIndicator';
 import { cn } from '@/lib/utils';
 import { PeerConnectionState } from '@/hooks/useWebRTC';
-import { useConnectionStats } from '@/hooks/useConnectionStats';
+import { useConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
 import { useCallSounds } from '@/hooks/useCallSounds';
 
 interface CallScreenProps {
@@ -35,6 +35,7 @@ interface CallScreenProps {
   onToggleMute: () => void;
   onToggleVideo: () => void;
   onSwitchCamera?: () => void;
+  onChangeVideoQuality?: (quality: VideoQuality) => void;
 }
 
 export const CallScreen = ({ 
@@ -52,9 +53,13 @@ export const CallScreen = ({
   onEndCall,
   onToggleMute,
   onToggleVideo,
-  onSwitchCamera
+  onSwitchCamera,
+  onChangeVideoQuality
 }: CallScreenProps) => {
-  const connectionStats = useConnectionStats(peerConnection);
+  const { stats: connectionStats, setVideoQuality } = useConnectionStats(peerConnection, {
+    autoAdaptQuality: true,
+    onQualityChange: onChangeVideoQuality,
+  });
   const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
   const [callDuration, setCallDuration] = useState(0);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
@@ -231,7 +236,14 @@ export const CallScreen = ({
       <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-2">
           {callStatus === 'active' ? (
-            <ConnectionQualityIndicator stats={connectionStats} />
+            <ConnectionQualityIndicator 
+              stats={connectionStats} 
+              onQualityChange={(quality) => {
+                setVideoQuality(quality);
+                onChangeVideoQuality?.(quality);
+              }}
+              isVideoCall={isVideoCall}
+            />
           ) : (
             <>
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

@@ -1,18 +1,42 @@
-import React from 'react';
-import { Wifi, WifiOff, Signal, SignalLow, SignalMedium, SignalHigh } from 'lucide-react';
-import { ConnectionStats } from '@/hooks/useConnectionStats';
+import React, { useState } from 'react';
+import { Wifi, WifiOff, Signal, SignalLow, SignalMedium, SignalHigh, Settings, ChevronDown } from 'lucide-react';
+import { ConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface ConnectionQualityIndicatorProps {
   stats: ConnectionStats;
+  onQualityChange?: (quality: VideoQuality) => void;
+  isVideoCall?: boolean;
 }
 
-export const ConnectionQualityIndicator: React.FC<ConnectionQualityIndicatorProps> = ({ stats }) => {
+const QUALITY_OPTIONS: { value: VideoQuality; label: string; description: string }[] = [
+  { value: 'auto', label: 'Авто', description: 'Автоматический выбор' },
+  { value: 'high', label: 'Высокое', description: '720p / 30fps' },
+  { value: 'medium', label: 'Среднее', description: '480p / 24fps' },
+  { value: 'low', label: 'Низкое', description: '240p / 15fps' },
+];
+
+export const ConnectionQualityIndicator: React.FC<ConnectionQualityIndicatorProps> = ({ 
+  stats, 
+  onQualityChange,
+  isVideoCall = false
+}) => {
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+
   const getQualityIcon = () => {
     switch (stats.quality) {
       case 'excellent':
@@ -58,47 +82,124 @@ export const ConnectionQualityIndicator: React.FC<ConnectionQualityIndicatorProp
     }
   };
 
+  const getVideoQualityLabel = (quality: VideoQuality) => {
+    return QUALITY_OPTIONS.find(q => q.value === quality)?.label || 'Авто';
+  };
+
+  const formatResolution = () => {
+    if (stats.videoStats.width && stats.videoStats.height) {
+      return `${stats.videoStats.width}×${stats.videoStats.height}`;
+    }
+    return '—';
+  };
+
   return (
     <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm ${getQualityColor()}`}>
-            {getQualityIcon()}
-            <span className="text-xs font-medium text-white/90">
-              {stats.latency !== null ? `${stats.latency}ms` : '...'}
-            </span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="bg-background/95 backdrop-blur-sm border-border">
-          <div className="space-y-2 p-1">
-            <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm ${getQualityColor()}`}>
               {getQualityIcon()}
-              <span className="font-medium">{getQualityLabel()}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <span className="text-muted-foreground">Задержка:</span>
-              <span className="font-mono">
-                {stats.latency !== null ? `${stats.latency} мс` : '—'}
-              </span>
-              
-              <span className="text-muted-foreground">Потери:</span>
-              <span className="font-mono">
-                {stats.packetLoss !== null ? `${stats.packetLoss}%` : '—'}
-              </span>
-              
-              <span className="text-muted-foreground">Джиттер:</span>
-              <span className="font-mono">
-                {stats.jitter !== null ? `${stats.jitter} мс` : '—'}
-              </span>
-              
-              <span className="text-muted-foreground">Битрейт:</span>
-              <span className="font-mono">
-                {stats.bitrate !== null ? `${stats.bitrate} кбит/с` : '—'}
+              <span className="text-xs font-medium text-white/90">
+                {stats.latency !== null ? `${stats.latency}ms` : '...'}
               </span>
             </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-background/95 backdrop-blur-sm border-border">
+            <div className="space-y-2 p-1">
+              <div className="flex items-center gap-2">
+                {getQualityIcon()}
+                <span className="font-medium">{getQualityLabel()}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <span className="text-muted-foreground">Задержка:</span>
+                <span className="font-mono">
+                  {stats.latency !== null ? `${stats.latency} мс` : '—'}
+                </span>
+                
+                <span className="text-muted-foreground">Потери:</span>
+                <span className="font-mono">
+                  {stats.packetLoss !== null ? `${stats.packetLoss}%` : '—'}
+                </span>
+                
+                <span className="text-muted-foreground">Джиттер:</span>
+                <span className="font-mono">
+                  {stats.jitter !== null ? `${stats.jitter} мс` : '—'}
+                </span>
+                
+                <span className="text-muted-foreground">Битрейт:</span>
+                <span className="font-mono">
+                  {stats.bitrate !== null ? `${stats.bitrate} кбит/с` : '—'}
+                </span>
+
+                {isVideoCall && (
+                  <>
+                    <span className="text-muted-foreground">Разрешение:</span>
+                    <span className="font-mono">{formatResolution()}</span>
+                    
+                    <span className="text-muted-foreground">FPS:</span>
+                    <span className="font-mono">
+                      {stats.videoStats.frameRate !== null ? stats.videoStats.frameRate : '—'}
+                    </span>
+                    
+                    <span className="text-muted-foreground">Видео битрейт:</span>
+                    <span className="font-mono">
+                      {stats.videoStats.bitrate !== null ? `${stats.videoStats.bitrate} кбит/с` : '—'}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Video Quality Selector */}
+        {isVideoCall && onQualityChange && (
+          <DropdownMenu open={showQualityMenu} onOpenChange={setShowQualityMenu}>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className={cn(
+                  "flex items-center gap-1 px-2.5 py-1.5 rounded-full border backdrop-blur-sm transition-colors",
+                  "bg-white/10 border-white/20 hover:bg-white/20"
+                )}
+              >
+                <Settings className="w-4 h-4 text-white/80" />
+                <span className="text-xs font-medium text-white/90">
+                  {getVideoQualityLabel(stats.currentVideoQuality)}
+                </span>
+                <ChevronDown className="w-3 h-3 text-white/60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 bg-background/95 backdrop-blur-sm">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Качество видео
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {QUALITY_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => onQualityChange(option.value)}
+                  className={cn(
+                    "flex flex-col items-start gap-0.5 cursor-pointer",
+                    stats.currentVideoQuality === option.value && "bg-accent"
+                  )}
+                >
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </DropdownMenuItem>
+              ))}
+              {stats.quality === 'poor' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-xs text-yellow-500">
+                    ⚠️ Низкое качество соединения. Рекомендуется снизить качество видео.
+                  </div>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </TooltipProvider>
   );
 };
