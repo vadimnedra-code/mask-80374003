@@ -35,7 +35,7 @@ export const ChatList = ({
   const filteredChats = chats.filter((chat) => {
     const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
     const name = chat.is_group ? chat.group_name : otherParticipant?.display_name;
-    return name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return (name?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false);
   });
 
   // Get users that match search query (excluding current user and users already in chats)

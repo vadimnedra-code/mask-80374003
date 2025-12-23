@@ -5,6 +5,7 @@ import { useChats } from '@/hooks/useChats';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface NewChatDialogProps {
   onClose: () => void;
@@ -34,9 +35,7 @@ export const NewChatDialog = ({ onClose, onChatCreated }: NewChatDialogProps) =>
 
   const handleCreateChat = async () => {
     if (selectedUsers.length === 0) return;
-    
-    setCreating(true);
-    
+
     // Check if chat already exists (for 1-on-1)
     if (selectedUsers.length === 1) {
       const existingChat = chats.find(
@@ -44,7 +43,7 @@ export const NewChatDialog = ({ onClose, onChatCreated }: NewChatDialogProps) =>
           !c.is_group &&
           c.participants.some((p) => p.user_id === selectedUsers[0])
       );
-      
+
       if (existingChat) {
         onChatCreated(existingChat.id);
         onClose();
@@ -52,16 +51,27 @@ export const NewChatDialog = ({ onClose, onChatCreated }: NewChatDialogProps) =>
       }
     }
 
-    const { data, error } = await createChat(selectedUsers);
-    
-    if (error) {
-      console.error('Error creating chat:', error);
-    } else if (data) {
-      onChatCreated(data.id);
-      onClose();
+    setCreating(true);
+    try {
+      const { data, error } = await createChat(selectedUsers);
+
+      if (error) {
+        console.error('Error creating chat:', error);
+        toast.error('Не удалось создать чат');
+        return;
+      }
+
+      if (data) {
+        onChatCreated(data.id);
+        onClose();
+        toast.success('Чат создан');
+      }
+    } catch (err) {
+      console.error('Unexpected error creating chat:', err);
+      toast.error('Произошла ошибка');
+    } finally {
+      setCreating(false);
     }
-    
-    setCreating(false);
   };
 
   return (
