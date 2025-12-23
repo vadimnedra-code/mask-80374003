@@ -1,16 +1,61 @@
+import { useState } from 'react';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, FileText, Download } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { VoicePlayer } from './VoicePlayer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   showAvatar?: boolean;
+  onEdit?: (messageId: string, newContent: string) => Promise<void>;
+  onDelete?: (messageId: string) => Promise<void>;
 }
 
-export const MessageBubble = ({ message, isOwn, showAvatar }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete }: MessageBubbleProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content || '');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isEdited = message.timestamp.getTime() !== new Date(message.timestamp).getTime() && 
+    message.content !== null;
+
+  const handleEdit = async () => {
+    if (!editContent.trim() || !onEdit) return;
+    await onEdit(message.id, editContent.trim());
+    setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    await onDelete(message.id);
+    setIsDeleting(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleEdit();
+    }
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditContent(message.content || '');
+    }
+  };
+
+  const canEdit = isOwn && message.type === 'text' && onEdit;
+  const canDelete = isOwn && onDelete;
+
   const renderMedia = () => {
     if (!message.mediaUrl) return null;
 
@@ -75,10 +120,41 @@ export const MessageBubble = ({ message, isOwn, showAvatar }: MessageBubbleProps
   return (
     <div
       className={cn(
-        'flex items-end gap-2 animate-fade-in',
+        'flex items-end gap-2 animate-fade-in group',
         isOwn ? 'justify-end' : 'justify-start'
       )}
     >
+      {/* Action menu for own messages */}
+      {isOwn && (canEdit || canDelete) && !isEditing && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1.5 rounded-full hover:bg-muted transition-colors">
+                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[140px]">
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Редактировать
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem 
+                  onClick={handleDelete}
+                  className="text-destructive focus:text-destructive"
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Удалить
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
       <div
         className={cn(
           'max-w-[75%] px-4 py-2.5 shadow-soft',
@@ -86,11 +162,44 @@ export const MessageBubble = ({ message, isOwn, showAvatar }: MessageBubbleProps
         )}
       >
         {renderMedia()}
-        {message.content && (
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-            {message.content}
-          </p>
+        
+        {isEditing ? (
+          <div className="flex flex-col gap-2">
+            <Input
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="bg-background/50 border-primary/30"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditContent(message.content || '');
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleEdit}
+                disabled={!editContent.trim()}
+              >
+                Сохранить
+              </Button>
+            </div>
+          </div>
+        ) : (
+          message.content && (
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+              {message.content}
+            </p>
+          )
         )}
+        
         <div
           className={cn(
             'flex items-center gap-1 mt-1',
