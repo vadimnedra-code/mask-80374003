@@ -233,7 +233,7 @@ export const CallScreen = ({
       )}
 
       {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
+      <div className="relative z-10 flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-2">
           {callStatus === 'active' ? (
             <ConnectionQualityIndicator 
@@ -349,7 +349,7 @@ export const CallScreen = ({
       )}
 
       {/* Bottom Controls - WhatsApp style */}
-      <div className="relative z-10 pb-10 pt-4 bg-gradient-to-t from-black/80 to-transparent">
+      <div className="relative z-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-4 bg-gradient-to-t from-black/80 to-transparent">
         {/* Control buttons row */}
         <div className="flex items-center justify-center gap-6 mb-6">
           {/* Speaker */}

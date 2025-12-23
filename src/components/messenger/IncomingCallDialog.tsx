@@ -56,7 +56,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
       <div className="absolute inset-0 bg-gradient-to-b from-[#0b141a] via-[#1f2c34] to-[#0b141a]" />
       
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)]">
         {/* Avatar with animation */}
         <div className="relative mb-8">
           <Avatar
@@ -92,7 +92,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
       </div>
 
       {/* Action Buttons - WhatsApp style */}
-      <div className="relative z-10 pb-12 pt-6">
+      <div className="relative z-10 pb-[max(3rem,env(safe-area-inset-bottom))] pt-6">
         <div className="flex items-center justify-center gap-20">
           {/* Decline */}
           <div className="flex flex-col items-center gap-2">

@@ -107,7 +107,7 @@ export const SearchPanel = ({ onClose, onSelectMessage }: SearchPanelProps) => {
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border">
+      <div className="flex items-center gap-3 p-4 border-b border-border pt-[max(1rem,env(safe-area-inset-top))]">
         <button
           onClick={onClose}
           className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -167,7 +167,7 @@ export const SearchPanel = ({ onClose, onSelectMessage }: SearchPanelProps) => {
       </div>
 
       {/* Results */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />

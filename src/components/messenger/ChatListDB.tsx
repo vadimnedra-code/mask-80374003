@@ -114,7 +114,7 @@ export const ChatList = ({
   return (
     <div className="flex flex-col h-full bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-border pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
           <button className="p-2 rounded-full hover:bg-muted transition-colors lg:hidden">
             <Menu className="w-5 h-5 text-muted-foreground" />
