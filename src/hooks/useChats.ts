@@ -138,10 +138,10 @@ export const useChats = () => {
   const createChat = async (participantIds: string[]) => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    // Create chat
+    // Create chat with created_by set to current user
     const { data: chat, error: chatError } = await supabase
       .from('chats')
-      .insert({ is_group: participantIds.length > 1 })
+      .insert({ is_group: participantIds.length > 1, created_by: user.id })
       .select()
       .single();
 

@@ -56,6 +56,7 @@ export type Database = {
       chats: {
         Row: {
           created_at: string
+          created_by: string | null
           group_avatar: string | null
           group_name: string | null
           id: string
@@ -64,6 +65,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           group_avatar?: string | null
           group_name?: string | null
           id?: string
@@ -72,6 +74,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           group_avatar?: string | null
           group_name?: string | null
           id?: string
