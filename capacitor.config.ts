@@ -1,13 +1,19 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const serverUrl = process.env.CAP_SERVER_URL;
+
 const config: CapacitorConfig = {
   appId: 'com.mask.messenger',
   appName: 'mask',
   webDir: 'dist',
-  server: {
-    url: 'https://1ade546d-83ee-4e13-a7e7-565e69fa0b77.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+  ...(serverUrl
+    ? {
+        server: {
+          url: serverUrl,
+          cleartext: true,
+        },
+      }
+    : {}),
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
