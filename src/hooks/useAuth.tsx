@@ -8,6 +8,8 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithPhone: (phone: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (phone: string, token: string, displayName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -62,12 +64,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signInWithPhone = async (phone: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
+    });
+    return { error };
+  };
+
+  const verifyOtp = async (phone: string, token: string, displayName?: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms',
+    });
+    
+    // После успешной верификации обновляем профиль с displayName
+    if (!error && data.user && displayName) {
+      await supabase.auth.updateUser({
+        data: { display_name: displayName }
+      });
+      // Также обновляем профиль в таблице profiles
+      await supabase
+        .from('profiles')
+        .update({ display_name: displayName, phone })
+        .eq('user_id', data.user.id);
+    } else if (!error && data.user) {
+      // Сохраняем номер телефона в профиле
+      await supabase
+        .from('profiles')
+        .update({ phone })
+        .eq('user_id', data.user.id);
+    }
+    
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithPhone, verifyOtp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
