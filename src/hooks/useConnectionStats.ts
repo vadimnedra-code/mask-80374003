@@ -1,4 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+export type VideoQuality = 'high' | 'medium' | 'low' | 'auto';
+
+export interface VideoStats {
+  width: number | null;
+  height: number | null;
+  frameRate: number | null;
+  bitrate: number | null;
+}
 
 export interface ConnectionStats {
   latency: number | null;
@@ -6,19 +15,59 @@ export interface ConnectionStats {
   jitter: number | null;
   bitrate: number | null;
   quality: 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
+  videoStats: VideoStats;
+  currentVideoQuality: VideoQuality;
 }
 
-export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => {
+interface UseConnectionStatsOptions {
+  autoAdaptQuality?: boolean;
+  onQualityChange?: (quality: VideoQuality) => void;
+}
+
+export const VIDEO_QUALITY_CONSTRAINTS: Record<Exclude<VideoQuality, 'auto'>, MediaTrackConstraints> = {
+  high: {
+    width: { ideal: 1280, max: 1920 },
+    height: { ideal: 720, max: 1080 },
+    frameRate: { ideal: 30 },
+  },
+  medium: {
+    width: { ideal: 640, max: 960 },
+    height: { ideal: 480, max: 540 },
+    frameRate: { ideal: 24 },
+  },
+  low: {
+    width: { ideal: 320, max: 480 },
+    height: { ideal: 240, max: 360 },
+    frameRate: { ideal: 15 },
+  },
+};
+
+export const useConnectionStats = (
+  peerConnection: RTCPeerConnection | null,
+  options: UseConnectionStatsOptions = {}
+) => {
+  const { autoAdaptQuality = true, onQualityChange } = options;
+  
   const [stats, setStats] = useState<ConnectionStats>({
     latency: null,
     packetLoss: null,
     jitter: null,
     bitrate: null,
-    quality: 'unknown'
+    quality: 'unknown',
+    videoStats: {
+      width: null,
+      height: null,
+      frameRate: null,
+      bitrate: null,
+    },
+    currentVideoQuality: 'auto',
   });
 
   const [prevBytesReceived, setPrevBytesReceived] = useState<number>(0);
+  const [prevVideoBytesReceived, setPrevVideoBytesReceived] = useState<number>(0);
   const [prevTimestamp, setPrevTimestamp] = useState<number>(0);
+  const poorQualityCount = useRef(0);
+  const lastQualityChange = useRef(0);
 
   const calculateQuality = useCallback((latency: number | null, packetLoss: number | null): ConnectionStats['quality'] => {
     if (latency === null && packetLoss === null) return 'unknown';
@@ -32,6 +81,21 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
     return 'poor';
   }, []);
 
+  const getRecommendedQuality = useCallback((quality: ConnectionStats['quality']): Exclude<VideoQuality, 'auto'> => {
+    switch (quality) {
+      case 'excellent':
+        return 'high';
+      case 'good':
+        return 'high';
+      case 'fair':
+        return 'medium';
+      case 'poor':
+        return 'low';
+      default:
+        return 'medium';
+    }
+  }, []);
+
   useEffect(() => {
     if (!peerConnection) {
       setStats({
@@ -39,8 +103,16 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
         packetLoss: null,
         jitter: null,
         bitrate: null,
-        quality: 'unknown'
+        quality: 'unknown',
+        videoStats: {
+          width: null,
+          height: null,
+          frameRate: null,
+          bitrate: null,
+        },
+        currentVideoQuality: 'auto',
       });
+      poorQualityCount.current = 0;
       return;
     }
 
@@ -51,7 +123,11 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
         let packetLoss: number | null = null;
         let jitter: number | null = null;
         let currentBytesReceived = 0;
+        let currentVideoBytesReceived = 0;
         let currentTimestamp = Date.now();
+        let videoWidth: number | null = null;
+        let videoHeight: number | null = null;
+        let frameRate: number | null = null;
 
         statsReport.forEach((report) => {
           // Get RTT from candidate-pair
@@ -61,7 +137,7 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
             }
           }
 
-          // Get packet loss and jitter from inbound-rtp
+          // Get packet loss and jitter from inbound-rtp audio
           if (report.type === 'inbound-rtp' && report.kind === 'audio') {
             if (report.packetsLost !== undefined && report.packetsReceived !== undefined) {
               const totalPackets = report.packetsLost + report.packetsReceived;
@@ -76,9 +152,25 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
               currentBytesReceived = report.bytesReceived;
             }
           }
+
+          // Get video stats from inbound-rtp video
+          if (report.type === 'inbound-rtp' && report.kind === 'video') {
+            if (report.frameWidth !== undefined) {
+              videoWidth = report.frameWidth;
+            }
+            if (report.frameHeight !== undefined) {
+              videoHeight = report.frameHeight;
+            }
+            if (report.framesPerSecond !== undefined) {
+              frameRate = Math.round(report.framesPerSecond);
+            }
+            if (report.bytesReceived !== undefined) {
+              currentVideoBytesReceived = report.bytesReceived;
+            }
+          }
         });
 
-        // Calculate bitrate
+        // Calculate audio bitrate
         let bitrate: number | null = null;
         if (prevBytesReceived > 0 && prevTimestamp > 0) {
           const timeDiff = (currentTimestamp - prevTimestamp) / 1000;
@@ -87,18 +179,49 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
           }
         }
 
+        // Calculate video bitrate
+        let videoBitrate: number | null = null;
+        if (prevVideoBytesReceived > 0 && prevTimestamp > 0) {
+          const timeDiff = (currentTimestamp - prevTimestamp) / 1000;
+          if (timeDiff > 0) {
+            videoBitrate = Math.round(((currentVideoBytesReceived - prevVideoBytesReceived) * 8) / timeDiff / 1000);
+          }
+        }
+
         setPrevBytesReceived(currentBytesReceived);
+        setPrevVideoBytesReceived(currentVideoBytesReceived);
         setPrevTimestamp(currentTimestamp);
 
         const quality = calculateQuality(latency, packetLoss);
 
-        setStats({
+        // Auto-adapt quality logic
+        if (autoAdaptQuality && quality === 'poor') {
+          poorQualityCount.current++;
+          // If poor quality persists for 3 checks (6 seconds), suggest lowering quality
+          if (poorQualityCount.current >= 3 && Date.now() - lastQualityChange.current > 10000) {
+            const recommended = getRecommendedQuality(quality);
+            onQualityChange?.(recommended);
+            lastQualityChange.current = Date.now();
+            poorQualityCount.current = 0;
+          }
+        } else if (quality === 'excellent' || quality === 'good') {
+          poorQualityCount.current = 0;
+        }
+
+        setStats(prev => ({
           latency,
           packetLoss,
           jitter,
           bitrate,
-          quality
-        });
+          quality,
+          videoStats: {
+            width: videoWidth,
+            height: videoHeight,
+            frameRate,
+            bitrate: videoBitrate,
+          },
+          currentVideoQuality: prev.currentVideoQuality,
+        }));
       } catch (error) {
         console.error('Error getting connection stats:', error);
       }
@@ -109,7 +232,12 @@ export const useConnectionStats = (peerConnection: RTCPeerConnection | null) => 
     getStats();
 
     return () => clearInterval(interval);
-  }, [peerConnection, calculateQuality, prevBytesReceived, prevTimestamp]);
+  }, [peerConnection, calculateQuality, autoAdaptQuality, onQualityChange, getRecommendedQuality, prevBytesReceived, prevVideoBytesReceived, prevTimestamp]);
 
-  return stats;
+  const setVideoQuality = useCallback((quality: VideoQuality) => {
+    setStats(prev => ({ ...prev, currentVideoQuality: quality }));
+    lastQualityChange.current = Date.now();
+  }, []);
+
+  return { stats, setVideoQuality };
 };

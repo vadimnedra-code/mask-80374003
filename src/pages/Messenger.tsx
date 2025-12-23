@@ -41,6 +41,7 @@ const Messenger = () => {
     toggleMute,
     toggleVideo,
     switchCamera,
+    changeVideoQuality,
   } = useWebRTC({
     onCallEnded: () => {
       setCallParticipant(null);
@@ -176,6 +177,7 @@ const Messenger = () => {
           onToggleMute={toggleMute}
           onToggleVideo={toggleVideo}
           onSwitchCamera={switchCamera}
+          onChangeVideoQuality={changeVideoQuality}
         />
       )}
 
