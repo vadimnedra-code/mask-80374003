@@ -7,9 +7,12 @@ import { SettingsPanelDB } from '@/components/messenger/SettingsPanelDB';
 import { CallScreen } from '@/components/messenger/CallScreen';
 import { NewChatDialog } from '@/components/messenger/NewChatDialog';
 import { SearchPanel } from '@/components/messenger/SearchPanel';
+import { IncomingCallDialog } from '@/components/messenger/IncomingCallDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
+import { useWebRTC } from '@/hooks/useWebRTC';
+import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -19,12 +22,32 @@ const Messenger = () => {
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
-  const [activeCall, setActiveCall] = useState<{ participantName: string; avatarUrl: string; type: 'voice' | 'video' } | null>(null);
+  const [callParticipant, setCallParticipant] = useState<{ name: string; avatar: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const { chats, loading: chatsLoading, createChat } = useChats();
   const { updateStatus } = useProfile(user?.id);
   const navigate = useNavigate();
+  
+  const { incomingCall, clearIncomingCall } = useIncomingCalls();
+  
+  const { 
+    callState, 
+    startCall, 
+    acceptCall, 
+    rejectCall, 
+    endCall, 
+    toggleMute 
+  } = useWebRTC({
+    onCallEnded: () => {
+      setCallParticipant(null);
+      toast.info('Звонок завершён');
+    },
+    onCallRejected: () => {
+      setCallParticipant(null);
+      toast.info('Звонок отклонён');
+    },
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -65,20 +88,51 @@ const Messenger = () => {
 
   const selectedChat = chats.find((chat) => chat.id === selectedChatId);
 
-  const handleStartCall = (type: 'voice' | 'video') => {
+  const handleStartCall = async (type: 'voice' | 'video') => {
     if (!selectedChat) return;
     const otherParticipant = selectedChat.participants.find((p) => p.user_id !== user.id);
-    if (otherParticipant) {
-      setActiveCall({ 
-        participantName: otherParticipant.display_name,
-        avatarUrl: otherParticipant.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.user_id}`,
-        type 
-      });
+    if (!otherParticipant) return;
+    
+    setCallParticipant({
+      name: otherParticipant.display_name,
+      avatar: otherParticipant.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.user_id}`,
+    });
+    
+    try {
+      await startCall(otherParticipant.user_id, selectedChat.id, type);
+    } catch (error) {
+      toast.error('Не удалось начать звонок. Проверьте доступ к микрофону.');
+      setCallParticipant(null);
     }
   };
 
   const handleEndCall = () => {
-    setActiveCall(null);
+    endCall();
+    setCallParticipant(null);
+  };
+
+  const handleAcceptIncomingCall = async () => {
+    if (!incomingCall) return;
+    
+    setCallParticipant({
+      name: incomingCall.caller_name || 'Unknown',
+      avatar: incomingCall.caller_avatar || '',
+    });
+    
+    try {
+      await acceptCall(incomingCall.id);
+      clearIncomingCall();
+    } catch (error) {
+      toast.error('Не удалось принять звонок. Проверьте доступ к микрофону.');
+      setCallParticipant(null);
+      clearIncomingCall();
+    }
+  };
+
+  const handleRejectIncomingCall = async () => {
+    if (!incomingCall) return;
+    await rejectCall(incomingCall.id);
+    clearIncomingCall();
   };
 
   const handleSearchSelectMessage = (chatId: string, messageId: string) => {
@@ -88,19 +142,29 @@ const Messenger = () => {
     setTimeout(() => setHighlightedMessageId(null), 3000);
   };
 
+  const isInCall = callState.status !== 'idle' && callParticipant;
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-background">
+      {/* Incoming Call Dialog */}
+      {incomingCall && !isInCall && (
+        <IncomingCallDialog
+          call={incomingCall}
+          onAccept={handleAcceptIncomingCall}
+          onReject={handleRejectIncomingCall}
+        />
+      )}
+
       {/* Call Screen */}
-      {activeCall && (
+      {isInCall && (
         <CallScreen
-          user={{
-            id: 'call-user',
-            name: activeCall.participantName,
-            avatar: activeCall.avatarUrl,
-            status: 'online',
-          }}
-          callType={activeCall.type}
+          participantName={callParticipant.name}
+          participantAvatar={callParticipant.avatar}
+          callType={callState.callType}
+          callStatus={callState.status as 'calling' | 'ringing' | 'connecting' | 'active'}
+          isMuted={callState.isMuted}
           onEndCall={handleEndCall}
+          onToggleMute={toggleMute}
         />
       )}
 

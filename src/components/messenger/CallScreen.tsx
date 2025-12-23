@@ -9,35 +9,36 @@ import {
   Volume2,
   MoreVertical
 } from 'lucide-react';
-import { User } from '@/types/chat';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
 
 interface CallScreenProps {
-  user: User;
+  participantName: string;
+  participantAvatar: string;
   callType: 'voice' | 'video';
+  callStatus: 'calling' | 'ringing' | 'connecting' | 'active';
+  isMuted: boolean;
   onEndCall: () => void;
+  onToggleMute: () => void;
 }
 
-export const CallScreen = ({ user, callType, onEndCall }: CallScreenProps) => {
-  const [isMuted, setIsMuted] = useState(false);
+export const CallScreen = ({ 
+  participantName, 
+  participantAvatar,
+  callType, 
+  callStatus,
+  isMuted,
+  onEndCall,
+  onToggleMute
+}: CallScreenProps) => {
   const [isVideoOff, setIsVideoOff] = useState(callType === 'voice');
   const [callDuration, setCallDuration] = useState(0);
-  const [callStatus, setCallStatus] = useState<'connecting' | 'ringing' | 'active'>('connecting');
 
   useEffect(() => {
-    // Simulate call connection
-    const connectTimer = setTimeout(() => setCallStatus('ringing'), 1000);
-    const activeTimer = setTimeout(() => setCallStatus('active'), 3000);
-
-    return () => {
-      clearTimeout(connectTimer);
-      clearTimeout(activeTimer);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (callStatus !== 'active') return;
+    if (callStatus !== 'active') {
+      setCallDuration(0);
+      return;
+    }
 
     const interval = setInterval(() => {
       setCallDuration((prev) => prev + 1);
@@ -54,10 +55,12 @@ export const CallScreen = ({ user, callType, onEndCall }: CallScreenProps) => {
 
   const getStatusText = () => {
     switch (callStatus) {
+      case 'calling':
+        return 'Вызов...';
+      case 'ringing':
+        return 'Звонок...';
       case 'connecting':
         return 'Подключение...';
-      case 'ringing':
-        return 'Вызов...';
       case 'active':
         return formatDuration(callDuration);
     }
@@ -74,8 +77,8 @@ export const CallScreen = ({ user, callType, onEndCall }: CallScreenProps) => {
       <div className="relative z-10 flex flex-col items-center pt-20">
         <div className="relative">
           <Avatar
-            src={user.avatar}
-            alt={user.name}
+            src={participantAvatar}
+            alt={participantName}
             size="xl"
             className="w-32 h-32 ring-4 ring-primary/20"
           />
@@ -85,7 +88,7 @@ export const CallScreen = ({ user, callType, onEndCall }: CallScreenProps) => {
             </div>
           )}
         </div>
-        <h2 className="mt-6 text-2xl font-semibold">{user.name}</h2>
+        <h2 className="mt-6 text-2xl font-semibold">{participantName}</h2>
         <p className={cn(
           'mt-2 text-lg',
           callStatus === 'active' ? 'text-status-online' : 'text-muted-foreground animate-pulse-soft'
@@ -126,7 +129,7 @@ export const CallScreen = ({ user, callType, onEndCall }: CallScreenProps) => {
             </button>
           )}
           <button
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={onToggleMute}
             className={cn(
               'p-4 rounded-full shadow-soft transition-colors',
               isMuted ? 'bg-destructive' : 'bg-card hover:bg-muted'
