@@ -13,6 +13,8 @@ import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { useIncomingCalls } from '@/hooks/useIncomingCalls';
+import { useCallKit } from '@/hooks/useCallKit';
+import { useVoipToken } from '@/hooks/useVoipToken';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -30,6 +32,22 @@ const Messenger = () => {
   const navigate = useNavigate();
   
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
+  const { saveToken } = useVoipToken();
+  
+  // CallKit integration for iOS native call UI
+  const { initialize: initializeCallKit, isAvailable: isCallKitAvailable } = useCallKit({
+    onCallAnswered: async (connectionId) => {
+      console.log('CallKit: Call answered via native UI:', connectionId);
+      // The connectionId is the call_id - accept it via WebRTC
+      if (connectionId) {
+        await handleAcceptIncomingCall();
+      }
+    },
+    onTokenReceived: async (token) => {
+      console.log('CallKit: VoIP token received, saving...');
+      await saveToken(token);
+    },
+  });
   
   const {
     callState,
@@ -52,6 +70,13 @@ const Messenger = () => {
       toast.info('Звонок отклонён');
     },
   });
+
+  // Initialize CallKit on iOS
+  useEffect(() => {
+    if (user && isCallKitAvailable()) {
+      initializeCallKit();
+    }
+  }, [user, isCallKitAvailable, initializeCallKit]);
 
   // Redirect if not authenticated
   useEffect(() => {
