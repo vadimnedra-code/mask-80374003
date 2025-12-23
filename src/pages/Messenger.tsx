@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const Messenger = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -120,18 +121,29 @@ const Messenger = () => {
             onOpenSettings={() => setShowSettings(true)}
             onNewChat={() => setShowNewChat(true)}
             onStartChatWithUser={async (userId) => {
-              // Check if chat already exists
-              const existingChat = chats.find(
-                (c) => !c.is_group && c.participants.some((p) => p.user_id === userId)
-              );
-              if (existingChat) {
-                setSelectedChatId(existingChat.id);
-                return;
-              }
-              // Create new chat directly
-              const { data, error } = await createChat([userId]);
-              if (!error && data) {
-                setSelectedChatId(data.id);
+              try {
+                // Check if chat already exists
+                const existingChat = chats.find(
+                  (c) => !c.is_group && c.participants.some((p) => p.user_id === userId)
+                );
+                if (existingChat) {
+                  setSelectedChatId(existingChat.id);
+                  return;
+                }
+                // Create new chat directly
+                const { data, error } = await createChat([userId]);
+                if (error) {
+                  console.error('Error creating chat:', error);
+                  toast.error('Не удалось создать чат');
+                  return;
+                }
+                if (data) {
+                  setSelectedChatId(data.id);
+                  toast.success('Чат создан');
+                }
+              } catch (err) {
+                console.error('Unexpected error:', err);
+                toast.error('Произошла ошибка');
               }
             }}
             loading={chatsLoading}
