@@ -18,17 +18,66 @@ export const useIncomingCalls = () => {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const incomingCallRef = useRef<IncomingCall | null>(null);
 
-  // Keep ref in sync with state
   useEffect(() => {
     incomingCallRef.current = incomingCall;
   }, [incomingCall]);
+
+  const hydrateIncomingCall = useCallback(
+    async (call: any) => {
+      if (!user) return;
+      if (!call) return;
+
+      if (call.status !== 'pending' && call.status !== 'ringing') return;
+
+      const { data: callerProfile } = await supabase
+        .from('profiles_public')
+        .select('display_name, avatar_url')
+        .eq('user_id', call.caller_id)
+        .maybeSingle();
+
+      setIncomingCall({
+        id: call.id,
+        caller_id: call.caller_id,
+        callee_id: call.callee_id,
+        chat_id: call.chat_id,
+        call_type: (call.call_type as 'voice' | 'video') ?? 'voice',
+        status: call.status,
+        caller_name: callerProfile?.display_name || 'Неизвестный',
+        caller_avatar:
+          callerProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${call.caller_id}`,
+      });
+    },
+    [user]
+  );
 
   useEffect(() => {
     if (!user) return;
 
     console.log('Setting up incoming call listener for user:', user.id);
 
-    // Subscribe to new calls where user is the callee
+    // Prevent missing calls if subscription starts after INSERT
+    const fetchLatestIncoming = async () => {
+      try {
+        const { data: call } = await supabase
+          .from('calls')
+          .select('*')
+          .eq('callee_id', user.id)
+          .in('status', ['pending', 'ringing'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (call) {
+          console.log('Found existing incoming call:', call.id, 'status:', call.status);
+          await hydrateIncomingCall(call);
+        }
+      } catch (err) {
+        console.error('Error fetching latest incoming call:', err);
+      }
+    };
+
+    fetchLatestIncoming();
+
     const channel = supabase
       .channel(`incoming-calls-${user.id}`)
       .on(
@@ -42,29 +91,7 @@ export const useIncomingCalls = () => {
         async (payload) => {
           const call = payload.new as any;
           console.log('Incoming call INSERT received:', call.id, 'status:', call.status);
-          
-          if (call.status === 'pending' || call.status === 'ringing') {
-            // Fetch caller info
-            const { data: callerProfile } = await supabase
-              .from('profiles_public')
-              .select('display_name, avatar_url')
-              .eq('user_id', call.caller_id)
-              .maybeSingle();
-            
-            const newCall = {
-              id: call.id,
-              caller_id: call.caller_id,
-              callee_id: call.callee_id,
-              chat_id: call.chat_id,
-              call_type: call.call_type,
-              status: call.status,
-              caller_name: callerProfile?.display_name || 'Неизвестный',
-              caller_avatar: callerProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${call.caller_id}`,
-            };
-            
-            console.log('Setting incoming call:', newCall.id);
-            setIncomingCall(newCall);
-          }
+          await hydrateIncomingCall(call);
         }
       )
       .on(
@@ -75,17 +102,21 @@ export const useIncomingCalls = () => {
           table: 'calls',
           filter: `callee_id=eq.${user.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const call = payload.new as any;
           console.log('Call UPDATE received:', call.id, 'status:', call.status);
-          
-          // Clear incoming call if it's no longer ringing
-          if (call.status !== 'pending' && call.status !== 'ringing') {
-            const currentCall = incomingCallRef.current;
-            if (currentCall?.id === call.id) {
-              console.log('Clearing incoming call (status changed to:', call.status, ')');
-              setIncomingCall(null);
-            }
+
+          // Surface ringing/pending even if we missed the INSERT
+          if (call.status === 'pending' || call.status === 'ringing') {
+            await hydrateIncomingCall(call);
+            return;
+          }
+
+          // Otherwise clear if this is the currently displayed incoming call
+          const currentCall = incomingCallRef.current;
+          if (currentCall?.id === call.id) {
+            console.log('Clearing incoming call (status changed to:', call.status, ')');
+            setIncomingCall(null);
           }
         }
       )
@@ -97,7 +128,7 @@ export const useIncomingCalls = () => {
       console.log('Removing incoming calls channel');
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, hydrateIncomingCall]);
 
   const clearIncomingCall = useCallback(() => {
     console.log('Manually clearing incoming call');
