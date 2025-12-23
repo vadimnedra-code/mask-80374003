@@ -147,17 +147,25 @@ export const useChats = () => {
 
     if (chatError) return { error: chatError };
 
-    // Add participants
-    const participants = [user.id, ...participantIds].map(userId => ({
-      chat_id: chat.id,
-      user_id: userId,
-    }));
-
-    const { error: partError } = await supabase
+    // Add participants (insert creator first to satisfy RLS)
+    const { error: selfPartError } = await supabase
       .from('chat_participants')
-      .insert(participants);
+      .insert({ chat_id: chat.id, user_id: user.id });
 
-    if (partError) return { error: partError };
+    if (selfPartError) return { error: selfPartError };
+
+    if (participantIds.length > 0) {
+      const otherParticipants = participantIds.map((participantUserId) => ({
+        chat_id: chat.id,
+        user_id: participantUserId,
+      }));
+
+      const { error: otherPartError } = await supabase
+        .from('chat_participants')
+        .insert(otherParticipants);
+
+      if (otherPartError) return { error: otherPartError };
+    }
 
     await fetchChats();
     return { data: chat, error: null };
