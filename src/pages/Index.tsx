@@ -53,6 +53,7 @@ const Index = () => {
           onEndCall={handleEndCall}
           onToggleMute={() => setIsMuted(!isMuted)}
           onToggleVideo={() => setIsVideoOff(!isVideoOff)}
+          onSwitchCamera={() => console.log('Switch camera not available in mock mode')}
         />
       )}
 
