@@ -1,11 +1,87 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { ChatList } from '@/components/messenger/ChatList';
+import { ChatView } from '@/components/messenger/ChatView';
+import { EmptyState } from '@/components/messenger/EmptyState';
+import { SettingsPanel } from '@/components/messenger/SettingsPanel';
+import { CallScreen } from '@/components/messenger/CallScreen';
+import { mockChats } from '@/data/mockData';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeCall, setActiveCall] = useState<{ userId: string; type: 'voice' | 'video' } | null>(null);
+
+  const selectedChat = mockChats.find((chat) => chat.id === selectedChatId);
+
+  const handleStartCall = (type: 'voice' | 'video') => {
+    if (!selectedChat) return;
+    const otherUser = selectedChat.participants.find((p) => p.id !== 'user-1');
+    if (otherUser) {
+      setActiveCall({ userId: otherUser.id, type });
+    }
+  };
+
+  const handleEndCall = () => {
+    setActiveCall(null);
+  };
+
+  const callingUser = activeCall
+    ? mockChats
+        .flatMap((c) => c.participants)
+        .find((p) => p.id === activeCall.userId)
+    : null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="h-screen w-screen overflow-hidden bg-background">
+      {/* Call Screen */}
+      {activeCall && callingUser && (
+        <CallScreen
+          user={callingUser}
+          callType={activeCall.type}
+          onEndCall={handleEndCall}
+        />
+      )}
+
+      {/* Main Layout */}
+      <div className="flex h-full">
+        {/* Sidebar - Chat List */}
+        <div
+          className={cn(
+            'w-full lg:w-[380px] lg:min-w-[380px] border-r border-border transition-all duration-300',
+            selectedChatId ? 'hidden lg:block' : 'block'
+          )}
+        >
+          <ChatList
+            chats={mockChats}
+            selectedChatId={selectedChatId}
+            onSelectChat={setSelectedChatId}
+            onOpenSettings={() => setShowSettings(true)}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className={cn(
+          'flex-1 transition-all duration-300',
+          !selectedChatId ? 'hidden lg:block' : 'block'
+        )}>
+          {selectedChat ? (
+            <ChatView
+              chat={selectedChat}
+              onBack={() => setSelectedChatId(null)}
+              onStartCall={handleStartCall}
+            />
+          ) : (
+            <EmptyState />
+          )}
+        </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="fixed inset-0 z-40 lg:relative lg:w-[380px] lg:min-w-[380px] lg:border-l lg:border-border">
+            <SettingsPanel onClose={() => setShowSettings(false)} />
+          </div>
+        )}
       </div>
     </div>
   );
