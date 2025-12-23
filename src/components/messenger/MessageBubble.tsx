@@ -1,6 +1,6 @@
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface MessageBubbleProps {
@@ -10,6 +10,59 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = ({ message, isOwn, showAvatar }: MessageBubbleProps) => {
+  const renderMedia = () => {
+    if (!message.mediaUrl) return null;
+
+    if (message.type === 'image') {
+      return (
+        <a 
+          href={message.mediaUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <img
+            src={message.mediaUrl}
+            alt="Изображение"
+            className="rounded-lg mb-2 max-w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          />
+        </a>
+      );
+    }
+
+    if (message.type === 'video') {
+      return (
+        <video
+          src={message.mediaUrl}
+          controls
+          className="rounded-lg mb-2 max-w-full max-h-64"
+        />
+      );
+    }
+
+    if (message.type === 'file') {
+      return (
+        <a
+          href={message.mediaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "flex items-center gap-2 p-2 rounded-lg mb-2 transition-colors",
+            isOwn 
+              ? "bg-primary-foreground/10 hover:bg-primary-foreground/20" 
+              : "bg-muted hover:bg-muted/80"
+          )}
+        >
+          <FileText className="w-8 h-8 shrink-0" />
+          <span className="truncate text-sm flex-1">Файл</span>
+          <Download className="w-4 h-4 shrink-0" />
+        </a>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div
       className={cn(
@@ -23,16 +76,12 @@ export const MessageBubble = ({ message, isOwn, showAvatar }: MessageBubbleProps
           isOwn ? 'message-bubble-sent' : 'message-bubble-received'
         )}
       >
-        {message.type === 'image' && message.mediaUrl && (
-          <img
-            src={message.mediaUrl}
-            alt="Изображение"
-            className="rounded-lg mb-2 max-w-full"
-          />
+        {renderMedia()}
+        {message.content && (
+          <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+            {message.content}
+          </p>
         )}
-        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-          {message.content}
-        </p>
         <div
           className={cn(
             'flex items-center gap-1 mt-1',
