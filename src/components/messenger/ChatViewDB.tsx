@@ -31,9 +31,10 @@ interface ChatViewDBProps {
   chat: ChatWithDetails;
   onBack: () => void;
   onStartCall: (type: 'voice' | 'video') => void;
+  highlightedMessageId?: string | null;
 }
 
-export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
+export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: ChatViewDBProps) => {
   const [messageText, setMessageText] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -57,6 +58,16 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
     scrollToBottom();
     markAsRead();
   }, [messages]);
+
+  // Scroll to highlighted message
+  useEffect(() => {
+    if (highlightedMessageId) {
+      const element = document.getElementById(`message-${highlightedMessageId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightedMessageId]);
 
   // Cleanup preview URL on unmount
   useEffect(() => {
@@ -222,25 +233,33 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
           </div>
         ) : (
           messages.map((msg) => (
-            <MessageBubble
+            <div
               key={msg.id}
-              message={{
-                id: msg.id,
-                senderId: msg.sender_id,
-                content: msg.content || '',
-                timestamp: new Date(msg.created_at),
-                type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
-                mediaUrl: msg.media_url || undefined,
-                isRead: msg.is_read,
-              }}
-              isOwn={msg.sender_id === user?.id}
-              onEdit={async (messageId, newContent) => {
-                await editMessage(messageId, newContent);
-              }}
-              onDelete={async (messageId) => {
-                await deleteMessage(messageId);
-              }}
-            />
+              id={`message-${msg.id}`}
+              className={cn(
+                'transition-all duration-500',
+                highlightedMessageId === msg.id && 'bg-primary/20 rounded-2xl -mx-2 px-2 py-1'
+              )}
+            >
+              <MessageBubble
+                message={{
+                  id: msg.id,
+                  senderId: msg.sender_id,
+                  content: msg.content || '',
+                  timestamp: new Date(msg.created_at),
+                  type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
+                  mediaUrl: msg.media_url || undefined,
+                  isRead: msg.is_read,
+                }}
+                isOwn={msg.sender_id === user?.id}
+                onEdit={async (messageId, newContent) => {
+                  await editMessage(messageId, newContent);
+                }}
+                onDelete={async (messageId) => {
+                  await deleteMessage(messageId);
+                }}
+              />
+            </div>
           ))
         )}
         <div ref={messagesEndRef} />
