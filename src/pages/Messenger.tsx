@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/messenger/EmptyState';
 import { SettingsPanelDB } from '@/components/messenger/SettingsPanelDB';
 import { CallScreen } from '@/components/messenger/CallScreen';
 import { NewChatDialog } from '@/components/messenger/NewChatDialog';
+import { SearchPanel } from '@/components/messenger/SearchPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
@@ -16,6 +17,8 @@ const Messenger = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [activeCall, setActiveCall] = useState<{ participantName: string; avatarUrl: string; type: 'voice' | 'video' } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
@@ -78,6 +81,13 @@ const Messenger = () => {
     setActiveCall(null);
   };
 
+  const handleSearchSelectMessage = (chatId: string, messageId: string) => {
+    setSelectedChatId(chatId);
+    setHighlightedMessageId(messageId);
+    // Clear highlight after animation
+    setTimeout(() => setHighlightedMessageId(null), 3000);
+  };
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-background">
       {/* Call Screen */}
@@ -120,6 +130,7 @@ const Messenger = () => {
             onSelectChat={setSelectedChatId}
             onOpenSettings={() => setShowSettings(true)}
             onNewChat={() => setShowNewChat(true)}
+            onOpenSearch={() => setShowSearch(true)}
             onStartChatWithUser={async (userId) => {
               try {
                 // Check if chat already exists
@@ -160,6 +171,7 @@ const Messenger = () => {
               chat={selectedChat}
               onBack={() => setSelectedChatId(null)}
               onStartCall={handleStartCall}
+              highlightedMessageId={highlightedMessageId}
             />
           ) : (
             <EmptyState />
@@ -171,6 +183,14 @@ const Messenger = () => {
           <div className="fixed inset-0 z-40 lg:relative lg:w-[380px] lg:min-w-[380px] lg:border-l lg:border-border">
             <SettingsPanelDB onClose={() => setShowSettings(false)} />
           </div>
+        )}
+
+        {/* Search Panel */}
+        {showSearch && (
+          <SearchPanel
+            onClose={() => setShowSearch(false)}
+            onSelectMessage={handleSearchSelectMessage}
+          />
         )}
       </div>
     </div>

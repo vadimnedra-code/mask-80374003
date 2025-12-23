@@ -14,6 +14,7 @@ interface ChatListProps {
   onSelectChat: (chatId: string) => void;
   onOpenSettings: () => void;
   onNewChat: () => void;
+  onOpenSearch?: () => void;
   onStartChatWithUser?: (userId: string) => Promise<void>;
   loading?: boolean;
 }
@@ -24,6 +25,7 @@ export const ChatList = ({
   onSelectChat, 
   onOpenSettings,
   onNewChat,
+  onOpenSearch,
   onStartChatWithUser,
   loading 
 }: ChatListProps) => {
@@ -92,16 +94,15 @@ export const ChatList = ({
 
       {/* Search */}
       <div className="p-3">
-        <div className="relative">
+        <button
+          onClick={onOpenSearch}
+          className="w-full relative"
+        >
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Поиск..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-          />
-        </div>
+          <div className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-xl text-sm text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
+            Поиск...
+          </div>
+        </button>
       </div>
 
       {/* Chat List */}
