@@ -14,7 +14,175 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_participants: {
+        Row: {
+          chat_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participants_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          created_at: string
+          group_avatar: string | null
+          group_name: string | null
+          id: string
+          is_group: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_avatar?: string | null
+          group_name?: string | null
+          id?: string
+          is_group?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_avatar?: string | null
+          group_name?: string | null
+          id?: string
+          is_group?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          chat_id: string
+          content: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          media_url: string | null
+          message_type: string
+          reply_to: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          chat_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          media_url?: string | null
+          message_type?: string
+          reply_to?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          media_url?: string | null
+          message_type?: string
+          reply_to?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          id: string
+          last_seen: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          last_seen?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          last_seen?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
