@@ -222,27 +222,17 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     
     peerConnection.current = pc;
     
-    // Handle ICE candidates
+    // Handle ICE candidates – use atomic RPC to avoid races
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         console.log('New ICE candidate generated');
-        
         try {
-          const { data: call } = await supabase
-            .from('calls')
-            .select('ice_candidates')
-            .eq('id', callId)
-            .single();
-          
-          const currentCandidates = (call?.ice_candidates || []) as unknown[];
-          const newCandidate = event.candidate.toJSON() as unknown;
-          
-          await supabase
-            .from('calls')
-            .update({
-              ice_candidates: [...currentCandidates, newCandidate] as any
-            })
-            .eq('id', callId);
+          const candidateJson = event.candidate.toJSON() as Record<string, unknown>;
+          const { error } = await supabase.rpc('append_call_ice_candidate', {
+            _call_id: callId,
+            _candidate: candidateJson as any,
+          });
+          if (error) console.error('Error appending ICE candidate via RPC:', error);
         } catch (err) {
           console.error('Error saving ICE candidate:', err);
         }
