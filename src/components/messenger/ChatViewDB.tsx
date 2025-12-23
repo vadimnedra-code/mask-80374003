@@ -147,6 +147,9 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
   };
 
   const getStatusText = () => {
+    if (chat.is_group) {
+      return `${chat.participants.length} участников`;
+    }
     if (otherParticipant?.status === 'online') {
       return 'в сети';
     }
@@ -158,7 +161,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
 
   const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
   const avatarUrl = chat.is_group 
-    ? chat.group_avatar 
+    ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
     : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
 
   return (
@@ -180,14 +183,12 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
           />
           <div>
             <h2 className="font-semibold">{displayName}</h2>
-            {!chat.is_group && (
-              <p className={cn(
-                'text-xs',
-                otherParticipant?.status === 'online' ? 'text-status-online' : 'text-muted-foreground'
-              )}>
-                {getStatusText()}
-              </p>
-            )}
+            <p className={cn(
+              'text-xs',
+              !chat.is_group && otherParticipant?.status === 'online' ? 'text-status-online' : 'text-muted-foreground'
+            )}>
+              {getStatusText()}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1">

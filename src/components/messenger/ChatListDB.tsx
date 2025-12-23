@@ -180,7 +180,7 @@ export const ChatList = ({
                 const isSelected = chat.id === selectedChatId;
                 const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
                 const avatarUrl = chat.is_group 
-                  ? chat.group_avatar 
+                  ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
                   : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
 
                 return (
