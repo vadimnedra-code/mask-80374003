@@ -8,10 +8,13 @@ import {
   VideoOff,
   Volume2,
   SwitchCamera,
-  MessageSquare
+  MessageSquare,
+  Settings2
 } from 'lucide-react';
 import { Avatar } from './Avatar';
+import { CallDiagnostics } from './CallDiagnostics';
 import { cn } from '@/lib/utils';
+import { PeerConnectionState } from '@/hooks/useWebRTC';
 
 interface CallScreenProps {
   participantName: string;
@@ -22,6 +25,8 @@ interface CallScreenProps {
   isVideoOff: boolean;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
+  peerConnectionState: PeerConnectionState | null;
+  error: string | null;
   onEndCall: () => void;
   onToggleMute: () => void;
   onToggleVideo: () => void;
@@ -37,6 +42,8 @@ export const CallScreen = ({
   isVideoOff,
   localStream,
   remoteStream,
+  peerConnectionState,
+  error,
   onEndCall,
   onToggleMute,
   onToggleVideo,
@@ -45,6 +52,7 @@ export const CallScreen = ({
   const [callDuration, setCallDuration] = useState(0);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -157,6 +165,17 @@ export const CallScreen = ({
         <div className="absolute inset-0 bg-gradient-to-b from-[#0b141a] via-[#1f2c34] to-[#0b141a]" />
       )}
 
+      {/* Diagnostics Panel */}
+      {showDiagnostics && (
+        <CallDiagnostics
+          localStream={localStream}
+          remoteStream={remoteStream}
+          peerConnectionState={peerConnectionState}
+          error={error}
+          onClose={() => setShowDiagnostics(false)}
+        />
+      )}
+
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-2">
@@ -165,9 +184,17 @@ export const CallScreen = ({
             {callStatus === 'active' ? 'Зашифровано' : getStatusText()}
           </span>
         </div>
-        {callStatus === 'active' && (
-          <span className="text-white text-sm font-medium">{formatDuration(callDuration)}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {callStatus === 'active' && (
+            <span className="text-white text-sm font-medium">{formatDuration(callDuration)}</span>
+          )}
+          <button 
+            onClick={() => setShowDiagnostics(!showDiagnostics)}
+            className="p-2 rounded-full hover:bg-white/20 transition-colors"
+          >
+            <Settings2 className="w-5 h-5 text-white/70" />
+          </button>
+        </div>
       </div>
 
       {/* Tap-to-play overlay (mobile autoplay restrictions) */}
