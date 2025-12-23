@@ -23,9 +23,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const clearStaleSession = () => {
+      try {
+        const keys = Object.keys(localStorage).filter(
+          (k) => k.includes('sb-') && k.endsWith('-auth-token')
+        );
+        keys.forEach((k) => localStorage.removeItem(k));
+      } catch {
+        // ignore (e.g. storage blocked)
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // If a stored refresh token is invalid, Supabase may enter a broken refresh loop.
+        // Clear local session to restore normal login behavior.
+        const evt = String(event);
+        if (evt === 'TOKEN_REFRESH_FAILED') {
+          clearStaleSession();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          supabase.auth.signOut().catch(() => {
+            // no-op
+          });
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -41,11 +66,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+
+        // Defensive: some environments can persist a corrupted refresh token.
+        if (session?.refresh_token && session.refresh_token.length < 20) {
+          clearStaleSession();
+          setSession(null);
+          setUser(null);
+        }
+      })
+      .catch(() => {
+        clearStaleSession();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);

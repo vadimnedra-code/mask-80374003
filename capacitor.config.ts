@@ -23,11 +23,14 @@ const config: CapacitorConfig = {
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
-    }
+    },
+    StatusBar: {
+      overlaysWebView: false,
+    },
   },
   ios: {
-    contentInset: 'automatic'
-  }
+    contentInset: 'always',
+  },
 };
 
 export default config;
