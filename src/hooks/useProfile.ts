@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Profile {
@@ -16,6 +16,12 @@ export interface Profile {
 export const useProfile = (userId?: string) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const userIdRef = useRef(userId);
+  
+  // Keep ref in sync
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -64,25 +70,27 @@ export const useProfile = (userId?: string) => {
     };
   }, [userId]);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!userId) return { error: new Error('No user ID') };
+  const updateProfile = useCallback(async (updates: Partial<Profile>) => {
+    const currentUserId = userIdRef.current;
+    if (!currentUserId) return { error: new Error('No user ID') };
 
     const { error } = await supabase
       .from('profiles')
       .update(updates)
-      .eq('user_id', userId);
+      .eq('user_id', currentUserId);
 
     return { error };
-  };
+  }, []);
 
-  const updateStatus = async (status: 'online' | 'offline' | 'away') => {
-    if (!userId) return;
+  const updateStatus = useCallback(async (status: 'online' | 'offline' | 'away') => {
+    const currentUserId = userIdRef.current;
+    if (!currentUserId) return;
 
     await supabase
       .from('profiles')
       .update({ status, last_seen: new Date().toISOString() })
-      .eq('user_id', userId);
-  };
+      .eq('user_id', currentUserId);
+  }, []);
 
   return { profile, loading, updateProfile, updateStatus };
 };
