@@ -41,7 +41,9 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Don't redirect if user is in password reset mode
-  const isResetMode = searchParams.get('mode') === 'reset';
+  const isResetMode =
+    searchParams.get('mode') === 'reset' ||
+    (typeof window !== 'undefined' && window.location.hash.includes('type=recovery'));
   
   if (user && !isResetMode) {
     return <Navigate to="/" replace />;
