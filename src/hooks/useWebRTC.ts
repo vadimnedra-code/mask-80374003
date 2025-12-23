@@ -6,6 +6,7 @@ export interface CallState {
   callId: string | null;
   status: 'idle' | 'calling' | 'ringing' | 'connecting' | 'active' | 'ended';
   isMuted: boolean;
+  isVideoOff: boolean;
   remoteUserId: string | null;
   callType: 'voice' | 'video';
 }
@@ -14,6 +15,8 @@ interface UseWebRTCOptions {
   onCallEnded?: () => void;
   onCallAccepted?: () => void;
   onCallRejected?: () => void;
+  onRemoteStream?: (stream: MediaStream) => void;
+  onLocalStream?: (stream: MediaStream) => void;
 }
 
 const ICE_SERVERS = [
@@ -27,22 +30,18 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     callId: null,
     status: 'idle',
     isMuted: false,
+    isVideoOff: false,
     remoteUserId: null,
     callType: 'voice',
   });
   
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const localStream = useRef<MediaStream | null>(null);
-  const remoteAudio = useRef<HTMLAudioElement | null>(null);
+  const remoteStream = useRef<MediaStream | null>(null);
   const callSubscription = useRef<any>(null);
+  const currentCallType = useRef<'voice' | 'video'>('voice');
 
-  // Initialize remote audio element
   useEffect(() => {
-    if (!remoteAudio.current) {
-      remoteAudio.current = new Audio();
-      remoteAudio.current.autoplay = true;
-    }
-    
     return () => {
       cleanup();
     };
@@ -56,6 +55,10 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       localStream.current = null;
     }
     
+    if (remoteStream.current) {
+      remoteStream.current = null;
+    }
+    
     if (peerConnection.current) {
       peerConnection.current.close();
       peerConnection.current = null;
@@ -66,21 +69,19 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       callSubscription.current = null;
     }
     
-    if (remoteAudio.current) {
-      remoteAudio.current.srcObject = null;
-    }
-    
     setCallState({
       callId: null,
       status: 'idle',
       isMuted: false,
+      isVideoOff: false,
       remoteUserId: null,
       callType: 'voice',
     });
   }, []);
 
-  const setupPeerConnection = useCallback(async (callId: string) => {
-    console.log('Setting up peer connection for call:', callId);
+  const setupPeerConnection = useCallback(async (callId: string, callType: 'voice' | 'video') => {
+    console.log('Setting up peer connection for call:', callId, 'type:', callType);
+    currentCallType.current = callType;
     
     peerConnection.current = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     
@@ -89,7 +90,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       if (event.candidate) {
         console.log('New ICE candidate:', event.candidate);
         
-        // Get current candidates and append new one
         const { data: call } = await supabase
           .from('calls')
           .select('ice_candidates')
@@ -123,24 +123,32 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       }
     };
     
-    // Handle incoming audio stream
+    // Handle incoming remote stream
     peerConnection.current.ontrack = (event) => {
       console.log('Received remote track:', event.track.kind);
-      if (remoteAudio.current && event.streams[0]) {
-        remoteAudio.current.srcObject = event.streams[0];
+      if (event.streams[0]) {
+        remoteStream.current = event.streams[0];
+        options.onRemoteStream?.(event.streams[0]);
       }
     };
     
-    // Get local audio stream
+    // Get local media stream
     try {
-      localStream.current = await navigator.mediaDevices.getUserMedia({
+      const constraints: MediaStreamConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         },
-        video: false,
-      });
+        video: callType === 'video' ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user',
+        } : false,
+      };
+      
+      localStream.current = await navigator.mediaDevices.getUserMedia(constraints);
+      options.onLocalStream?.(localStream.current);
       
       localStream.current.getTracks().forEach(track => {
         if (peerConnection.current && localStream.current) {
@@ -148,7 +156,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         }
       });
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      console.error('Error accessing media devices:', error);
       throw error;
     }
     
@@ -172,7 +180,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           const call = payload.new as any;
           console.log('Call update received:', call.status);
           
-          // Handle call status changes
           if (call.status === 'rejected') {
             options.onCallRejected?.();
             cleanup();
@@ -180,7 +187,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
             options.onCallEnded?.();
             cleanup();
           } else if (call.status === 'active' && call.answer && peerConnection.current) {
-            // Caller receives answer
             if (!peerConnection.current.remoteDescription && call.answer) {
               console.log('Setting remote description (answer)');
               const answer = new RTCSessionDescription(call.answer);
@@ -188,7 +194,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
             }
           }
           
-          // Handle ICE candidates
           if (call.ice_candidates && call.ice_candidates.length > 0 && peerConnection.current) {
             const addedCandidates = new Set<string>();
             
@@ -213,10 +218,9 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const startCall = useCallback(async (calleeId: string, chatId: string, callType: 'voice' | 'video' = 'voice') => {
     if (!user) return;
     
-    console.log('Starting call to:', calleeId);
+    console.log('Starting call to:', calleeId, 'type:', callType);
     
     try {
-      // Create call record
       const { data: call, error } = await supabase
         .from('calls')
         .insert({
@@ -237,16 +241,15 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         callId: call.id,
         status: 'calling',
         isMuted: false,
+        isVideoOff: false,
         remoteUserId: calleeId,
         callType,
       });
       
-      // Setup peer connection and create offer
-      const pc = await setupPeerConnection(call.id);
+      const pc = await setupPeerConnection(call.id, callType);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
-      // Save offer to database - cast to any for JSON compatibility
       await supabase
         .from('calls')
         .update({ 
@@ -256,8 +259,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         .eq('id', call.id);
       
       setCallState(prev => ({ ...prev, status: 'ringing' }));
-      
-      // Subscribe to call updates
       subscribeToCall(call.id);
       
       return call.id;
@@ -274,7 +275,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     console.log('Accepting call:', callId);
     
     try {
-      // Get call details
       const { data: call, error } = await supabase
         .from('calls')
         .select('*')
@@ -285,28 +285,27 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         throw error || new Error('Call not found');
       }
       
+      const callType = call.call_type as 'voice' | 'video';
+      
       setCallState({
         callId: call.id,
         status: 'connecting',
         isMuted: false,
+        isVideoOff: false,
         remoteUserId: call.caller_id,
-        callType: call.call_type as 'voice' | 'video',
+        callType,
       });
       
-      // Setup peer connection
-      const pc = await setupPeerConnection(callId);
+      const pc = await setupPeerConnection(callId, callType);
       
-      // Set remote description (offer from caller)
       if (call.offer) {
         const offerData = call.offer as unknown as RTCSessionDescriptionInit;
         const offer = new RTCSessionDescription(offerData);
         await pc.setRemoteDescription(offer);
         
-        // Create and set answer
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         
-        // Save answer and update status - cast to any for JSON compatibility
         await supabase
           .from('calls')
           .update({
@@ -316,7 +315,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           })
           .eq('id', callId);
         
-        // Add any pending ICE candidates
         if (call.ice_candidates) {
           for (const candidate of call.ice_candidates as RTCIceCandidateInit[]) {
             try {
@@ -328,7 +326,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         }
       }
       
-      // Subscribe to call updates
       subscribeToCall(callId);
       
     } catch (error) {
@@ -379,6 +376,19 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     }
   }, []);
 
+  const toggleVideo = useCallback(() => {
+    if (localStream.current) {
+      const videoTrack = localStream.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setCallState(prev => ({ ...prev, isVideoOff: !videoTrack.enabled }));
+      }
+    }
+  }, []);
+
+  const getLocalStream = useCallback(() => localStream.current, []);
+  const getRemoteStream = useCallback(() => remoteStream.current, []);
+
   return {
     callState,
     startCall,
@@ -386,6 +396,9 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     rejectCall,
     endCall,
     toggleMute,
+    toggleVideo,
+    getLocalStream,
+    getRemoteStream,
     cleanup,
   };
 };

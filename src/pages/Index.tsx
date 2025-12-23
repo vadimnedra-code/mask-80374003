@@ -12,6 +12,7 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [activeCall, setActiveCall] = useState<{ userId: string; type: 'voice' | 'video'; name: string; avatar: string } | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
 
   const selectedChat = mockChats.find((chat) => chat.id === selectedChatId);
 
@@ -31,6 +32,7 @@ const Index = () => {
   const handleEndCall = () => {
     setActiveCall(null);
     setIsMuted(false);
+    setIsVideoOff(false);
   };
 
   return (
@@ -43,8 +45,12 @@ const Index = () => {
           callType={activeCall.type}
           callStatus="active"
           isMuted={isMuted}
+          isVideoOff={isVideoOff}
+          localStream={null}
+          remoteStream={null}
           onEndCall={handleEndCall}
           onToggleMute={() => setIsMuted(!isMuted)}
+          onToggleVideo={() => setIsVideoOff(!isVideoOff)}
         />
       )}
 
