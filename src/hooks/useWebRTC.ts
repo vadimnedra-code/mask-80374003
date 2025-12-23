@@ -635,6 +635,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
 
   return {
     callState,
+    peerConnection: peerConnection.current,
     startCall,
     acceptCall,
     rejectCall,

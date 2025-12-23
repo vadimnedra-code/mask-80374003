@@ -13,8 +13,10 @@ import {
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { CallDiagnostics } from './CallDiagnostics';
+import { ConnectionQualityIndicator } from './ConnectionQualityIndicator';
 import { cn } from '@/lib/utils';
 import { PeerConnectionState } from '@/hooks/useWebRTC';
+import { useConnectionStats } from '@/hooks/useConnectionStats';
 
 interface CallScreenProps {
   participantName: string;
@@ -26,6 +28,7 @@ interface CallScreenProps {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   peerConnectionState: PeerConnectionState | null;
+  peerConnection: RTCPeerConnection | null;
   error: string | null;
   onEndCall: () => void;
   onToggleMute: () => void;
@@ -43,12 +46,14 @@ export const CallScreen = ({
   localStream,
   remoteStream,
   peerConnectionState,
+  peerConnection,
   error,
   onEndCall,
   onToggleMute,
   onToggleVideo,
   onSwitchCamera
 }: CallScreenProps) => {
+  const connectionStats = useConnectionStats(peerConnection);
   const [callDuration, setCallDuration] = useState(0);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
@@ -179,10 +184,16 @@ export const CallScreen = ({
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-white/80 text-sm font-medium">
-            {callStatus === 'active' ? 'Зашифровано' : getStatusText()}
-          </span>
+          {callStatus === 'active' ? (
+            <ConnectionQualityIndicator stats={connectionStats} />
+          ) : (
+            <>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-white/80 text-sm font-medium">
+                {getStatusText()}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {callStatus === 'active' && (
