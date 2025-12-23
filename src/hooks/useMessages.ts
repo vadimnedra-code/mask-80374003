@@ -19,6 +19,7 @@ export const useMessages = (chatId: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const fetchMessages = useCallback(async () => {
     if (!chatId || !user) {
@@ -84,7 +85,46 @@ export const useMessages = (chatId: string | null) => {
     };
   }, [chatId, fetchMessages]);
 
-  const sendMessage = async (content: string, type: 'text' | 'image' | 'video' | 'voice' | 'file' = 'text', mediaUrl?: string) => {
+  const uploadFile = async (file: File): Promise<{ url: string; type: 'image' | 'video' | 'file' } | null> => {
+    if (!user) return null;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-media')
+        .getPublicUrl(fileName);
+
+      // Determine file type
+      let type: 'image' | 'video' | 'file' = 'file';
+      if (file.type.startsWith('image/')) {
+        type = 'image';
+      } else if (file.type.startsWith('video/')) {
+        type = 'video';
+      }
+
+      return { url: publicUrl, type };
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const sendMessage = async (
+    content: string, 
+    type: 'text' | 'image' | 'video' | 'voice' | 'file' = 'text', 
+    mediaUrl?: string
+  ) => {
     if (!chatId || !user) return { error: new Error('Not authenticated') };
 
     const { error } = await supabase.from('messages').insert({
@@ -102,6 +142,21 @@ export const useMessages = (chatId: string | null) => {
     return { error };
   };
 
+  const sendMediaMessage = async (file: File) => {
+    const result = await uploadFile(file);
+    if (!result) {
+      return { error: new Error('Failed to upload file') };
+    }
+
+    const content = file.type.startsWith('image/') 
+      ? '📷 Изображение' 
+      : file.type.startsWith('video/') 
+        ? '🎥 Видео' 
+        : `📎 ${file.name}`;
+
+    return sendMessage(content, result.type, result.url);
+  };
+
   const markAsRead = async () => {
     if (!chatId || !user) return;
 
@@ -112,5 +167,5 @@ export const useMessages = (chatId: string | null) => {
       .neq('sender_id', user.id);
   };
 
-  return { messages, loading, sendMessage, markAsRead };
+  return { messages, loading, uploading, sendMessage, sendMediaMessage, markAsRead };
 };
