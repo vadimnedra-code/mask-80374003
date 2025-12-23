@@ -44,7 +44,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   
   const { user } = useAuth();
-  const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead } = useMessages(chat.id);
+  const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage } = useMessages(chat.id);
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
@@ -233,6 +233,12 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
                 isRead: msg.is_read,
               }}
               isOwn={msg.sender_id === user?.id}
+              onEdit={async (messageId, newContent) => {
+                await editMessage(messageId, newContent);
+              }}
+              onDelete={async (messageId) => {
+                await deleteMessage(messageId);
+              }}
             />
           ))
         )}

@@ -47,7 +47,7 @@ export const useMessages = (chatId: string | null) => {
 
     if (!chatId) return;
 
-    // Subscribe to new messages
+    // Subscribe to message changes
     const channel = supabase
       .channel(`messages-${chatId}`)
       .on(
@@ -76,6 +76,18 @@ export const useMessages = (chatId: string | null) => {
               msg.id === payload.new.id ? (payload.new as Message) : msg
             )
           );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `chat_id=eq.${chatId}`,
+        },
+        (payload) => {
+          setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
         }
       )
       .subscribe();
@@ -196,5 +208,47 @@ export const useMessages = (chatId: string | null) => {
       .neq('sender_id', user.id);
   };
 
-  return { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead };
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const { error } = await supabase
+      .from('messages')
+      .update({ content: newContent, updated_at: new Date().toISOString() })
+      .eq('id', messageId)
+      .eq('sender_id', user.id);
+
+    if (error) {
+      console.error('Error editing message:', error);
+    }
+
+    return { error };
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', user.id);
+
+    if (error) {
+      console.error('Error deleting message:', error);
+    }
+
+    return { error };
+  };
+
+  return { 
+    messages, 
+    loading, 
+    uploading, 
+    sendMessage, 
+    sendMediaMessage, 
+    sendVoiceMessage, 
+    markAsRead,
+    editMessage,
+    deleteMessage 
+  };
 };
