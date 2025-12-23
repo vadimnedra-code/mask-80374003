@@ -157,6 +157,35 @@ export const useMessages = (chatId: string | null) => {
     return sendMessage(content, result.type, result.url);
   };
 
+  const sendVoiceMessage = async (audioBlob: Blob, duration: number) => {
+    if (!user || !chatId) return { error: new Error('Not authenticated') };
+
+    setUploading(true);
+    try {
+      const fileName = `${user.id}/${Date.now()}-voice.webm`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(fileName, audioBlob, {
+          contentType: audioBlob.type || 'audio/webm',
+        });
+
+      if (uploadError) {
+        console.error('Error uploading voice message:', uploadError);
+        return { error: uploadError };
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-media')
+        .getPublicUrl(fileName);
+
+      const durationText = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`;
+      return sendMessage(`🎤 Голосовое (${durationText})`, 'voice', publicUrl);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const markAsRead = async () => {
     if (!chatId || !user) return;
 
@@ -167,5 +196,5 @@ export const useMessages = (chatId: string | null) => {
       .neq('sender_id', user.id);
   };
 
-  return { messages, loading, uploading, sendMessage, sendMediaMessage, markAsRead };
+  return { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead };
 };
