@@ -22,6 +22,20 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) {
+    const hasRecovery =
+      typeof window !== "undefined" &&
+      (window.location.hash.includes("type=recovery") ||
+        window.location.search.includes("type=recovery"));
+
+    // If user opened a password recovery link, preserve the tokens in URL
+    // and send them to /auth so the reset-password form can be shown.
+    if (hasRecovery) {
+      const url = new URL(window.location.href);
+      const extraQuery = url.search ? `&${url.search.slice(1)}` : "";
+      const hash = url.hash ?? "";
+      return <Navigate to={`/auth?mode=reset${extraQuery}${hash}`} replace />;
+    }
+
     return <Navigate to="/auth" replace />;
   }
 
@@ -43,6 +57,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   // Don't redirect if user is in password reset mode
   const isResetMode =
     searchParams.get('mode') === 'reset' ||
+    searchParams.get('type') === 'recovery' ||
     (typeof window !== 'undefined' && window.location.hash.includes('type=recovery'));
   
   if (user && !isResetMode) {
