@@ -14,7 +14,7 @@ interface ChatListProps {
   onSelectChat: (chatId: string) => void;
   onOpenSettings: () => void;
   onNewChat: () => void;
-  onStartChatWithUser?: (userId: string) => void;
+  onStartChatWithUser?: (userId: string) => Promise<void>;
   loading?: boolean;
 }
 
@@ -28,6 +28,7 @@ export const ChatList = ({
   loading 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [creatingChatWithUserId, setCreatingChatWithUserId] = useState<string | null>(null);
   const { user } = useAuth();
   const { users, searchUsers } = useUsers();
 
@@ -49,9 +50,15 @@ export const ChatList = ({
       )
     : [];
 
-  const handleUserClick = (userId: string) => {
-    if (onStartChatWithUser) {
-      onStartChatWithUser(userId);
+  const handleUserClick = async (userId: string) => {
+    if (creatingChatWithUserId || !onStartChatWithUser) return;
+    
+    setCreatingChatWithUserId(userId);
+    try {
+      await onStartChatWithUser(userId);
+      setSearchQuery('');
+    } finally {
+      setCreatingChatWithUserId(null);
     }
   };
 
@@ -111,27 +118,38 @@ export const ChatList = ({
                 <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Пользователи
                 </div>
-                {filteredUsers.map((u) => (
-                  <button
-                    key={u.user_id}
-                    onClick={() => handleUserClick(u.user_id)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200"
-                  >
-                    <Avatar
-                      src={u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.user_id}`}
-                      alt={u.display_name}
-                      size="lg"
-                      status={u.status as 'online' | 'offline' | 'away'}
-                    />
-                    <div className="flex-1 min-w-0 text-left">
-                      <span className="font-medium truncate">{u.display_name}</span>
-                      {u.username && (
-                        <p className="text-sm text-muted-foreground">@{u.username}</p>
+                {filteredUsers.map((u) => {
+                  const isCreating = creatingChatWithUserId === u.user_id;
+                  return (
+                    <button
+                      key={u.user_id}
+                      onClick={() => handleUserClick(u.user_id)}
+                      disabled={creatingChatWithUserId !== null}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200",
+                        creatingChatWithUserId !== null && "opacity-50 cursor-not-allowed"
                       )}
-                    </div>
-                    <UserPlus className="w-4 h-4 text-primary" />
-                  </button>
-                ))}
+                    >
+                      <Avatar
+                        src={u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.user_id}`}
+                        alt={u.display_name}
+                        size="lg"
+                        status={u.status as 'online' | 'offline' | 'away'}
+                      />
+                      <div className="flex-1 min-w-0 text-left">
+                        <span className="font-medium truncate">{u.display_name}</span>
+                        {u.username && (
+                          <p className="text-sm text-muted-foreground">@{u.username}</p>
+                        )}
+                      </div>
+                      {isCreating ? (
+                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      ) : (
+                        <UserPlus className="w-4 h-4 text-primary" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
