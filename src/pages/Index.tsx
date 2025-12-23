@@ -49,6 +49,7 @@ const Index = () => {
           localStream={null}
           remoteStream={null}
           peerConnectionState={null}
+          peerConnection={null}
           error={null}
           onEndCall={handleEndCall}
           onToggleMute={() => setIsMuted(!isMuted)}

@@ -31,12 +31,13 @@ const Messenger = () => {
   
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
   
-  const { 
-    callState, 
-    startCall, 
-    acceptCall, 
-    rejectCall, 
-    endCall, 
+  const {
+    callState,
+    peerConnection,
+    startCall,
+    acceptCall,
+    rejectCall,
+    endCall,
     toggleMute,
     toggleVideo,
     switchCamera,
@@ -169,6 +170,7 @@ const Messenger = () => {
           localStream={callState.localStream}
           remoteStream={callState.remoteStream}
           peerConnectionState={callState.peerConnectionState}
+          peerConnection={peerConnection}
           error={callState.error}
           onEndCall={handleEndCall}
           onToggleMute={toggleMute}
