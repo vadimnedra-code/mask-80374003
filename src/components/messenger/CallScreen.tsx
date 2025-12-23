@@ -152,16 +152,16 @@ export const CallScreen = ({
       {/* Hidden remote audio element to ensure audio plays even if video rendering is blocked */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
 
-      {showRemoteVideo ? (
-        <div className="absolute inset-0">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        </div>
-      ) : (
+      {/* Always render video element to maintain srcObject, control visibility with CSS */}
+      <div className={cn("absolute inset-0", showRemoteVideo ? "block" : "hidden")}>
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+        />
+      </div>
+      {!showRemoteVideo && (
         <div className="absolute inset-0 bg-gradient-to-b from-[#0b141a] via-[#1f2c34] to-[#0b141a]" />
       )}
 
