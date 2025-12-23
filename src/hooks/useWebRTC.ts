@@ -19,12 +19,45 @@ interface UseWebRTCOptions {
   onCallRejected?: () => void;
 }
 
-const ICE_SERVERS = [
+const ICE_SERVERS: RTCIceServer[] = [
+  // STUN servers
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' },
+  // Free TURN servers from OpenRelay
+  {
+    urls: 'turn:openrelay.metered.ca:80',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  // Additional free TURN from Metered
+  {
+    urls: 'turn:a.relay.metered.ca:80',
+    username: 'e8dd65c92d865b653b024fe8',
+    credential: 'uWdWNmkhvyqTmhWu',
+  },
+  {
+    urls: 'turn:a.relay.metered.ca:443',
+    username: 'e8dd65c92d865b653b024fe8',
+    credential: 'uWdWNmkhvyqTmhWu',
+  },
+  {
+    urls: 'turn:a.relay.metered.ca:443?transport=tcp',
+    username: 'e8dd65c92d865b653b024fe8',
+    credential: 'uWdWNmkhvyqTmhWu',
+  },
 ];
 
 export const useWebRTC = (options: UseWebRTCOptions = {}) => {
