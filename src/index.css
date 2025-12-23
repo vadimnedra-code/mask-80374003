@@ -205,6 +205,52 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
   }
+  
+  /* Mobile touch optimizations */
+  .touch-action-pan-y {
+    touch-action: pan-y;
+  }
+  
+  .touch-action-pan-x {
+    touch-action: pan-x;
+  }
+  
+  .touch-action-none {
+    touch-action: none;
+  }
+  
+  /* Improved tap targets */
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Active state for touch */
+  .touch-active:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  
+  /* Pull to refresh indicator */
+  .pull-indicator {
+    @apply flex items-center justify-center;
+    transition: transform 0.2s ease-out;
+  }
+  
+  /* Swipe action background */
+  .swipe-action-left {
+    @apply absolute right-0 top-0 bottom-0 flex items-center justify-center bg-destructive;
+  }
+  
+  .swipe-action-right {
+    @apply absolute left-0 top-0 bottom-0 flex items-center justify-center bg-primary;
+  }
+  
+  /* Smooth momentum scrolling */
+  .scroll-smooth {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {

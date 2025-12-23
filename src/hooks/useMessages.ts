@@ -249,6 +249,7 @@ export const useMessages = (chatId: string | null) => {
     sendVoiceMessage, 
     markAsRead,
     editMessage,
-    deleteMessage 
+    deleteMessage,
+    refetch: fetchMessages
   };
 };

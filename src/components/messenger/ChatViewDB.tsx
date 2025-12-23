@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Phone, 
   Video, 
@@ -13,13 +13,15 @@ import {
   FileText,
   X,
   Loader2,
-  Square,
-  Trash2
+  Trash2,
+  Reply,
+  RefreshCw
 } from 'lucide-react';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
 import { Avatar } from './Avatar';
 import { MessageBubble } from './MessageBubble';
+import { SwipeableMessage } from './SwipeableMessage';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -34,18 +36,30 @@ interface ChatViewDBProps {
   highlightedMessageId?: string | null;
 }
 
+interface ChatViewDBProps {
+  chat: ChatWithDetails;
+  onBack: () => void;
+  onStartCall: (type: 'voice' | 'video') => void;
+  highlightedMessageId?: string | null;
+}
+
 export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: ChatViewDBProps) => {
   const [messageText, setMessageText] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const pullStartY = useRef<number>(0);
   
   const { user } = useAuth();
-  const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage } = useMessages(chat.id);
+  const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage, refetch } = useMessages(chat.id);
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
@@ -125,6 +139,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
 
     await sendMessage(messageText.trim());
     setMessageText('');
+    setReplyToMessage(null);
     inputRef.current?.focus();
   };
 
@@ -156,6 +171,60 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const handleCancelRecording = () => {
     cancelRecording();
   };
+
+  const handleReply = (msg: Message) => {
+    setReplyToMessage(msg);
+    inputRef.current?.focus();
+    // Haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  };
+
+  // Pull to refresh handlers
+  const handlePullStart = useCallback((e: React.TouchEvent) => {
+    if (isRefreshing) return;
+    const container = messagesContainerRef.current;
+    if (container && container.scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
+    }
+  }, [isRefreshing]);
+
+  const handlePullMove = useCallback((e: React.TouchEvent) => {
+    if (isRefreshing || pullStartY.current === 0) return;
+    const container = messagesContainerRef.current;
+    if (!container || container.scrollTop > 0) {
+      pullStartY.current = 0;
+      setPullDistance(0);
+      return;
+    }
+
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - pullStartY.current;
+    
+    if (diff > 0) {
+      const distance = Math.min(diff * 0.5, 100);
+      setPullDistance(distance);
+    }
+  }, [isRefreshing]);
+
+  const handlePullEnd = useCallback(async () => {
+    if (pullDistance >= 60 && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(60);
+      
+      try {
+        await refetch();
+        toast.success('Обновлено');
+      } finally {
+        setIsRefreshing(false);
+        setPullDistance(0);
+      }
+    } else {
+      setPullDistance(0);
+    }
+    pullStartY.current = 0;
+  }, [pullDistance, isRefreshing, refetch]);
 
   const getStatusText = () => {
     if (chat.is_group) {
@@ -221,8 +290,29 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
         </div>
       </div>
 
+      {/* Pull to Refresh Indicator */}
+      {pullDistance > 0 && (
+        <div 
+          className="flex items-center justify-center bg-muted/50 overflow-hidden transition-all"
+          style={{ height: pullDistance }}
+        >
+          <div className={cn(
+            'transition-all duration-200',
+            pullDistance >= 60 ? 'scale-100 text-primary' : 'scale-75 text-muted-foreground'
+          )}>
+            <RefreshCw className={cn('w-5 h-5', isRefreshing && 'animate-spin')} />
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin bg-gradient-to-b from-background to-muted/20">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scroll-smooth bg-gradient-to-b from-background to-muted/20"
+        onTouchStart={handlePullStart}
+        onTouchMove={handlePullMove}
+        onTouchEnd={handlePullEnd}
+      >
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -241,24 +331,29 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                 highlightedMessageId === msg.id && 'bg-primary/20 rounded-2xl -mx-2 px-2 py-1'
               )}
             >
-              <MessageBubble
-                message={{
-                  id: msg.id,
-                  senderId: msg.sender_id,
-                  content: msg.content || '',
-                  timestamp: new Date(msg.created_at),
-                  type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
-                  mediaUrl: msg.media_url || undefined,
-                  isRead: msg.is_read,
-                }}
+              <SwipeableMessage 
                 isOwn={msg.sender_id === user?.id}
-                onEdit={async (messageId, newContent) => {
-                  await editMessage(messageId, newContent);
-                }}
-                onDelete={async (messageId) => {
-                  await deleteMessage(messageId);
-                }}
-              />
+                onSwipeReply={() => handleReply(msg)}
+              >
+                <MessageBubble
+                  message={{
+                    id: msg.id,
+                    senderId: msg.sender_id,
+                    content: msg.content || '',
+                    timestamp: new Date(msg.created_at),
+                    type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
+                    mediaUrl: msg.media_url || undefined,
+                    isRead: msg.is_read,
+                  }}
+                  isOwn={msg.sender_id === user?.id}
+                  onEdit={async (messageId, newContent) => {
+                    await editMessage(messageId, newContent);
+                  }}
+                  onDelete={async (messageId) => {
+                    await deleteMessage(messageId);
+                  }}
+                />
+              </SwipeableMessage>
             </div>
           ))
         )}
@@ -340,11 +435,30 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       {/* Input Area */}
       {!selectedFile && !isRecording && (
         <div className="p-3 bg-card border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Reply preview */}
+          {replyToMessage && (
+            <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-xl animate-fade-in">
+              <Reply className="w-4 h-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+                <p className="text-xs text-primary font-medium">Ответ</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {replyToMessage.content || 'Медиафайл'}
+                </p>
+              </div>
+              <button
+                onClick={() => setReplyToMessage(null)}
+                className="p-1 rounded-full hover:bg-background transition-colors"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          )}
+          
           <div className="flex items-end gap-2">
             <div className="relative">
               <button
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="p-2.5 rounded-full hover:bg-muted transition-colors"
+                className="p-2.5 rounded-full hover:bg-muted transition-colors tap-target touch-active"
               >
                 <Paperclip className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -366,23 +480,23 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
               
               {/* Attachment Menu */}
               {showAttachMenu && (
-                <div className="absolute bottom-full left-0 mb-2 p-2 bg-card rounded-2xl shadow-medium border border-border animate-scale-in">
+                <div className="absolute bottom-full left-0 mb-2 p-2 bg-card rounded-2xl shadow-medium border border-border animate-scale-in z-50">
                   <div className="flex gap-1">
                     <button 
                       onClick={() => imageInputRef.current?.click()}
-                      className="p-3 rounded-xl hover:bg-muted transition-colors group"
+                      className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
                     >
                       <Image className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                     </button>
                     <button 
                       onClick={() => imageInputRef.current?.click()}
-                      className="p-3 rounded-xl hover:bg-muted transition-colors group"
+                      className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
                     >
                       <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                     </button>
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-3 rounded-xl hover:bg-muted transition-colors group"
+                      className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
                     >
                       <FileText className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                     </button>
@@ -395,7 +509,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Сообщение..."
+                placeholder={replyToMessage ? 'Ответить...' : 'Сообщение...'}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -409,7 +523,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
             <button
               onClick={messageText.trim() ? handleSendMessage : handleStartRecording}
               className={cn(
-                'p-3 rounded-full transition-all duration-200',
+                'p-3 rounded-full transition-all duration-200 tap-target touch-active',
                 messageText.trim()
                   ? 'gradient-primary shadow-glow hover:scale-105'
                   : 'bg-muted hover:bg-muted/80'
