@@ -7,8 +7,8 @@ import {
   Video, 
   VideoOff,
   Volume2,
-  MoreVertical,
-  SwitchCamera
+  SwitchCamera,
+  MessageSquare
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ interface CallScreenProps {
   onEndCall: () => void;
   onToggleMute: () => void;
   onToggleVideo: () => void;
+  onSwitchCamera?: () => void;
 }
 
 export const CallScreen = ({ 
@@ -38,9 +39,11 @@ export const CallScreen = ({
   remoteStream,
   onEndCall,
   onToggleMute,
-  onToggleVideo
+  onToggleVideo,
+  onSwitchCamera
 }: CallScreenProps) => {
   const [callDuration, setCallDuration] = useState(0);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -48,6 +51,7 @@ export const CallScreen = ({
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      console.log('Local video connected');
     }
   }, [localStream]);
 
@@ -55,6 +59,7 @@ export const CallScreen = ({
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+      console.log('Remote video connected');
     }
   }, [remoteStream]);
 
@@ -93,173 +98,172 @@ export const CallScreen = ({
   const isVideoCall = callType === 'video';
   const hasRemoteVideo = remoteStream && remoteStream.getVideoTracks().length > 0;
   const hasLocalVideo = localStream && localStream.getVideoTracks().length > 0 && !isVideoOff;
+  const showRemoteVideo = isVideoCall && hasRemoteVideo && callStatus === 'active';
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-gradient-to-b from-background via-background to-muted/50">
-      {/* Background / Remote Video */}
-      {isVideoCall && hasRemoteVideo && callStatus === 'active' ? (
-        <div className="absolute inset-0 bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#0b141a]">
+      {/* Remote Video / Background */}
+      {showRemoteVideo ? (
+        <div className="absolute inset-0">
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
             className="w-full h-full object-cover"
           />
-          {/* Gradient overlay for controls visibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
         </div>
       ) : (
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px]" />
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0b141a] via-[#1f2c34] to-[#0b141a]" />
       )}
 
-      {/* Top Section - User Info */}
-      <div className="relative z-10 flex flex-col items-center pt-20">
-        {/* Show avatar only for voice calls or when video is not active */}
-        {(!isVideoCall || !hasRemoteVideo || callStatus !== 'active') && (
-          <>
+      {/* Top bar */}
+      <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-white/80 text-sm font-medium">
+            {callStatus === 'active' ? 'Зашифровано' : getStatusText()}
+          </span>
+        </div>
+        {callStatus === 'active' && (
+          <span className="text-white text-sm font-medium">{formatDuration(callDuration)}</span>
+        )}
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
+        {/* Show avatar for voice calls or when connecting */}
+        {(!showRemoteVideo) && (
+          <div className="flex flex-col items-center">
             <div className="relative">
               <Avatar
                 src={participantAvatar}
                 alt={participantName}
                 size="xl"
-                className="w-32 h-32 ring-4 ring-primary/20"
+                className="w-36 h-36 ring-4 ring-white/10"
               />
               {callStatus !== 'active' && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-36 h-36 border-4 border-primary/30 rounded-full animate-ping" />
+                  <div className="w-40 h-40 border-4 border-[#00a884]/30 rounded-full animate-ping" />
                 </div>
               )}
             </div>
-            <h2 className="mt-6 text-2xl font-semibold">{participantName}</h2>
-          </>
+            <h2 className="mt-6 text-2xl font-medium text-white">{participantName}</h2>
+            <p className="mt-2 text-white/60 text-base">
+              {getStatusText()}
+            </p>
+          </div>
         )}
         
-        {/* Status text */}
-        <p className={cn(
-          'mt-2 text-lg',
-          callStatus === 'active' ? 'text-status-online' : 'text-muted-foreground animate-pulse-soft',
-          isVideoCall && hasRemoteVideo && callStatus === 'active' && 'text-white/80'
-        )}>
-          {getStatusText()}
-        </p>
-        
-        {/* Show name overlay for video calls */}
-        {isVideoCall && hasRemoteVideo && callStatus === 'active' && (
-          <h2 className="text-xl font-semibold text-white">{participantName}</h2>
+        {/* Name overlay for active video */}
+        {showRemoteVideo && (
+          <div className="absolute top-16 left-0 right-0 flex flex-col items-center">
+            <h2 className="text-xl font-medium text-white drop-shadow-lg">{participantName}</h2>
+            <p className="text-white/80 text-sm drop-shadow-lg">{getStatusText()}</p>
+          </div>
         )}
       </div>
 
-      {/* Local Video Preview (Picture-in-Picture) */}
-      {isVideoCall && hasLocalVideo && callStatus === 'active' && (
-        <div className="absolute top-20 right-4 w-32 h-44 md:w-40 md:h-56 rounded-2xl overflow-hidden shadow-xl border-2 border-white/20 z-20">
+      {/* Local Video Preview (PiP) */}
+      {isVideoCall && hasLocalVideo && (
+        <div 
+          className={cn(
+            "absolute rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 z-20",
+            callStatus === 'active' 
+              ? "top-20 right-4 w-28 h-40 md:w-36 md:h-48" 
+              : "bottom-44 right-4 w-28 h-40"
+          )}
+        >
           <video
             ref={localVideoRef}
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover mirror"
+            className="w-full h-full object-cover"
             style={{ transform: 'scaleX(-1)' }}
           />
+          {onSwitchCamera && (
+            <button
+              onClick={onSwitchCamera}
+              className="absolute bottom-2 right-2 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+            >
+              <SwitchCamera className="w-4 h-4 text-white" />
+            </button>
+          )}
         </div>
       )}
 
-      {/* Video Off Placeholder for local video */}
+      {/* Video Off Placeholder */}
       {isVideoCall && !hasLocalVideo && callStatus === 'active' && (
-        <div className="absolute top-20 right-4 w-32 h-44 md:w-40 md:h-56 rounded-2xl overflow-hidden shadow-xl border-2 border-white/20 z-20 bg-muted flex items-center justify-center">
-          <VideoOff className="w-8 h-8 text-muted-foreground" />
+        <div className="absolute top-20 right-4 w-28 h-40 md:w-36 md:h-48 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 z-20 bg-[#1f2c34] flex items-center justify-center">
+          <VideoOff className="w-8 h-8 text-white/50" />
         </div>
       )}
 
-      {/* Controls */}
-      <div className="relative z-10 flex flex-col items-center gap-8 pb-12">
-        {/* Secondary Controls */}
-        <div className="flex items-center gap-4">
-          <button className={cn(
-            "p-4 rounded-full shadow-soft transition-colors",
-            isVideoCall && hasRemoteVideo && callStatus === 'active'
-              ? "bg-white/20 hover:bg-white/30 backdrop-blur-sm"
-              : "bg-card hover:bg-muted"
-          )}>
+      {/* Bottom Controls - WhatsApp style */}
+      <div className="relative z-10 pb-10 pt-4 bg-gradient-to-t from-black/80 to-transparent">
+        {/* Control buttons row */}
+        <div className="flex items-center justify-center gap-6 mb-6">
+          {/* Speaker */}
+          <button 
+            onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+            className={cn(
+              "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all",
+              isSpeakerOn ? "bg-white" : "bg-white/20"
+            )}
+          >
             <Volume2 className={cn(
               "w-6 h-6",
-              isVideoCall && hasRemoteVideo && callStatus === 'active'
-                ? "text-white"
-                : "text-foreground"
+              isSpeakerOn ? "text-[#0b141a]" : "text-white"
             )} />
           </button>
           
+          {/* Video toggle */}
           {isVideoCall && (
             <button
               onClick={onToggleVideo}
               className={cn(
-                'p-4 rounded-full shadow-soft transition-colors',
-                isVideoOff 
-                  ? 'bg-destructive' 
-                  : isVideoCall && hasRemoteVideo && callStatus === 'active'
-                    ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
-                    : 'bg-card hover:bg-muted'
+                "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all",
+                isVideoOff ? "bg-white" : "bg-white/20"
               )}
             >
               {isVideoOff ? (
-                <VideoOff className="w-6 h-6 text-destructive-foreground" />
+                <VideoOff className="w-6 h-6 text-[#0b141a]" />
               ) : (
-                <Video className={cn(
-                  "w-6 h-6",
-                  isVideoCall && hasRemoteVideo && callStatus === 'active'
-                    ? "text-white"
-                    : "text-foreground"
-                )} />
+                <Video className="w-6 h-6 text-white" />
               )}
             </button>
           )}
           
+          {/* Mute */}
           <button
             onClick={onToggleMute}
             className={cn(
-              'p-4 rounded-full shadow-soft transition-colors',
-              isMuted 
-                ? 'bg-destructive' 
-                : isVideoCall && hasRemoteVideo && callStatus === 'active'
-                  ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
-                  : 'bg-card hover:bg-muted'
+              "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all",
+              isMuted ? "bg-white" : "bg-white/20"
             )}
           >
             {isMuted ? (
-              <MicOff className="w-6 h-6 text-destructive-foreground" />
+              <MicOff className="w-6 h-6 text-[#0b141a]" />
             ) : (
-              <Mic className={cn(
-                "w-6 h-6",
-                isVideoCall && hasRemoteVideo && callStatus === 'active'
-                  ? "text-white"
-                  : "text-foreground"
-              )} />
+              <Mic className="w-6 h-6 text-white" />
             )}
           </button>
           
-          <button className={cn(
-            "p-4 rounded-full shadow-soft transition-colors",
-            isVideoCall && hasRemoteVideo && callStatus === 'active'
-              ? "bg-white/20 hover:bg-white/30 backdrop-blur-sm"
-              : "bg-card hover:bg-muted"
-          )}>
-            <MoreVertical className={cn(
-              "w-6 h-6",
-              isVideoCall && hasRemoteVideo && callStatus === 'active'
-                ? "text-white"
-                : "text-foreground"
-            )} />
+          {/* Message */}
+          <button className="flex flex-col items-center gap-1.5 p-4 rounded-full bg-white/20 transition-all hover:bg-white/30">
+            <MessageSquare className="w-6 h-6 text-white" />
           </button>
         </div>
 
         {/* End Call Button */}
-        <button
-          onClick={onEndCall}
-          className="p-5 rounded-full bg-destructive shadow-medium hover:bg-destructive/90 hover:scale-105 transition-all"
-        >
-          <PhoneOff className="w-7 h-7 text-destructive-foreground" />
-        </button>
+        <div className="flex justify-center">
+          <button
+            onClick={onEndCall}
+            className="flex items-center justify-center w-16 h-16 rounded-full bg-[#f15c6d] shadow-lg hover:bg-[#e04b5c] hover:scale-105 transition-all"
+          >
+            <PhoneOff className="w-7 h-7 text-white" />
+          </button>
+        </div>
       </div>
     </div>
   );
