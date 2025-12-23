@@ -12,7 +12,9 @@ import {
   Camera,
   FileText,
   X,
-  Loader2
+  Loader2,
+  Square,
+  Trash2
 } from 'lucide-react';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
@@ -23,6 +25,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { useAudioRecorder, formatDuration } from '@/hooks/useAudioRecorder';
 
 interface ChatViewDBProps {
   chat: ChatWithDetails;
@@ -41,7 +44,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   
   const { user } = useAuth();
-  const { messages, loading, uploading, sendMessage, sendMediaMessage, markAsRead } = useMessages(chat.id);
+  const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead } = useMessages(chat.id);
+  const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
 
@@ -118,6 +122,28 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      await startRecording();
+    } catch (error) {
+      toast.error('Не удалось получить доступ к микрофону');
+    }
+  };
+
+  const handleStopRecording = async () => {
+    const audioBlob = await stopRecording();
+    if (audioBlob && audioBlob.size > 0) {
+      const { error } = await sendVoiceMessage(audioBlob, recordingDuration);
+      if (error) {
+        toast.error('Не удалось отправить голосовое сообщение');
+      }
+    }
+  };
+
+  const handleCancelRecording = () => {
+    cancelRecording();
   };
 
   const getStatusText = () => {
@@ -255,8 +281,38 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
         </div>
       )}
 
+      {/* Voice Recording UI */}
+      {isRecording && (
+        <div className="p-3 bg-card border-t border-border">
+          <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-2xl">
+            <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Запись голосового...</p>
+              <p className="text-xs text-muted-foreground">{formatDuration(recordingDuration)}</p>
+            </div>
+            <button
+              onClick={handleCancelRecording}
+              className="p-2.5 rounded-full hover:bg-destructive/20 transition-colors"
+            >
+              <Trash2 className="w-5 h-5 text-destructive" />
+            </button>
+            <button
+              onClick={handleStopRecording}
+              disabled={uploading}
+              className="p-3 rounded-full gradient-primary shadow-glow hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 text-primary-foreground animate-spin" />
+              ) : (
+                <Send className="w-5 h-5 text-primary-foreground" />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input Area */}
-      {!selectedFile && (
+      {!selectedFile && !isRecording && (
         <div className="p-3 bg-card border-t border-border">
           <div className="flex items-end gap-2">
             <div className="relative">
@@ -325,7 +381,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall }: ChatViewDBProps) => {
             </div>
 
             <button
-              onClick={messageText.trim() ? handleSendMessage : undefined}
+              onClick={messageText.trim() ? handleSendMessage : handleStartRecording}
               className={cn(
                 'p-3 rounded-full transition-all duration-200',
                 messageText.trim()

@@ -2,6 +2,7 @@ import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
 import { Check, CheckCheck, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import { VoicePlayer } from './VoicePlayer';
 
 interface MessageBubbleProps {
   message: Message;
@@ -37,6 +38,14 @@ export const MessageBubble = ({ message, isOwn, showAvatar }: MessageBubbleProps
           controls
           className="rounded-lg mb-2 max-w-full max-h-64"
         />
+      );
+    }
+
+    if (message.type === 'voice') {
+      return (
+        <div className="mb-2">
+          <VoicePlayer src={message.mediaUrl} isOwn={isOwn} />
+        </div>
       );
     }
 
