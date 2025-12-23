@@ -58,6 +58,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isNewUser, setIsNewUser] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const { signIn, signUp, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
@@ -66,7 +67,9 @@ const Auth = () => {
   // Check if we're in password reset mode (user clicked reset link in email)
   useEffect(() => {
     const mode = searchParams.get('mode');
-    if (mode === 'reset') {
+    const isRecoveryHash = typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
+
+    if (mode === 'reset' || isRecoveryHash) {
       setAuthMode('reset-password');
     }
   }, [searchParams]);
@@ -188,7 +191,7 @@ const Auth = () => {
           title: 'Письмо отправлено',
           description: 'Проверьте почту для сброса пароля',
         });
-        setAuthMode('email-login');
+        setResetEmailSent(true);
       }
     } catch (err) {
       toast({
@@ -297,6 +300,7 @@ const Auth = () => {
     setErrors({});
     setOtp('');
     setIsNewUser(false);
+    setResetEmailSent(false);
   };
 
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
@@ -711,6 +715,15 @@ const Auth = () => {
               Назад
             </button>
 
+            {resetEmailSent && (
+              <div className="rounded-2xl border border-border bg-muted/40 p-4">
+                <p className="text-sm font-medium text-foreground">Письмо отправлено</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Откройте письмо и перейдите по ссылке, чтобы установить новый пароль. Если письма нет — проверьте папку «Спам».
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -735,7 +748,7 @@ const Auth = () => {
               {loading ? (
                 <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
-                'Отправить ссылку'
+                resetEmailSent ? 'Отправить ещё раз' : 'Отправить ссылку'
               )}
             </Button>
           </form>
