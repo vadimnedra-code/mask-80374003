@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-
 const signInSchema = z.object({
   email: z.string().email('Введите корректный email'),
   password: z.string().min(6, 'Пароль должен содержать минимум 6 символов'),
@@ -44,9 +43,10 @@ const newPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password';
+type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password';
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState<AuthMode>('email-login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,9 +59,17 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isNewUser, setIsNewUser] = useState(false);
 
-  const { signIn, signUp, signInWithPhone, verifyOtp, resetPassword } = useAuth();
+  const { signIn, signUp, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if we're in password reset mode (user clicked reset link in email)
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'reset') {
+      setAuthMode('reset-password');
+    }
+  }, [searchParams]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,6 +299,50 @@ const Auth = () => {
     setIsNewUser(false);
   };
 
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setLoading(true);
+
+    try {
+      const validation = newPasswordSchema.safeParse({ password, confirmPassword });
+      if (!validation.success) {
+        const fieldErrors: Record<string, string> = {};
+        validation.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await updatePassword(password);
+      if (error) {
+        toast({
+          title: 'Ошибка',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Пароль изменён',
+          description: 'Вы можете войти с новым паролем',
+        });
+        navigate('/');
+      }
+    } catch (err) {
+      toast({
+        title: 'Ошибка',
+        description: 'Что-то пошло не так. Попробуйте позже.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getTitle = () => {
     switch (authMode) {
       case 'email-login': return 'Войдите в аккаунт';
@@ -298,6 +350,7 @@ const Auth = () => {
       case 'phone-login': return 'Вход по телефону';
       case 'phone-otp': return 'Введите код из SMS';
       case 'forgot-password': return 'Восстановление пароля';
+      case 'reset-password': return 'Новый пароль';
       default: return '';
     }
   };
@@ -683,6 +736,68 @@ const Auth = () => {
                 <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
                 'Отправить ссылку'
+              )}
+            </Button>
+          </form>
+        )}
+
+        {/* Reset Password Form (New Password) */}
+        {authMode === 'reset-password' && (
+          <form onSubmit={handleResetPasswordSubmit} className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <div className="text-center mb-4">
+              <p className="text-sm text-muted-foreground">
+                Введите новый пароль для вашего аккаунта
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Новый пароль</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-12 rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                />
+              </div>
+              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                'Сохранить пароль'
               )}
             </Button>
           </form>
