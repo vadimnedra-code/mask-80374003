@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, forwardRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatList } from '@/components/messenger/ChatListDB';
 import { ChatViewDB } from '@/components/messenger/ChatViewDB';
@@ -16,7 +16,7 @@ import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const Messenger = forwardRef<HTMLDivElement, Record<string, never>>(function Messenger(_, ref) {
+const Messenger = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
@@ -283,6 +283,6 @@ const Messenger = forwardRef<HTMLDivElement, Record<string, never>>(function Mes
       </div>
     </div>
   );
-});
+};
 
 export default Messenger;
