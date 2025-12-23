@@ -91,40 +91,11 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const processedCandidates = useRef<Set<string>>(new Set());
   const isCleaningUp = useRef(false);
 
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
-  }, []);
+  const isMountedRef = useRef(true);
 
-  const cleanup = useCallback(() => {
-    if (isCleaningUp.current) return;
-    isCleaningUp.current = true;
-    
-    console.log('Cleaning up WebRTC resources');
-    
-    // Stop all tracks on local stream
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-        console.log('Stopped track:', track.kind);
-      });
-      localStreamRef.current = null;
-    }
-    
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
-    }
-    
-    if (callSubscription.current) {
-      supabase.removeChannel(callSubscription.current);
-      callSubscription.current = null;
-    }
-    
-    pendingCandidates.current = [];
-    processedCandidates.current.clear();
-    
+  const resetCallState = useCallback(() => {
+    // Avoid state updates after unmount (React StrictMode mounts/unmounts twice in dev)
+    if (!isMountedRef.current) return;
     setCallState({
       callId: null,
       status: 'idle',
@@ -137,8 +108,55 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       peerConnectionState: null,
       error: null,
     });
-    
+  }, []);
+
+  const cleanupResources = useCallback(() => {
+    if (isCleaningUp.current) return;
+    isCleaningUp.current = true;
+
+    console.log('Cleaning up WebRTC resources');
+
+    // Stop all tracks on local stream
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        track.stop();
+        console.log('Stopped track:', track.kind);
+      });
+      localStreamRef.current = null;
+    }
+
+    if (peerConnection.current) {
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+
+    if (callSubscription.current) {
+      supabase.removeChannel(callSubscription.current);
+      callSubscription.current = null;
+    }
+
+    pendingCandidates.current = [];
+    processedCandidates.current.clear();
+
     isCleaningUp.current = false;
+  }, []);
+
+  const cleanup = useCallback(
+    (opts?: { resetState?: boolean }) => {
+      cleanupResources();
+      if (opts?.resetState === false) return;
+      resetCallState();
+    },
+    [cleanupResources, resetCallState]
+  );
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      // On unmount we only cleanup resources; state reset on unmount can crash React in some dev/HMR/StrictMode paths.
+      cleanup({ resetState: false });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getMediaStream = useCallback(async (callType: 'voice' | 'video'): Promise<MediaStream> => {
