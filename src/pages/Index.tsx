@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils';
 const Index = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [activeCall, setActiveCall] = useState<{ userId: string; type: 'voice' | 'video' } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ userId: string; type: 'voice' | 'video'; name: string; avatar: string } | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
 
   const selectedChat = mockChats.find((chat) => chat.id === selectedChatId);
 
@@ -18,28 +19,32 @@ const Index = () => {
     if (!selectedChat) return;
     const otherUser = selectedChat.participants.find((p) => p.id !== 'user-1');
     if (otherUser) {
-      setActiveCall({ userId: otherUser.id, type });
+      setActiveCall({ 
+        userId: otherUser.id, 
+        type,
+        name: otherUser.name,
+        avatar: otherUser.avatar,
+      });
     }
   };
 
   const handleEndCall = () => {
     setActiveCall(null);
+    setIsMuted(false);
   };
-
-  const callingUser = activeCall
-    ? mockChats
-        .flatMap((c) => c.participants)
-        .find((p) => p.id === activeCall.userId)
-    : null;
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background">
       {/* Call Screen */}
-      {activeCall && callingUser && (
+      {activeCall && (
         <CallScreen
-          user={callingUser}
+          participantName={activeCall.name}
+          participantAvatar={activeCall.avatar}
           callType={activeCall.type}
+          callStatus="active"
+          isMuted={isMuted}
           onEndCall={handleEndCall}
+          onToggleMute={() => setIsMuted(!isMuted)}
         />
       )}
 
