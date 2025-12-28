@@ -19,12 +19,14 @@ import {
   Ban,
   CheckCircle
 } from 'lucide-react';
-import { ChatWithDetails } from '@/hooks/useChats';
+import { ChatWithDetails, useChats } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
 import { Avatar } from './Avatar';
 import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
+import { ForwardMessageDialog } from './ForwardMessageDialog';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,6 +47,12 @@ interface ChatViewDBProps {
   highlightedMessageId?: string | null;
 }
 
+interface MessageToForward {
+  content: string | null;
+  type: 'text' | 'image' | 'video' | 'voice' | 'file';
+  mediaUrl: string | null;
+}
+
 export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: ChatViewDBProps) => {
   const [messageText, setMessageText] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -53,6 +61,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
+  const [messageToForward, setMessageToForward] = useState<MessageToForward | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +71,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   
   const { user } = useAuth();
   const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage, refetch } = useMessages(chat.id);
+  const { chats } = useChats();
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
 
@@ -86,6 +96,35 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
         toast.success('Пользователь заблокирован');
       }
     }
+  };
+
+  const handleForwardMessage = (msg: Message) => {
+    setMessageToForward({
+      content: msg.content,
+      type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
+      mediaUrl: msg.media_url,
+    });
+  };
+
+  const handleForwardToChat = async (targetChatId: string) => {
+    if (!messageToForward || !user) return;
+    
+    // Send message to target chat
+    const { error } = await supabase.from('messages').insert({
+      chat_id: targetChatId,
+      sender_id: user.id,
+      content: messageToForward.content ? `↪️ ${messageToForward.content}` : '↪️ Пересланное сообщение',
+      message_type: messageToForward.type,
+      media_url: messageToForward.mediaUrl,
+    });
+    
+    if (error) {
+      toast.error('Не удалось переслать сообщение');
+    } else {
+      toast.success('Сообщение переслано');
+    }
+    
+    setMessageToForward(null);
   };
 
   const scrollToBottom = () => {
@@ -270,6 +309,15 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
 
   return (
     <div className="flex flex-col h-full bg-background">
+      {/* Forward Message Dialog */}
+      {messageToForward && (
+        <ForwardMessageDialog
+          chats={chats.filter(c => c.id !== chat.id)}
+          onClose={() => setMessageToForward(null)}
+          onForward={handleForwardToChat}
+          messagePreview={messageToForward.content || 'Медиафайл'}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shadow-soft pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
@@ -407,6 +455,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                   onDelete={async (messageId) => {
                     await deleteMessage(messageId);
                   }}
+                  onForward={() => handleForwardMessage(msg)}
                 />
               </SwipeableMessage>
             </div>

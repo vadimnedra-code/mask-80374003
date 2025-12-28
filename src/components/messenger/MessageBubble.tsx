@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward } from 'lucide-react';
 import { format } from 'date-fns';
 import { VoicePlayer } from './VoicePlayer';
 import {
@@ -19,9 +19,10 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   onEdit?: (messageId: string, newContent: string) => Promise<void>;
   onDelete?: (messageId: string) => Promise<void>;
+  onForward?: (message: Message) => void;
 }
 
-export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, onForward }: MessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || '');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -124,8 +125,8 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete }: 
         isOwn ? 'justify-end' : 'justify-start'
       )}
     >
-      {/* Action menu for own messages */}
-      {isOwn && (canEdit || canDelete) && !isEditing && (
+      {/* Action menu for messages */}
+      {!isEditing && (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -133,7 +134,13 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete }: 
                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[140px]">
+            <DropdownMenuContent align={isOwn ? "end" : "start"} className="min-w-[140px]">
+              {onForward && (
+                <DropdownMenuItem onClick={() => onForward(message)}>
+                  <Forward className="w-4 h-4 mr-2" />
+                  Переслать
+                </DropdownMenuItem>
+              )}
               {canEdit && (
                 <DropdownMenuItem onClick={() => setIsEditing(true)}>
                   <Pencil className="w-4 h-4 mr-2" />
