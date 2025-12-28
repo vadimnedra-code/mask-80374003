@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           answer: Json | null
@@ -347,6 +368,10 @@ export type Database = {
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       is_chat_participant: {
         Args: { _chat_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_user_blocked: {
+        Args: { _by_user_id: string; _user_id: string }
         Returns: boolean
       }
     }

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface PublicProfile {
   user_id: string;
@@ -12,8 +13,24 @@ export interface PublicProfile {
 }
 
 export const useUsers = () => {
+  const { user } = useAuth();
   const [users, setUsers] = useState<PublicProfile[]>([]);
+  const [blockedByUsers, setBlockedByUsers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Fetch users who have blocked current user (to hide them)
+  const fetchBlockedBy = useCallback(async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('blocked_users')
+      .select('blocker_id')
+      .eq('blocked_id', user.id);
+    
+    if (data) {
+      setBlockedByUsers(data.map(b => b.blocker_id));
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -31,6 +48,7 @@ export const useUsers = () => {
     };
 
     fetchUsers();
+    fetchBlockedBy();
 
     // Subscribe to profile changes
     const channel = supabase
@@ -59,17 +77,24 @@ export const useUsers = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchBlockedBy]);
 
-  const searchUsers = (query: string) => {
-    if (!query.trim()) return users;
+  const searchUsers = useCallback((query: string) => {
+    // Filter out users who have blocked the current user
+    const availableUsers = users.filter(u => !blockedByUsers.includes(u.user_id));
+    
+    if (!query.trim()) return availableUsers;
     const lowerQuery = query.toLowerCase();
-    return users.filter(
+    return availableUsers.filter(
       (u) =>
         u.display_name.toLowerCase().includes(lowerQuery) ||
         u.username?.toLowerCase().includes(lowerQuery)
     );
-  };
+  }, [users, blockedByUsers]);
 
-  return { users, loading, searchUsers };
+  const getUserById = useCallback((userId: string) => {
+    return users.find(u => u.user_id === userId);
+  }, [users]);
+
+  return { users, loading, searchUsers, getUserById, refetchBlockedBy: fetchBlockedBy };
 };

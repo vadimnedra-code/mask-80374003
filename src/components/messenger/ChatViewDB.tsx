@@ -15,7 +15,9 @@ import {
   Loader2,
   Trash2,
   Reply,
-  RefreshCw
+  RefreshCw,
+  Ban,
+  CheckCircle
 } from 'lucide-react';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
@@ -26,15 +28,15 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { toast } from 'sonner';
 import { useAudioRecorder, formatDuration } from '@/hooks/useAudioRecorder';
-
-interface ChatViewDBProps {
-  chat: ChatWithDetails;
-  onBack: () => void;
-  onStartCall: (type: 'voice' | 'video') => void;
-  highlightedMessageId?: string | null;
-}
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ChatViewDBProps {
   chat: ChatWithDetails;
@@ -61,8 +63,30 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const { user } = useAuth();
   const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage, refetch } = useMessages(chat.id);
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
+  const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
+  const isOtherUserBlocked = otherParticipant ? isBlocked(otherParticipant.user_id) : false;
+
+  const handleBlockUser = async () => {
+    if (!otherParticipant) return;
+    
+    if (isOtherUserBlocked) {
+      const { error } = await unblockUser(otherParticipant.user_id);
+      if (error) {
+        toast.error('Не удалось разблокировать пользователя');
+      } else {
+        toast.success('Пользователь разблокирован');
+      }
+    } else {
+      const { error } = await blockUser(otherParticipant.user_id);
+      if (error) {
+        toast.error('Не удалось заблокировать пользователя');
+      } else {
+        toast.success('Пользователь заблокирован');
+      }
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -275,18 +299,49 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           <button 
             onClick={() => onStartCall('voice')}
             className="p-2.5 rounded-full hover:bg-muted transition-colors"
+            disabled={isOtherUserBlocked}
           >
             <Phone className="w-5 h-5 text-muted-foreground" />
           </button>
           <button 
             onClick={() => onStartCall('video')}
             className="p-2.5 rounded-full hover:bg-muted transition-colors"
+            disabled={isOtherUserBlocked}
           >
             <Video className="w-5 h-5 text-muted-foreground" />
           </button>
-          <button className="p-2.5 rounded-full hover:bg-muted transition-colors">
-            <MoreVertical className="w-5 h-5 text-muted-foreground" />
-          </button>
+          
+          {/* Chat Menu */}
+          {!chat.is_group && otherParticipant && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2.5 rounded-full hover:bg-muted transition-colors">
+                  <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleBlockUser}>
+                  {isOtherUserBlocked ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Разблокировать
+                    </>
+                  ) : (
+                    <>
+                      <Ban className="w-4 h-4 mr-2" />
+                      Заблокировать
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          {chat.is_group && (
+            <button className="p-2.5 rounded-full hover:bg-muted transition-colors">
+              <MoreVertical className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -435,6 +490,16 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       {/* Input Area */}
       {!selectedFile && !isRecording && (
         <div className="p-3 bg-card border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Blocked user notice */}
+          {isOtherUserBlocked && (
+            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground">
+              <Ban className="w-4 h-4" />
+              <span className="text-sm">Пользователь заблокирован</span>
+            </div>
+          )}
+          
+          {!isOtherUserBlocked && (
+            <>
           {/* Reply preview */}
           {replyToMessage && (
             <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-xl animate-fade-in">
@@ -536,6 +601,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
               )}
             </button>
           </div>
+          </>
+          )}
         </div>
       )}
     </div>
