@@ -3,6 +3,7 @@ import { Search, X, UserPlus, Users, Camera } from 'lucide-react';
 import { useUsers } from '@/hooks/useUsers';
 import { useChats } from '@/hooks/useChats';
 import { useAuth } from '@/hooks/useAuth';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -22,9 +23,11 @@ export const NewChatDialog = ({ onClose, onChatCreated }: NewChatDialogProps) =>
   const { user } = useAuth();
   const { users, searchUsers } = useUsers();
   const { createChat, chats } = useChats();
+  const { isBlocked } = useBlockedUsers();
 
+  // Filter out current user and blocked users
   const filteredUsers = searchUsers(searchQuery).filter(
-    (u) => u.user_id !== user?.id
+    (u) => u.user_id !== user?.id && !isBlocked(u.user_id)
   );
 
   const isGroupChat = selectedUsers.length > 1;
