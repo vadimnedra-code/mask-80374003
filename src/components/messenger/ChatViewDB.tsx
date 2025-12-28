@@ -31,6 +31,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { toast } from 'sonner';
 import { useAudioRecorder, formatDuration } from '@/hooks/useAudioRecorder';
 import {
@@ -74,6 +75,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const { chats } = useChats();
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
+  const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
   const isOtherUserBlocked = otherParticipant ? isBlocked(otherParticipant.user_id) : false;
@@ -200,6 +202,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
 
+    handleTypingStop();
     await sendMessage(messageText.trim());
     setMessageText('');
     setReplyToMessage(null);
@@ -290,6 +293,11 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   }, [pullDistance, isRefreshing, refetch]);
 
   const getStatusText = () => {
+    // Show typing indicator if someone is typing
+    if (typingText) {
+      return typingText;
+    }
+    
     if (chat.is_group) {
       return `${chat.participants.length} участников`;
     }
@@ -337,7 +345,11 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
             <h2 className="font-semibold">{displayName}</h2>
             <p className={cn(
               'text-xs',
-              !chat.is_group && otherParticipant?.status === 'online' ? 'text-status-online' : 'text-muted-foreground'
+              typingText 
+                ? 'text-primary animate-pulse' 
+                : !chat.is_group && otherParticipant?.status === 'online' 
+                  ? 'text-status-online' 
+                  : 'text-muted-foreground'
             )}>
               {getStatusText()}
             </p>
@@ -625,8 +637,14 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                 type="text"
                 placeholder={replyToMessage ? 'Ответить...' : 'Сообщение...'}
                 value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
+                onChange={(e) => {
+                  setMessageText(e.target.value);
+                  if (e.target.value.trim()) {
+                    handleTypingStart();
+                  }
+                }}
                 onKeyPress={handleKeyPress}
+                onBlur={handleTypingStop}
                 className="w-full px-4 py-3 bg-muted rounded-2xl text-[15px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
               />
               <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:scale-110 transition-transform">
