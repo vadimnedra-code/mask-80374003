@@ -32,6 +32,7 @@ import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { useMessageReactions } from '@/hooks/useMessageReactions';
 import { toast } from 'sonner';
 import { useAudioRecorder, formatDuration } from '@/hooks/useAudioRecorder';
 import {
@@ -76,6 +77,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
+  const { fetchReactions, toggleReaction, getReactionGroups } = useMessageReactions(chat.id);
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
   const isOtherUserBlocked = otherParticipant ? isBlocked(otherParticipant.user_id) : false;
@@ -136,6 +138,10 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   useEffect(() => {
     scrollToBottom();
     markAsRead();
+    // Fetch reactions for visible messages
+    if (messages.length > 0) {
+      fetchReactions(messages.map(m => m.id));
+    }
   }, [messages]);
 
   // Scroll to highlighted message
@@ -468,6 +474,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                     await deleteMessage(messageId);
                   }}
                   onForward={() => handleForwardMessage(msg)}
+                  reactions={getReactionGroups(msg.id)}
+                  onReaction={(emoji) => toggleReaction(msg.id, emoji)}
                 />
               </SwipeableMessage>
             </div>

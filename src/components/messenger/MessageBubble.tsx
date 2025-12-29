@@ -12,6 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { EmojiPicker } from './EmojiPicker';
+import { MessageReactions } from './MessageReactions';
+import { ReactionGroup } from '@/hooks/useMessageReactions';
 
 interface MessageBubbleProps {
   message: Message;
@@ -20,9 +23,11 @@ interface MessageBubbleProps {
   onEdit?: (messageId: string, newContent: string) => Promise<void>;
   onDelete?: (messageId: string) => Promise<void>;
   onForward?: (message: Message) => void;
+  reactions?: ReactionGroup[];
+  onReaction?: (emoji: string) => void;
 }
 
-export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, onForward }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, onForward, reactions = [], onReaction }: MessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || '');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -127,7 +132,10 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
     >
       {/* Action menu for messages */}
       {!isEditing && (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          {onReaction && (
+            <EmojiPicker onSelect={onReaction} align={isOwn ? "end" : "start"} />
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="p-1.5 rounded-full hover:bg-muted transition-colors">
@@ -229,6 +237,15 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
             )
           )}
         </div>
+        
+        {/* Reactions */}
+        {onReaction && (
+          <MessageReactions 
+            reactions={reactions} 
+            onToggle={onReaction}
+            isOwn={isOwn}
+          />
+        )}
       </div>
     </div>
   );
