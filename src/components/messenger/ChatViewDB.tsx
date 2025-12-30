@@ -25,6 +25,7 @@ import { Avatar } from './Avatar';
 import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
 import { ForwardMessageDialog } from './ForwardMessageDialog';
+import { EmojiPicker } from './EmojiPicker';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -64,11 +65,13 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [messageToForward, setMessageToForward] = useState<MessageToForward | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
   const pullStartY = useRef<number>(0);
   
   const { user } = useAuth();
@@ -162,6 +165,21 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       }
     };
   }, [previewUrl]);
+
+  // Close attach menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showAttachMenu && attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
+        setShowAttachMenu(false);
+      }
+      if (showEmojiPicker) {
+        setShowEmojiPicker(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAttachMenu, showEmojiPicker]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
     const file = e.target.files?.[0];
@@ -589,7 +607,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           )}
           
           <div className="flex items-end gap-2">
-            <div className="relative">
+            <div className="relative" ref={attachMenuRef}>
               <button
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
                 className="p-2.5 rounded-full hover:bg-muted transition-colors tap-target touch-active"
@@ -617,19 +635,28 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                 <div className="absolute bottom-full left-0 mb-2 p-2 bg-card rounded-2xl shadow-medium border border-border animate-scale-in z-50">
                   <div className="flex gap-1">
                     <button 
-                      onClick={() => imageInputRef.current?.click()}
+                      onClick={() => {
+                        imageInputRef.current?.click();
+                        setShowAttachMenu(false);
+                      }}
                       className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
                     >
                       <Image className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                     </button>
                     <button 
-                      onClick={() => imageInputRef.current?.click()}
+                      onClick={() => {
+                        imageInputRef.current?.click();
+                        setShowAttachMenu(false);
+                      }}
                       className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
                     >
                       <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                     </button>
                     <button 
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => {
+                        fileInputRef.current?.click();
+                        setShowAttachMenu(false);
+                      }}
                       className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
                     >
                       <FileText className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
@@ -653,11 +680,17 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                 }}
                 onKeyPress={handleKeyPress}
                 onBlur={handleTypingStop}
-                className="w-full px-4 py-3 bg-muted rounded-2xl text-[15px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                className="w-full px-4 py-3 pr-12 bg-muted rounded-2xl text-[15px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:scale-110 transition-transform">
-                <Smile className="w-5 h-5 text-muted-foreground" />
-              </button>
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <EmojiPicker 
+                  onSelect={(emoji) => {
+                    setMessageText(prev => prev + emoji);
+                    inputRef.current?.focus();
+                  }}
+                  align="end"
+                />
+              </div>
             </div>
 
             <button

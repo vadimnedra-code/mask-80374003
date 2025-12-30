@@ -139,16 +139,38 @@ export const useMessages = (chatId: string | null) => {
   ) => {
     if (!chatId || !user) return { error: new Error('Not authenticated') };
 
-    const { error } = await supabase.from('messages').insert({
+    // Optimistic update - add message immediately
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: tempId,
+      chat_id: chatId,
+      sender_id: user.id,
+      content,
+      message_type: type,
+      media_url: mediaUrl || null,
+      reply_to: null,
+      is_read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    const { data, error } = await supabase.from('messages').insert({
       chat_id: chatId,
       sender_id: user.id,
       content,
       message_type: type,
       media_url: mediaUrl,
-    });
+    }).select().single();
 
     if (error) {
       console.error('Error sending message:', error);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+    } else if (data) {
+      // Replace temp message with real one
+      setMessages(prev => prev.map(m => m.id === tempId ? (data as Message) : m));
     }
 
     return { error };

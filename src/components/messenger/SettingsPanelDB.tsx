@@ -11,7 +11,7 @@ import {
   Sun
 } from 'lucide-react';
 import { Avatar } from './Avatar';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -22,14 +22,29 @@ interface SettingsPanelProps {
 }
 
 export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // Initialize from actual DOM state or localStorage
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') || 
+             localStorage.getItem('theme') === 'dark';
+    }
+    return false;
+  });
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
   const navigate = useNavigate();
 
+  // Sync theme on mount
+  useEffect(() => {
+    const currentlyDark = document.documentElement.classList.contains('dark');
+    setIsDark(currentlyDark);
+  }, []);
+
   const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    document.documentElement.classList.toggle('dark', newIsDark);
+    localStorage.setItem('theme', newIsDark ? 'dark' : 'light');
   };
 
   const handleSignOut = async () => {
