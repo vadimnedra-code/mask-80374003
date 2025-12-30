@@ -25,6 +25,7 @@ export interface ChatWithDetails extends Chat {
     sender_id: string;
   };
   unreadCount: number;
+  pinned_at: string | null;
 }
 
 export const useChats = () => {
@@ -35,10 +36,10 @@ export const useChats = () => {
   const fetchChats = async () => {
     if (!user) return;
 
-    // Get chats where user is a participant
+    // Get chats where user is a participant (including pinned_at)
     const { data: participations, error: partError } = await supabase
       .from('chat_participants')
-      .select('chat_id')
+      .select('chat_id, pinned_at')
       .eq('user_id', user.id);
 
     if (partError) {
@@ -46,6 +47,9 @@ export const useChats = () => {
       setLoading(false);
       return;
     }
+
+    // Create a map of chat_id to pinned_at
+    const pinnedMap = new Map(participations.map(p => [p.chat_id, p.pinned_at]));
 
     const chatIds = participations.map(p => p.chat_id);
 
@@ -115,9 +119,20 @@ export const useChats = () => {
           }),
           lastMessage: lastMessages?.[0],
           unreadCount: unreadCount || 0,
+          pinned_at: pinnedMap.get(chat.id) || null,
         };
       })
     );
+
+    // Sort chats: pinned first (by pinned_at desc), then by updated_at desc
+    chatsWithDetails.sort((a, b) => {
+      if (a.pinned_at && !b.pinned_at) return -1;
+      if (!a.pinned_at && b.pinned_at) return 1;
+      if (a.pinned_at && b.pinned_at) {
+        return new Date(b.pinned_at).getTime() - new Date(a.pinned_at).getTime();
+      }
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
 
     setChats(chatsWithDetails);
     setLoading(false);
@@ -285,5 +300,43 @@ export const useChats = () => {
     }
   };
 
-  return { chats, loading, createChat, findExistingDirectChat, deleteChat, refetch: fetchChats };
+  const togglePinChat = async (chatId: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const chat = chats.find(c => c.id === chatId);
+    const isPinned = !!chat?.pinned_at;
+    const newPinnedAt = isPinned ? null : new Date().toISOString();
+
+    const { error } = await supabase
+      .from('chat_participants')
+      .update({ pinned_at: newPinnedAt })
+      .eq('chat_id', chatId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error toggling pin:', error);
+      return { error };
+    }
+
+    // Update local state
+    setChats(prev => {
+      const updated = prev.map(c => 
+        c.id === chatId ? { ...c, pinned_at: newPinnedAt } : c
+      );
+      // Re-sort after pin change
+      updated.sort((a, b) => {
+        if (a.pinned_at && !b.pinned_at) return -1;
+        if (!a.pinned_at && b.pinned_at) return 1;
+        if (a.pinned_at && b.pinned_at) {
+          return new Date(b.pinned_at).getTime() - new Date(a.pinned_at).getTime();
+        }
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+      return updated;
+    });
+
+    return { error: null };
+  };
+
+  return { chats, loading, createChat, findExistingDirectChat, deleteChat, togglePinChat, refetch: fetchChats };
 };

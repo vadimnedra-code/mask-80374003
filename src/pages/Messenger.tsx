@@ -28,7 +28,7 @@ const Messenger = () => {
   const [callParticipant, setCallParticipant] = useState<{ name: string; avatar: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
-  const { chats, loading: chatsLoading, createChat, deleteChat } = useChats();
+  const { chats, loading: chatsLoading, createChat, deleteChat, togglePinChat } = useChats();
   const { updateStatus } = useProfile(user?.id);
   const navigate = useNavigate();
   
@@ -272,6 +272,15 @@ const Messenger = () => {
                   setSelectedChatId(null);
                 }
                 toast.success('Чат удалён');
+              }
+            }}
+            onTogglePinChat={async (chatId) => {
+              const chat = chats.find(c => c.id === chatId);
+              const { error } = await togglePinChat(chatId);
+              if (error) {
+                toast.error('Не удалось изменить закрепление');
+              } else {
+                toast.success(chat?.pinned_at ? 'Чат откреплён' : 'Чат закреплён');
               }
             }}
             loading={chatsLoading}
