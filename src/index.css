@@ -274,4 +274,8 @@
   .status-offline {
     @apply bg-[hsl(var(--offline))];
   }
+  
+  .text-status-online {
+    color: hsl(var(--online));
+  }
 }
