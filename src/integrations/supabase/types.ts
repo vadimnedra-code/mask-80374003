@@ -97,6 +97,7 @@ export type Database = {
           id: string
           joined_at: string
           last_read_at: string | null
+          pinned_at: string | null
           user_id: string
         }
         Insert: {
@@ -104,6 +105,7 @@ export type Database = {
           id?: string
           joined_at?: string
           last_read_at?: string | null
+          pinned_at?: string | null
           user_id: string
         }
         Update: {
@@ -111,6 +113,7 @@ export type Database = {
           id?: string
           joined_at?: string
           last_read_at?: string | null
+          pinned_at?: string | null
           user_id?: string
         }
         Relationships: [

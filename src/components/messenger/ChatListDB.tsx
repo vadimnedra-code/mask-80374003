@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Search, Settings, Edit, Menu, UserPlus, Trash2 } from 'lucide-react';
+import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff } from 'lucide-react';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
 import { Avatar } from './Avatar';
@@ -17,6 +17,7 @@ interface ChatListProps {
   onOpenSearch?: () => void;
   onStartChatWithUser?: (userId: string) => Promise<void>;
   onDeleteChat?: (chatId: string) => Promise<void>;
+  onTogglePinChat?: (chatId: string) => Promise<void>;
   loading?: boolean;
 }
 
@@ -29,12 +30,14 @@ export const ChatList = ({
   onOpenSearch,
   onStartChatWithUser,
   onDeleteChat,
+  onTogglePinChat,
   loading 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [creatingChatWithUserId, setCreatingChatWithUserId] = useState<string | null>(null);
   const [swipedChatId, setSwipedChatId] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const [pinningChatId, setPinningChatId] = useState<string | null>(null);
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const { user } = useAuth();
@@ -103,6 +106,19 @@ export const ChatList = ({
     }
   };
 
+  const handleTogglePinChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onTogglePinChat || pinningChatId) return;
+    
+    setPinningChatId(chatId);
+    try {
+      await onTogglePinChat(chatId);
+      setSwipedChatId(null);
+    } finally {
+      setPinningChatId(null);
+    }
+  };
+
   const handleChatClick = (chatId: string) => {
     if (swipedChatId === chatId) {
       setSwipedChatId(null);
@@ -110,6 +126,10 @@ export const ChatList = ({
       onSelectChat(chatId);
     }
   };
+
+  // Separate pinned and unpinned chats
+  const pinnedChats = filteredChats.filter(c => c.pinned_at);
+  const unpinnedChats = filteredChats.filter(c => !c.pinned_at);
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -223,87 +243,132 @@ export const ChatList = ({
                 )}
               </div>
             ) : (
-              filteredChats.map((chat) => {
-                const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
-                const isSelected = chat.id === selectedChatId;
-                const isSwiped = swipedChatId === chat.id;
-                const isDeleting = deletingChatId === chat.id;
-                const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
-                const avatarUrl = chat.is_group 
-                  ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
-                  : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
-
-                return (
-                  <div key={chat.id} className="relative overflow-hidden">
-                    {/* Delete button background */}
-                    <div 
-                      className={cn(
-                        "absolute right-0 top-0 bottom-0 flex items-center justify-center bg-destructive transition-all duration-200",
-                        isSwiped ? "w-20 opacity-100" : "w-0 opacity-0"
-                      )}
-                    >
-                      <button
-                        onClick={(e) => handleDeleteChat(chat.id, e)}
-                        disabled={isDeleting}
-                        className="w-full h-full flex items-center justify-center text-destructive-foreground"
-                      >
-                        {isDeleting ? (
-                          <div className="w-5 h-5 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="w-5 h-5" />
-                        )}
-                      </button>
+              <>
+                {/* Pinned chats section */}
+                {pinnedChats.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Pin className="w-3 h-3" />
+                      Закреплённые
                     </div>
-                    
-                    {/* Chat item */}
-                    <button
-                      onClick={() => handleChatClick(chat.id)}
-                      onTouchStart={(e) => handleTouchStart(chat.id, e)}
-                      onTouchMove={(e) => handleTouchMove(chat.id, e)}
-                      onTouchEnd={handleTouchEnd}
-                      className={cn(
-                        'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200 bg-card relative',
-                        isSelected && 'bg-accent',
-                        isSwiped && '-translate-x-20'
-                      )}
-                    >
-                      <Avatar
-                        src={avatarUrl || ''}
-                        alt={displayName || 'Chat'}
-                        size="lg"
-                        status={otherParticipant?.status as 'online' | 'offline' | 'away'}
-                      />
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium truncate">{displayName}</span>
-                          {chat.lastMessage && (
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(chat.lastMessage.created_at), { 
-                                addSuffix: false, 
-                                locale: ru 
-                              })}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <p className="text-sm text-muted-foreground truncate pr-2">
-                            {chat.lastMessage?.content || 'Нет сообщений'}
-                          </p>
-                          {chat.unreadCount > 0 && (
-                            <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
-                              {chat.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
+                    {pinnedChats.map((chat) => renderChatItem(chat))}
+                  </>
+                )}
+                
+                {/* Regular chats section */}
+                {unpinnedChats.length > 0 && pinnedChats.length > 0 && (
+                  <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Все чаты
                   </div>
-                );
-              })
+                )}
+                {unpinnedChats.map((chat) => renderChatItem(chat))}
+              </>
             )}
           </>
         )}
       </div>
     </div>
   );
+  
+  function renderChatItem(chat: ChatWithDetails) {
+    const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
+    const isSelected = chat.id === selectedChatId;
+    const isSwiped = swipedChatId === chat.id;
+    const isDeleting = deletingChatId === chat.id;
+    const isPinning = pinningChatId === chat.id;
+    const isPinned = !!chat.pinned_at;
+    const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
+    const avatarUrl = chat.is_group 
+      ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
+      : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
+
+    return (
+      <div key={chat.id} className="relative overflow-hidden">
+        {/* Action buttons background */}
+        <div 
+          className={cn(
+            "absolute right-0 top-0 bottom-0 flex items-center transition-all duration-200",
+            isSwiped ? "w-32 opacity-100" : "w-0 opacity-0"
+          )}
+        >
+          {/* Pin/Unpin button */}
+          <button
+            onClick={(e) => handleTogglePinChat(chat.id, e)}
+            disabled={isPinning}
+            className="w-16 h-full flex items-center justify-center bg-primary text-primary-foreground"
+          >
+            {isPinning ? (
+              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+            ) : isPinned ? (
+              <PinOff className="w-5 h-5" />
+            ) : (
+              <Pin className="w-5 h-5" />
+            )}
+          </button>
+          {/* Delete button */}
+          <button
+            onClick={(e) => handleDeleteChat(chat.id, e)}
+            disabled={isDeleting}
+            className="w-16 h-full flex items-center justify-center bg-destructive text-destructive-foreground"
+          >
+            {isDeleting ? (
+              <div className="w-5 h-5 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" />
+            ) : (
+              <Trash2 className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+        
+        {/* Chat item */}
+        <button
+          onClick={() => handleChatClick(chat.id)}
+          onTouchStart={(e) => handleTouchStart(chat.id, e)}
+          onTouchMove={(e) => handleTouchMove(chat.id, e)}
+          onTouchEnd={handleTouchEnd}
+          className={cn(
+            'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200 bg-card relative',
+            isSelected && 'bg-accent',
+            isSwiped && '-translate-x-32'
+          )}
+        >
+          <div className="relative">
+            <Avatar
+              src={avatarUrl || ''}
+              alt={displayName || 'Chat'}
+              size="lg"
+              status={otherParticipant?.status as 'online' | 'offline' | 'away'}
+            />
+            {isPinned && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                <Pin className="w-2.5 h-2.5 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <div className="flex items-center justify-between">
+              <span className="font-medium truncate">{displayName}</span>
+              {chat.lastMessage && (
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(chat.lastMessage.created_at), { 
+                    addSuffix: false, 
+                    locale: ru 
+                  })}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center justify-between mt-0.5">
+              <p className="text-sm text-muted-foreground truncate pr-2">
+                {chat.lastMessage?.content || 'Нет сообщений'}
+              </p>
+              {chat.unreadCount > 0 && (
+                <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
+                  {chat.unreadCount}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+      </div>
+    );
+  }
 };
