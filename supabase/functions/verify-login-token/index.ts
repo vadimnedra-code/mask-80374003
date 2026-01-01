@@ -6,6 +6,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 5; // 5 requests per minute for login attempts
+
+function checkRateLimit(ip: string): { allowed: boolean; resetAt: number } {
+  const now = Date.now();
+  const existing = rateLimitMap.get(ip);
+  
+  if (existing && existing.resetAt > now) {
+    if (existing.count >= MAX_REQUESTS) {
+      return { allowed: false, resetAt: existing.resetAt };
+    }
+    existing.count++;
+    return { allowed: true, resetAt: existing.resetAt };
+  }
+  
+  // New window
+  rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+  return { allowed: true, resetAt: now + WINDOW_MS };
+}
+
+function getClientIP(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() 
+    || req.headers.get("x-real-ip") 
+    || "unknown";
+}
+
 interface TokenRequest {
   action: 'generate' | 'verify' | 'login';
   token?: string;
@@ -19,6 +47,27 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Rate limiting for all requests
+    const clientIP = getClientIP(req);
+    const rateCheck = checkRateLimit(clientIP);
+    
+    if (!rateCheck.allowed) {
+      console.log(`Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many requests. Please try again later.",
+          retryAfter: Math.ceil((rateCheck.resetAt - Date.now()) / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": Math.ceil((rateCheck.resetAt - Date.now()) / 1000).toString()
+          } 
+        }
+      );
+    }
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
@@ -93,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("Attempting login with secret key:", secretKey.substring(0, 10) + "...");
+      console.log("Login attempt from IP:", clientIP);
 
       // Find the token
       const { data: tokenData, error: fetchError } = await supabase
