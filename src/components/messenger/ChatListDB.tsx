@@ -153,15 +153,9 @@ export const ChatList = ({
       {/* Header - WhatsApp Style */}
       <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <h1 className="text-xl font-semibold text-white">
-          WhatsApp
+          Mask
         </h1>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={onOpenSearch}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-          >
-            <Search className="w-5 h-5 text-white" />
-          </button>
           <button 
             onClick={onNewChat}
             className="p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -178,15 +172,31 @@ export const ChatList = ({
       </div>
 
       {/* Search - WhatsApp Style */}
-      <div className="px-3 py-2 bg-card">
+      <div className="px-2 py-2 bg-card">
         <button
           onClick={onOpenSearch}
           className="w-full relative"
         >
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <div className="w-full pl-10 pr-4 py-2 bg-muted rounded-full text-sm text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
-            Поиск
+          <div className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg text-sm text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
+            Поиск или новый чат
           </div>
+        </button>
+      </div>
+
+      {/* Filter Tabs - WhatsApp Style */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-card overflow-x-auto scrollbar-none">
+        <button className="px-4 py-1.5 rounded-full text-sm font-medium bg-primary/10 text-primary whitespace-nowrap">
+          Все
+        </button>
+        <button className="px-4 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:bg-muted whitespace-nowrap transition-colors">
+          Непрочитанное
+        </button>
+        <button className="px-4 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:bg-muted whitespace-nowrap transition-colors">
+          Избранное
+        </button>
+        <button className="px-4 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:bg-muted whitespace-nowrap transition-colors">
+          Группы
         </button>
       </div>
 
@@ -398,23 +408,26 @@ export const ChatList = ({
             )}
           </div>
           <div className="flex-1 min-w-0 text-left">
-            <div className="flex items-center justify-between">
-              <span className="font-medium truncate">{displayName}</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium truncate text-[15px]">{displayName}</span>
               {chat.lastMessage && (
-                <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(chat.lastMessage.created_at), { 
-                    addSuffix: false, 
-                    locale: ru 
+                <span className="text-xs text-muted-foreground flex-shrink-0">
+                  {new Date(chat.lastMessage.created_at).toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
                   })}
                 </span>
               )}
             </div>
-            <div className="flex items-center justify-between mt-0.5">
-              <p className="text-sm text-muted-foreground truncate pr-2">
+            <div className="flex items-center justify-between mt-0.5 gap-2">
+              <p className="text-sm text-muted-foreground truncate flex-1">
+                {chat.lastMessage?.sender_id === user?.id && (
+                  <span className="text-primary mr-1">✓</span>
+                )}
                 {chat.lastMessage?.content || 'Нет сообщений'}
               </p>
               {chat.unreadCount > 0 && (
-                <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
+                <span className="flex-shrink-0 min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
                   {chat.unreadCount}
                 </span>
               )}
