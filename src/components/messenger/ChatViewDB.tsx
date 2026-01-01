@@ -17,7 +17,8 @@ import {
   Reply,
   RefreshCw,
   Ban,
-  CheckCircle
+  CheckCircle,
+  MessageSquareX
 } from 'lucide-react';
 import { ChatWithDetails, useChats } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
@@ -43,8 +44,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ChatViewDBProps {
   chat: ChatWithDetails;
@@ -68,6 +80,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [messageToForward, setMessageToForward] = useState<MessageToForward | null>(null);
+  const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +119,26 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       } else {
         toast.success('Пользователь заблокирован');
       }
+    }
+  };
+
+  const handleClearHistory = async () => {
+    setIsClearingHistory(true);
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('chat_id', chat.id);
+
+      if (error) {
+        toast.error('Не удалось очистить историю');
+      } else {
+        toast.success('История чата очищена');
+        refetch();
+      }
+    } finally {
+      setIsClearingHistory(false);
+      setShowClearHistoryDialog(false);
     }
   };
 
@@ -355,6 +389,35 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           messagePreview={messageToForward.content || 'Медиафайл'}
         />
       )}
+
+      {/* Clear History Confirmation Dialog */}
+      <AlertDialog open={showClearHistoryDialog} onOpenChange={setShowClearHistoryDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Очистить историю чата?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Все сообщения в этом чате будут удалены безвозвратно. Это действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClearingHistory}>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleClearHistory}
+              disabled={isClearingHistory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isClearingHistory ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Удаление...
+                </>
+              ) : (
+                'Очистить'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Header - WhatsApp Style */}
       <div className="whatsapp-header flex items-center gap-1 px-1 py-1.5 safe-area-top">
@@ -421,14 +484,35 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                     </>
                   )}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setShowClearHistoryDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <MessageSquareX className="w-4 h-4 mr-2" />
+                  Очистить историю
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
           
           {chat.is_group && (
-            <button className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20">
-              <MoreVertical className="w-[22px] h-[22px] text-white" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20">
+                  <MoreVertical className="w-[22px] h-[22px] text-white" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  onClick={() => setShowClearHistoryDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <MessageSquareX className="w-4 h-4 mr-2" />
+                  Очистить историю
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
