@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { PeerConnectionState } from '@/hooks/useWebRTC';
 import { useConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { DiagnosticLogEntry } from '@/hooks/useCallDiagnosticLogs';
 
 interface CallScreenProps {
   participantName: string;
@@ -30,6 +31,8 @@ interface CallScreenProps {
   remoteStream: MediaStream | null;
   peerConnectionState: PeerConnectionState | null;
   getPeerConnection?: () => RTCPeerConnection | null;
+  diagnosticLogs?: DiagnosticLogEntry[];
+  onCopyDiagnosticReport?: () => Promise<boolean>;
   error: string | null;
   onEndCall: () => void;
   onToggleMute: () => void;
@@ -49,6 +52,8 @@ export const CallScreen = ({
   remoteStream,
   peerConnectionState,
   getPeerConnection,
+  diagnosticLogs = [],
+  onCopyDiagnosticReport,
   error,
   onEndCall,
   onToggleMute,
@@ -231,6 +236,8 @@ export const CallScreen = ({
           remoteStream={remoteStream}
           peerConnectionState={peerConnectionState}
           error={error}
+          logs={diagnosticLogs}
+          onCopyReport={onCopyDiagnosticReport}
           onClose={() => setShowDiagnostics(false)}
         />
       )}

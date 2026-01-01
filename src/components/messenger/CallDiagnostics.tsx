@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Wifi, WifiOff, Mic, MicOff, Video, VideoOff, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { X, Wifi, WifiOff, Mic, MicOff, Video, VideoOff, AlertTriangle, CheckCircle, RefreshCw, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DiagnosticLogEntry } from '@/hooks/useCallDiagnosticLogs';
+import { toast } from 'sonner';
 
 interface CallDiagnosticsProps {
   localStream: MediaStream | null;
@@ -12,6 +14,8 @@ interface CallDiagnosticsProps {
     signalingState: string;
   } | null;
   error: string | null;
+  logs?: DiagnosticLogEntry[];
+  onCopyReport?: () => Promise<boolean>;
   onClose: () => void;
   onRetryMedia?: () => void;
 }
@@ -21,6 +25,8 @@ export const CallDiagnostics = ({
   remoteStream,
   peerConnectionState,
   error,
+  logs = [],
+  onCopyReport,
   onClose,
   onRetryMedia,
 }: CallDiagnosticsProps) => {
@@ -28,6 +34,8 @@ export const CallDiagnostics = ({
     audio: false,
     video: false,
   });
+  const [copied, setCopied] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
   useEffect(() => {
     // Check available media devices
@@ -38,6 +46,19 @@ export const CallDiagnostics = ({
       });
     });
   }, []);
+
+  const handleCopyReport = async () => {
+    if (onCopyReport) {
+      const success = await onCopyReport();
+      if (success) {
+        setCopied(true);
+        toast.success('Отчёт скопирован');
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        toast.error('Не удалось скопировать');
+      }
+    }
+  };
 
   const getLocalAudioTracks = () => localStream?.getAudioTracks() || [];
   const getLocalVideoTracks = () => localStream?.getVideoTracks() || [];
@@ -86,14 +107,50 @@ export const CallDiagnostics = ({
     }
   };
 
+  const getLogTypeColor = (type: DiagnosticLogEntry['type']) => {
+    switch (type) {
+      case 'ice': return 'text-blue-400';
+      case 'sdp': return 'text-purple-400';
+      case 'connection': return 'text-cyan-400';
+      case 'media': return 'text-green-400';
+      case 'error': return 'text-red-400';
+      case 'info': return 'text-gray-400';
+      default: return 'text-white/60';
+    }
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toISOString().split('T')[1].split('.')[0];
+  };
+
   return (
     <div className="absolute inset-x-4 top-16 z-50 bg-black/90 backdrop-blur-xl rounded-2xl p-4 text-white text-sm max-h-[70vh] overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-base">Диагностика звонка</h3>
-        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {onCopyReport && (
+            <button
+              onClick={handleCopyReport}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-xs"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400">Скопировано</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Скопировать отчёт</span>
+                </>
+              )}
+            </button>
+          )}
+          <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Error */}
@@ -158,6 +215,40 @@ export const CallDiagnostics = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Event Logs - Collapsible */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowLogs(!showLogs)}
+          className="flex items-center justify-between w-full text-white/60 text-xs uppercase tracking-wider mb-2 hover:text-white/80 transition-colors"
+        >
+          <span>Журнал событий ({logs.length})</span>
+          {showLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+        
+        {showLogs && (
+          <div className="bg-white/5 rounded-xl p-3 max-h-48 overflow-y-auto font-mono text-xs space-y-1">
+            {logs.length === 0 ? (
+              <p className="text-white/40">Нет событий</p>
+            ) : (
+              logs.slice().reverse().map((log, index) => (
+                <div key={index} className="flex flex-col">
+                  <div className="flex items-start gap-2">
+                    <span className="text-white/40 flex-shrink-0">{formatTime(log.timestamp)}</span>
+                    <span className={cn('flex-shrink-0 uppercase', getLogTypeColor(log.type))}>
+                      [{log.type.padEnd(6)}]
+                    </span>
+                    <span className="text-white/80 break-all">{log.event}</span>
+                  </div>
+                  {log.details && (
+                    <span className="ml-[88px] text-white/50 break-all">└─ {log.details}</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Available Devices */}
