@@ -3,6 +3,7 @@ import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff } from 'luc
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
 import { Avatar } from './Avatar';
+import { MaskSwitch } from './MaskSwitch';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -132,16 +133,14 @@ export const ChatList = ({
   const unpinnedChats = filteredChats.filter(c => !c.pinned_at);
 
   return (
-    <div className="flex flex-col h-full bg-card">
-      {/* Header */}
+    <div className="flex flex-col h-full layer-elevated">
+      {/* Header - Lucid Layers */}
       <div className="flex items-center justify-between p-4 border-b border-border pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full hover:bg-muted transition-colors lg:hidden">
-            <Menu className="w-5 h-5 text-muted-foreground" />
-          </button>
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Mask
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            MAsk
           </h1>
+          <MaskSwitch />
         </div>
         <div className="flex items-center gap-1">
           <button 

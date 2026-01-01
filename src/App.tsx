@@ -3,7 +3,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, AuthProvider } from "@/hooks/useAuth";
+import { MaskProvider } from "@/hooks/useMask";
 import Auth from "./pages/Auth";
 import Messenger from "./pages/Messenger";
 import NotFound from "./pages/NotFound";
@@ -115,10 +116,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <TooltipProvider>
-          <Toaster />
-          <AppRoutes />
-        </TooltipProvider>
+        <AuthProvider>
+          <MaskProvider>
+            <TooltipProvider>
+              <Toaster />
+              <AppRoutes />
+            </TooltipProvider>
+          </MaskProvider>
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
