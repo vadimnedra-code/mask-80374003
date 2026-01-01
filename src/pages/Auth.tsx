@@ -5,9 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2 } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { QRCodeSVG } from 'qrcode.react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const signInSchema = z.object({
   email: z.string().email('Введите корректный email'),
@@ -64,7 +72,7 @@ const Auth = () => {
   const { signIn, signUp, signInWithGoogle, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
 
-  // Check if we're in password reset mode (user clicked reset link in email)
+  // Check URL params for mode
   useEffect(() => {
     const mode = searchParams.get('mode');
     const type = searchParams.get('type');
@@ -72,6 +80,8 @@ const Auth = () => {
 
     if (mode === 'reset' || type === 'recovery' || isRecoveryHash) {
       setAuthMode('reset-password');
+    } else if (mode === 'signup') {
+      setAuthMode('email-signup');
     }
   }, [searchParams]);
 
@@ -417,6 +427,49 @@ const Auth = () => {
               <Phone className="w-5 h-5 mr-2" />
               Войти по телефону
             </Button>
+
+            {/* QR Code для регистрации */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12 rounded-xl"
+                >
+                  <QrCode className="w-5 h-5 mr-2" />
+                  QR-код для регистрации
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-center">QR-код для регистрации</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="p-4 bg-white rounded-2xl shadow-md">
+                    <QRCodeSVG
+                      value={`${window.location.origin}/auth?mode=signup`}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Отсканируйте QR-код камерой телефона, чтобы открыть страницу регистрации
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/auth?mode=signup`);
+                      toast.success('Ссылка скопирована');
+                    }}
+                    className="w-full"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Скопировать ссылку
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             <p className="text-center text-sm text-muted-foreground">
               Нет аккаунта?{' '}
