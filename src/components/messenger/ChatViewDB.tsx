@@ -492,6 +492,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                         type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
                         mediaUrl: msg.media_url || undefined,
                         isRead: msg.is_read,
+                        isDelivered: !msg.id.startsWith('temp-'),
                       }}
                       isOwn={msg.sender_id === user?.id}
                       onEdit={async (messageId, newContent) => {
