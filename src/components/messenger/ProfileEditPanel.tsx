@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, Loader2, Check } from 'lucide-react';
+import { X, Camera, Loader2, Check, Trash2 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -188,8 +188,20 @@ export const ProfileEditPanel = ({ onClose }: ProfileEditPanelProps) => {
                 <Camera className="w-4 h-4" />
               )}
             </button>
+            {/* Delete avatar button - only show if custom avatar is set */}
+            {avatarUrl && (
+              <button
+                onClick={() => setAvatarUrl('')}
+                className="absolute bottom-0 left-0 p-2 rounded-full bg-destructive text-destructive-foreground shadow-lg hover:bg-destructive/90 transition-colors"
+                title="Удалить фото"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">Нажмите для изменения фото</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {avatarUrl ? 'Нажмите 🗑️ чтобы удалить фото' : 'Нажмите для изменения фото'}
+          </p>
         </div>
 
         {/* Form Fields */}
