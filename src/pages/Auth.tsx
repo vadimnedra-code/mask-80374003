@@ -556,49 +556,6 @@ const Auth = () => {
               Войти по телефону
             </Button>
 
-            {/* QR Code для регистрации */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-12 rounded-xl"
-                >
-                  <QrCode className="w-5 h-5 mr-2" />
-                  QR-код для регистрации
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-center">QR-код для мгновенной регистрации</DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <div className="p-4 bg-white rounded-2xl shadow-md">
-                    <QRCodeSVG
-                      value={`${window.location.origin}/auth?mode=qr`}
-                      size={200}
-                      level="H"
-                      includeMargin={true}
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Отсканируйте QR-код — сразу попадёте в сеть и выберете имя
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/auth?mode=qr`);
-                      toast.success('Ссылка скопирована');
-                    }}
-                    className="w-full"
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Скопировать ссылку
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
             {/* Войти по QR-коду (для существующих пользователей) */}
             <Button
               type="button"
