@@ -19,8 +19,10 @@ import {
   RefreshCw,
   Ban,
   CheckCircle,
-  MessageSquareX
+  MessageSquareX,
+  ChevronLeft
 } from 'lucide-react';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { ChatWithDetails, useChats } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
 import { Avatar } from './Avatar';
@@ -102,6 +104,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
   const { fetchReactions, toggleReaction, getReactionGroups } = useMessageReactions(chat.id);
+
+  // Swipe right to go back (mobile only)
+  const { offsetX, isSwiping, handlers: swipeHandlers } = useSwipeGesture({
+    threshold: 80,
+    maxSwipe: 150,
+    onSwipeRight: onBack,
+  });
 
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
   const isOtherUserBlocked = otherParticipant ? isBlocked(otherParticipant.user_id) : false;
@@ -412,7 +421,33 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
     : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div 
+      className="flex flex-col h-full bg-background relative overflow-hidden"
+      {...swipeHandlers}
+    >
+      {/* Swipe back indicator */}
+      <div 
+        className={cn(
+          "absolute left-0 top-0 bottom-0 z-50 flex items-center justify-center pointer-events-none transition-opacity lg:hidden",
+          offsetX > 30 ? "opacity-100" : "opacity-0"
+        )}
+        style={{ 
+          width: Math.max(0, offsetX),
+          background: `linear-gradient(to right, hsl(var(--primary) / ${Math.min(offsetX / 150, 0.3)}), transparent)`
+        }}
+      >
+        <div 
+          className={cn(
+            "w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center transition-transform",
+            offsetX > 80 ? "scale-110" : "scale-100"
+          )}
+        >
+          <ChevronLeft className={cn(
+            "w-6 h-6 text-primary transition-all",
+            offsetX > 80 ? "scale-110" : "scale-100"
+          )} />
+        </div>
+      </div>
       {/* Forward Message Dialog */}
       {messageToForward && (
         <ForwardMessageDialog
