@@ -54,7 +54,7 @@ const newPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-show-key' | 'qr-confirm-saved' | 'qr-setup-name' | 'qr-show-token' | 'qr-scan-login';
+type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-show-key' | 'qr-confirm-saved' | 'qr-setup-name' | 'qr-show-token' | 'qr-scan-login' | 'key-login';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -72,6 +72,7 @@ const Auth = () => {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loginToken, setLoginToken] = useState<string | null>(null);
   const [secretKey, setSecretKey] = useState<string | null>(null);
+  const [inputSecretKey, setInputSecretKey] = useState('');
   const [keyCopied, setKeyCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -353,20 +354,79 @@ const Auth = () => {
       }
       
       if (newUser) {
-        // Store the secret key as login token
+        // Store the SECRET KEY that user saved - not a new generated one
         const { data, error: tokenError } = await supabase.functions.invoke('verify-login-token', {
-          body: { action: 'generate', userId: newUser.id }
+          body: { action: 'generate', userId: newUser.id, secretKey: secretKey }
         });
         
         if (tokenError) {
           console.error('Token generation error:', tokenError);
+          toast.error('Ошибка сохранения ключа');
+        } else {
+          console.log('Secret key stored successfully');
         }
         
-        // Also store our custom key in the database for recovery
-        setLoginToken(data?.token || secretKey);
+        setLoginToken(secretKey);
         setAuthMode('qr-setup-name');
       }
     } catch (err) {
+      toast.error('Что-то пошло не так. Попробуйте позже.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    const keyToUse = inputSecretKey.trim();
+    if (!keyToUse) {
+      setErrors({ secretKey: 'Введите секретный ключ' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Verify the key with edge function
+      const { data, error: verifyError } = await supabase.functions.invoke('verify-login-token', {
+        body: { action: 'login', secretKey: keyToUse }
+      });
+
+      if (verifyError || !data?.success) {
+        console.error('Key verification error:', verifyError, data);
+        if (data?.code === 'INVALID_KEY') {
+          toast.error('Неверный ключ. Проверьте правильность ввода.');
+        } else if (data?.code === 'USER_NOT_FOUND') {
+          toast.error('Пользователь не найден. Возможно, аккаунт был удалён.');
+        } else {
+          toast.error('Ошибка входа. Попробуйте позже.');
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Use the magic link token to sign in
+      if (data.token_hash && data.email) {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: 'magiclink'
+        });
+
+        if (otpError) {
+          console.error('OTP verification error:', otpError);
+          toast.error('Ошибка авторизации. Попробуйте ещё раз.');
+          setLoading(false);
+          return;
+        }
+
+        toast.success(`С возвращением${data.displayName ? ', ' + data.displayName : ''}!`);
+        navigate('/');
+      } else {
+        toast.error('Ошибка генерации сессии');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
       toast.error('Что-то пошло не так. Попробуйте позже.');
     } finally {
       setLoading(false);
@@ -477,6 +537,7 @@ const Auth = () => {
       case 'qr-setup-name': return 'Как вас зовут?';
       case 'qr-show-token': return 'Сохраните QR-код';
       case 'qr-scan-login': return 'Войти по QR-коду';
+      case 'key-login': return 'Вход по ключу';
       default: return '';
     }
   };
@@ -606,6 +667,17 @@ const Auth = () => {
               Войти по телефону
             </Button>
 
+            {/* Войти по ключу */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setAuthMode('key-login'); resetForm(); setInputSecretKey(''); }}
+              className="w-full h-12 rounded-xl border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50"
+            >
+              <Key className="w-5 h-5 mr-2" />
+              Войти по ключу
+            </Button>
+
             {/* Мгновенная регистрация */}
             <Button
               type="button"
@@ -624,6 +696,71 @@ const Auth = () => {
                 className="text-primary hover:underline font-medium"
               >
                 Регистрация по email
+              </button>
+            </p>
+          </form>
+        )}
+
+        {/* Key Login Form */}
+        {authMode === 'key-login' && (
+          <form onSubmit={handleKeyLogin} className="space-y-5 bg-gradient-to-b from-amber-950/20 to-orange-950/10 p-8 rounded-3xl shadow-medium border border-amber-500/20">
+            <button
+              type="button"
+              onClick={() => { setAuthMode('email-login'); resetForm(); setInputSecretKey(''); }}
+              className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Назад
+            </button>
+
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/20 flex items-center justify-center border-2 border-amber-400/50">
+                <Key className="w-8 h-8 text-amber-400" />
+              </div>
+              <h2 className="text-xl font-bold text-amber-100">Вход по ключу</h2>
+              <p className="text-sm text-amber-200/70">
+                Введите секретный ключ, который вы сохранили при регистрации
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="secretKey" className="text-amber-200">Секретный ключ</Label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/60" />
+                <Input
+                  id="secretKey"
+                  type="text"
+                  placeholder="XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX"
+                  value={inputSecretKey}
+                  onChange={(e) => setInputSecretKey(e.target.value.toUpperCase())}
+                  className="pl-10 h-12 rounded-xl bg-black/30 border-amber-500/30 text-amber-100 placeholder:text-amber-400/30 focus:border-amber-400/50 font-mono text-sm"
+                  autoComplete="off"
+                  autoFocus
+                />
+              </div>
+              {errors.secretKey && <p className="text-sm text-red-400">{errors.secretKey}</p>}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading || !inputSecretKey.trim()}
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold text-lg shadow-lg shadow-amber-500/30 transition-all duration-300"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                'Войти'
+              )}
+            </Button>
+
+            <p className="text-center text-sm text-amber-200/60">
+              Нет ключа?{' '}
+              <button
+                type="button"
+                onClick={() => { setAuthMode('qr-register'); resetForm(); }}
+                className="text-amber-400 hover:underline font-medium"
+              >
+                Мгновенная регистрация
               </button>
             </p>
           </form>
