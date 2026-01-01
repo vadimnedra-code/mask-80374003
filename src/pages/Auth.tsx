@@ -171,13 +171,14 @@ const Auth = () => {
     }
   };
 
-  // Generate a Bitcoin-style secret key
+  // Generate a Bitcoin-style secret key (UPPERCASE only to avoid case-mismatch on mobile keyboards)
   const generateSecretKey = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    // Exclude ambiguous chars: 0 O I 1 l
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let key = '';
     const segments = 6;
     const segmentLength = 6;
-    
+
     for (let s = 0; s < segments; s++) {
       for (let i = 0; i < segmentLength; i++) {
         const randomIndex = Math.floor(Math.random() * chars.length);
