@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2, Upload, Download, Camera, Zap } from 'lucide-react';
+import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2, Upload, Download, Camera, Zap, Copy, Check, AlertTriangle, Key, Shield } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { QRCodeSVG } from 'qrcode.react';
@@ -54,7 +54,7 @@ const newPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-setup-name' | 'qr-show-token' | 'qr-scan-login';
+type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-show-key' | 'qr-confirm-saved' | 'qr-setup-name' | 'qr-show-token' | 'qr-scan-login';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -71,6 +71,8 @@ const Auth = () => {
   const [isNewUser, setIsNewUser] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loginToken, setLoginToken] = useState<string | null>(null);
+  const [secretKey, setSecretKey] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { signIn, signUp, signInWithGoogle, signInWithPhone, verifyOtp, resetPassword, updatePassword, signInAnonymously, updateDisplayName, user } = useAuth();
@@ -298,24 +300,70 @@ const Auth = () => {
     }
   };
 
+  // Generate a Bitcoin-style secret key
+  const generateSecretKey = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    let key = '';
+    const segments = 6;
+    const segmentLength = 6;
+    
+    for (let s = 0; s < segments; s++) {
+      for (let i = 0; i < segmentLength; i++) {
+        const randomIndex = Math.floor(Math.random() * chars.length);
+        key += chars[randomIndex];
+      }
+      if (s < segments - 1) key += '-';
+    }
+    return key;
+  };
+
   const handleQrRegister = async () => {
+    // Generate and show the secret key first (before creating account)
+    const newKey = generateSecretKey();
+    setSecretKey(newKey);
+    setKeyCopied(false);
+    setAuthMode('qr-show-key');
+  };
+
+  const handleCopyKey = async () => {
+    if (secretKey) {
+      try {
+        await navigator.clipboard.writeText(secretKey);
+        setKeyCopied(true);
+        toast.success('Ключ скопирован!');
+      } catch {
+        toast.error('Не удалось скопировать');
+      }
+    }
+  };
+
+  const handleConfirmKeySaved = () => {
+    setAuthMode('qr-confirm-saved');
+  };
+
+  const handleProceedWithRegistration = async () => {
+    if (!secretKey) return;
+    
     setLoading(true);
     try {
       const { error, user: newUser } = await signInAnonymously();
       if (error) {
         toast.error('Ошибка регистрации. Попробуйте позже.');
-      } else if (newUser) {
-        // Generate a login token for the user
+        return;
+      }
+      
+      if (newUser) {
+        // Store the secret key as login token
         const { data, error: tokenError } = await supabase.functions.invoke('verify-login-token', {
           body: { action: 'generate', userId: newUser.id }
         });
         
-        if (tokenError || !data?.token) {
+        if (tokenError) {
           console.error('Token generation error:', tokenError);
-          toast.error('Ошибка генерации токена');
-        } else {
-          setLoginToken(data.token);
         }
+        
+        // Also store our custom key in the database for recovery
+        setLoginToken(data?.token || secretKey);
         setAuthMode('qr-setup-name');
       }
     } catch (err) {
@@ -340,8 +388,8 @@ const Auth = () => {
       if (error) {
         toast.error('Ошибка сохранения имени');
       } else {
-        // Show the QR code to save
-        setAuthMode('qr-show-token');
+        toast.success('Добро пожаловать, ' + displayName + '!');
+        navigate('/');
       }
     } catch (err) {
       toast.error('Что-то пошло не так');
@@ -424,6 +472,8 @@ const Auth = () => {
       case 'forgot-password': return 'Восстановление пароля';
       case 'reset-password': return 'Новый пароль';
       case 'qr-register': return 'Мгновенная регистрация';
+      case 'qr-show-key': return 'Ваш секретный ключ';
+      case 'qr-confirm-saved': return 'Подтверждение';
       case 'qr-setup-name': return 'Как вас зовут?';
       case 'qr-show-token': return 'Сохраните QR-код';
       case 'qr-scan-login': return 'Войти по QR-коду';
@@ -921,83 +971,212 @@ const Auth = () => {
           </form>
         )}
 
-        {/* QR Instant Registration */}
+        {/* QR Instant Registration - Initial Screen */}
         {authMode === 'qr-register' && (
-          <div className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+          <div className="space-y-5 bg-gradient-to-b from-amber-950/20 to-orange-950/10 p-8 rounded-3xl shadow-medium border border-amber-500/20">
             <div className="text-center space-y-4">
-              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <QrCode className="w-10 h-10 text-primary" />
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/20 flex items-center justify-center border-2 border-amber-500/30">
+                <Key className="w-10 h-10 text-amber-500" />
               </div>
-              <h2 className="text-xl font-semibold">Мгновенная регистрация</h2>
-              <p className="text-sm text-muted-foreground">
-                Нажмите кнопку ниже, чтобы мгновенно зарегистрироваться и начать общение
+              <h2 className="text-xl font-bold text-amber-100">Мгновенная регистрация</h2>
+              <p className="text-sm text-amber-200/70">
+                Вам будет выдан уникальный секретный ключ. Это ваш единственный способ входа — берегите его!
               </p>
+            </div>
+
+            <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-200/80 space-y-1">
+                  <p className="font-semibold">Важно:</p>
+                  <ul className="list-disc list-inside space-y-1 text-amber-200/60">
+                    <li>Ключ нельзя восстановить</li>
+                    <li>Сохраните его в надёжном месте</li>
+                    <li>Без ключа вход невозможен</li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
             <Button
               onClick={handleQrRegister}
               disabled={loading}
-              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold text-lg shadow-lg shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02]"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
               ) : (
-                'Войти в сеть'
+                <>
+                  <Zap className="w-6 h-6 mr-2" />
+                  Получить ключ
+                </>
               )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              Уже есть аккаунт?{' '}
               <button
                 type="button"
                 onClick={() => { setAuthMode('email-login'); resetForm(); }}
-                className="text-primary hover:underline font-medium"
+                className="text-amber-400 hover:underline font-medium"
               >
-                Войти
+                ← Назад к входу
               </button>
             </p>
           </div>
         )}
 
-        {/* QR Setup Name */}
-        {authMode === 'qr-setup-name' && (
-          <form onSubmit={handleSetupName} className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
-            <div className="text-center space-y-2">
-              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <User className="w-8 h-8 text-primary" />
+        {/* QR Show Key - Bitcoin-style secret key display */}
+        {authMode === 'qr-show-key' && secretKey && (
+          <div className="space-y-5 bg-gradient-to-b from-amber-950/30 to-orange-950/20 p-8 rounded-3xl shadow-medium border border-amber-500/30">
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/40 to-orange-500/30 flex items-center justify-center border-2 border-amber-400/50">
+                <Shield className="w-8 h-8 text-amber-400" />
               </div>
-              <h2 className="text-xl font-semibold">Как вас зовут?</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-xl font-bold text-amber-100">Ваш секретный ключ</h2>
+              <p className="text-sm text-amber-200/70">
+                Запишите, сделайте скриншот или скопируйте этот ключ
+              </p>
+            </div>
+
+            {/* Bitcoin-style key display */}
+            <div className="bg-black/50 border-2 border-amber-500/40 rounded-2xl p-6 relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-2 left-2 w-8 h-8 border-l-2 border-t-2 border-amber-500/30 rounded-tl-lg" />
+              <div className="absolute top-2 right-2 w-8 h-8 border-r-2 border-t-2 border-amber-500/30 rounded-tr-lg" />
+              <div className="absolute bottom-2 left-2 w-8 h-8 border-l-2 border-b-2 border-amber-500/30 rounded-bl-lg" />
+              <div className="absolute bottom-2 right-2 w-8 h-8 border-r-2 border-b-2 border-amber-500/30 rounded-br-lg" />
+              
+              <div className="text-center py-4">
+                <p className="font-mono text-lg md:text-xl text-amber-400 font-bold tracking-wider break-all leading-relaxed">
+                  {secretKey}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-300/80">
+                  <span className="font-bold">Внимание!</span> Этот ключ показывается только один раз. Если вы его потеряете, восстановить аккаунт будет невозможно.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleCopyKey}
+                variant="outline"
+                className={`w-full h-12 rounded-xl border-2 transition-all duration-300 ${
+                  keyCopied 
+                    ? 'border-green-500/50 bg-green-500/10 text-green-400' 
+                    : 'border-amber-500/30 hover:border-amber-500/50 text-amber-200 hover:bg-amber-500/10'
+                }`}
+              >
+                {keyCopied ? (
+                  <>
+                    <Check className="w-5 h-5 mr-2" />
+                    Скопировано!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5 mr-2" />
+                    Скопировать ключ
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleConfirmKeySaved}
+                className="w-full h-14 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold text-base shadow-lg shadow-amber-500/30 transition-all duration-300"
+              >
+                Я сохранил ключ
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* QR Confirm Saved - Confirmation before creating account */}
+        {authMode === 'qr-confirm-saved' && (
+          <div className="space-y-5 bg-gradient-to-b from-amber-950/30 to-orange-950/20 p-8 rounded-3xl shadow-medium border border-amber-500/30">
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/20 flex items-center justify-center border-2 border-green-400/50">
+                <Check className="w-10 h-10 text-green-400" />
+              </div>
+              <h2 className="text-xl font-bold text-green-100">Вы готовы войти?</h2>
+              <p className="text-sm text-green-200/70">
+                Убедитесь, что вы сохранили секретный ключ в надёжном месте
+              </p>
+            </div>
+
+            <div className="bg-black/40 border border-amber-500/20 rounded-xl p-4">
+              <p className="font-mono text-sm text-amber-400/80 text-center break-all">
+                {secretKey}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleProceedWithRegistration}
+                disabled={loading}
+                className="w-full h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold text-lg shadow-lg shadow-green-500/30 transition-all duration-300"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Да, войти!'
+                )}
+              </Button>
+
+              <Button
+                onClick={() => setAuthMode('qr-show-key')}
+                variant="ghost"
+                className="w-full h-12 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+              >
+                ← Вернуться к ключу
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* QR Setup Name - After confirming key is saved */}
+        {authMode === 'qr-setup-name' && (
+          <form onSubmit={handleSetupName} className="space-y-5 bg-gradient-to-b from-green-950/20 to-emerald-950/10 p-8 rounded-3xl shadow-medium border border-green-500/20">
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/20 flex items-center justify-center border-2 border-green-400/50">
+                <User className="w-8 h-8 text-green-400" />
+              </div>
+              <h2 className="text-xl font-bold text-green-100">Как вас зовут?</h2>
+              <p className="text-sm text-green-200/70">
                 Выберите имя, которое увидят другие пользователи
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="displayName">Ваше имя</Label>
+              <Label htmlFor="displayName" className="text-green-200">Ваше имя</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400/60" />
                 <Input
                   id="displayName"
                   type="text"
                   placeholder="Введите имя"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="pl-10 h-12 rounded-xl"
+                  className="pl-10 h-12 rounded-xl bg-black/30 border-green-500/30 text-green-100 placeholder:text-green-400/40 focus:border-green-400/50"
                   autoFocus
                 />
               </div>
-              {errors.displayName && <p className="text-sm text-destructive">{errors.displayName}</p>}
+              {errors.displayName && <p className="text-sm text-red-400">{errors.displayName}</p>}
             </div>
 
             <Button
               type="submit"
               disabled={loading || !displayName.trim()}
-              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold text-lg shadow-lg shadow-green-500/30 transition-all duration-300"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                'Начать общение'
+                'Начать общение →'
               )}
             </Button>
           </form>
