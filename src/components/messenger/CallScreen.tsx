@@ -8,6 +8,7 @@ import {
   VideoOff,
   Volume2,
   Volume1,
+  Headphones,
   SwitchCamera,
   MessageSquare,
   Settings
@@ -19,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { PeerConnectionState } from '@/hooks/useWebRTC';
 import { useConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
 import { useCallSounds } from '@/hooks/useCallSounds';
-import { useAudioRouting } from '@/hooks/useAudioRouting';
+import { useAudioRouting, AudioRoute } from '@/hooks/useAudioRouting';
 import { DiagnosticLogEntry } from '@/hooks/useCallDiagnosticLogs';
 
 interface CallScreenProps {
@@ -71,7 +72,13 @@ export const CallScreen = ({
     onQualityChange: onChangeVideoQuality,
   });
   const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
-  const { isSpeakerOn, toggleSpeaker, applyAudioRoute } = useAudioRouting('earpiece'); // Default to earpiece for calls
+  const { 
+    audioRoute, 
+    isSpeakerOn, 
+    isHeadphonesConnected, 
+    cycleAudioRoute, 
+    applyAudioRoute 
+  } = useAudioRouting('earpiece'); // Default to earpiece for voice calls
   const [callDuration, setCallDuration] = useState(0);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -365,26 +372,34 @@ export const CallScreen = ({
       <div className="relative z-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-4 bg-gradient-to-t from-black/80 to-transparent">
         {/* Control buttons row */}
         <div className="flex items-center justify-center gap-6 mb-6">
-          {/* Speaker Toggle */}
+          {/* Audio Route Toggle (WhatsApp style - cycles through routes) */}
           <button 
             onClick={() => {
-              toggleSpeaker();
+              cycleAudioRoute();
               // Re-apply audio route after toggle
-              if (remoteAudioRef.current) {
-                applyAudioRoute(remoteAudioRef.current);
-              }
-              tryPlayRemoteMedia();
+              setTimeout(() => {
+                if (remoteAudioRef.current) {
+                  applyAudioRoute(remoteAudioRef.current);
+                }
+                tryPlayRemoteMedia();
+              }, 50);
             }}
             className={cn(
-              "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all",
-              isSpeakerOn ? "bg-white" : "bg-white/20"
+              "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all relative",
+              audioRoute === 'speaker' ? "bg-white" : "bg-white/20"
             )}
           >
-            {isSpeakerOn ? (
+            {audioRoute === 'headphones' ? (
+              <Headphones className="w-6 h-6 text-white" />
+            ) : audioRoute === 'speaker' ? (
               <Volume2 className="w-6 h-6 text-[#0b141a]" />
             ) : (
               <Volume1 className="w-6 h-6 text-white" />
             )}
+            {/* Route label */}
+            <span className="absolute -bottom-5 text-[10px] text-white/70 whitespace-nowrap">
+              {audioRoute === 'headphones' ? 'Наушники' : audioRoute === 'speaker' ? 'Динамик' : 'Телефон'}
+            </span>
           </button>
           
           {/* Video toggle */}
