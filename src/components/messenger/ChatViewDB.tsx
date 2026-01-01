@@ -451,7 +451,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       {/* Messages - WhatsApp Wallpaper */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 scrollbar-thin scroll-smooth chat-wallpaper"
+        className="flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin scroll-smooth chat-wallpaper"
         onTouchStart={handlePullStart}
         onTouchMove={handlePullMove}
         onTouchEnd={handlePullEnd}
