@@ -313,331 +313,374 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     };
     
     return pc;
-  }, [options, addLog]);
+  }, [addLog, options, updatePeerConnectionState]);
 
-  const subscribeToCall = useCallback((callId: string, isCaller: boolean) => {
-    console.log('Subscribing to call updates:', callId, 'isCaller:', isCaller);
-    
-    // Remove existing subscription first
-    if (callSubscription.current) {
-      supabase.removeChannel(callSubscription.current);
-      callSubscription.current = null;
-    }
-    
-    const channelName = `call-${callId}-${Date.now()}`;
-    callSubscription.current = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'calls',
-          filter: `id=eq.${callId}`,
-        },
-        async (payload) => {
-          const call = payload.new as any;
-          console.log('Call update received:', call.status, 'answer:', !!call.answer, 'ice:', call.ice_candidates?.length || 0);
-          
-          if (call.status === 'rejected') {
-            console.log('Call was rejected');
-            options.onCallRejected?.();
-            cleanup();
-            return;
-          }
-          
-          if (call.status === 'ended') {
-            console.log('Call was ended');
-            options.onCallEnded?.();
-            cleanup();
-            return;
-          }
-          
-          // If caller and answer received, set remote description
-          if (isCaller && call.answer && peerConnection.current) {
-            if (!peerConnection.current.remoteDescription) {
-              console.log('Setting remote description (answer)');
-              try {
-                const answer = new RTCSessionDescription(call.answer);
-                await peerConnection.current.setRemoteDescription(answer);
-                console.log('Remote description set successfully');
-                setCallState(prev => ({ ...prev, status: 'connecting' }));
-                // Add any pending ICE candidates
-                await addPendingCandidates();
-              } catch (err) {
-                console.error('Error setting remote description:', err);
-              }
-            }
-          }
+  const subscribeToCall = useCallback(
+    (callId: string, isCaller: boolean) => {
+      console.log('Subscribing to call updates:', callId, 'isCaller:', isCaller);
+      addLog('info', 'Subscribing to call updates', `callId: ${callId}, role: ${isCaller ? 'caller' : 'callee'}`);
 
-          // If callee accepted before offer was available, handle offer once it arrives
-          if (!isCaller && call.offer && peerConnection.current) {
-            if (!peerConnection.current.remoteDescription) {
-              console.log('Callee: offer received via update, creating answer');
-              try {
-                const offer = new RTCSessionDescription(call.offer);
-                await peerConnection.current.setRemoteDescription(offer);
-                console.log('Callee: remote description (offer) set');
+      // Remove existing subscription first
+      if (callSubscription.current) {
+        supabase.removeChannel(callSubscription.current);
+        callSubscription.current = null;
+      }
 
-                // Add any pending ICE candidates that arrived before we set remoteDescription
-                await addPendingCandidates();
+      const handleCallUpdate = async (call: any) => {
+        addLog(
+          'info',
+          'Call row update',
+          `status: ${call.status}, offer: ${!!call.offer}, answer: ${!!call.answer}, ice: ${call.ice_candidates?.length || 0}`
+        );
 
-                const answer = await peerConnection.current.createAnswer();
-                await peerConnection.current.setLocalDescription(answer);
-                console.log('Callee: created and set local answer');
+        if (call.status === 'rejected') {
+          addLog('connection', 'Call rejected');
+          options.onCallRejected?.();
+          cleanup();
+          return;
+        }
 
-                await supabase
-                  .from('calls')
-                  .update({
-                    answer: JSON.parse(JSON.stringify(answer)),
-                    status: 'active',
-                    started_at: new Date().toISOString(),
-                  })
-                  .eq('id', callId);
+        if (call.status === 'ended') {
+          addLog('connection', 'Call ended');
+          options.onCallEnded?.();
+          cleanup();
+          return;
+        }
 
-                console.log('Callee: call updated with answer');
-              } catch (err) {
-                console.error('Callee: error handling offer from update:', err);
-              }
-            }
-          }
-          
-          // Process ICE candidates - for BOTH caller and callee
-          if (call.ice_candidates && call.ice_candidates.length > 0 && peerConnection.current) {
-            console.log('Processing', call.ice_candidates.length, 'ICE candidates from update');
-            for (const candidate of call.ice_candidates) {
-              const candidateKey = JSON.stringify(candidate);
-              if (!processedCandidates.current.has(candidateKey)) {
-                processedCandidates.current.add(candidateKey);
-                
-                if (peerConnection.current.remoteDescription) {
-                  try {
-                    await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-                    console.log('Added ICE candidate from update');
-                  } catch (err) {
-                    console.error('Error adding ICE candidate:', err);
-                  }
-                } else {
-                  // Queue for later
-                  pendingCandidates.current.push(candidate);
-                  console.log('Queued ICE candidate (no remote description yet)');
-                }
-              }
+        // If caller and answer received, set remote description
+        if (isCaller && call.answer && peerConnection.current) {
+          if (!peerConnection.current.remoteDescription) {
+            addLog('sdp', 'Caller received answer; setting remote description');
+            try {
+              const answer = new RTCSessionDescription(call.answer);
+              await peerConnection.current.setRemoteDescription(answer);
+              addLog('sdp', 'Caller remote description (answer) set');
+              setCallState((prev) => ({ ...prev, status: 'connecting' }));
+              await addPendingCandidates();
+            } catch (err) {
+              console.error('Error setting remote description (answer):', err);
+              addLog('error', 'Failed to set remote description (answer)', String(err));
             }
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('Call subscription status:', status);
-      });
-  }, [cleanup, options, addPendingCandidates]);
 
-  const startCall = useCallback(async (calleeId: string, chatId: string, callType: 'voice' | 'video' = 'voice') => {
-    if (!user) return;
-    
-    console.log('Starting call to:', calleeId, 'type:', callType);
-    isCleaningUp.current = false;
-    
-    try {
-      // Get media stream first
-      const stream = await getMediaStream(callType);
-      localStreamRef.current = stream;
-      
-      // Create call record
-      const { data: call, error } = await supabase
-        .from('calls')
-        .insert({
-          caller_id: user.id,
-          callee_id: calleeId,
-          chat_id: chatId,
-          call_type: callType,
-          status: 'pending',
-        })
-        .select()
-        .single();
-      
-      if (error || !call) {
-        stream.getTracks().forEach(t => t.stop());
-        throw error || new Error('Failed to create call');
-      }
-      
-      setCallState({
-        callId: call.id,
-        status: 'calling',
-        isMuted: false,
-        isVideoOff: false,
-        remoteUserId: calleeId,
-        callType,
-        localStream: stream,
-        remoteStream: null,
-        peerConnectionState: null,
-        error: null,
-      });
-      
-      // Setup peer connection
-      const pc = setupPeerConnection(call.id, callType);
-      
-      // Add tracks to peer connection
-      stream.getTracks().forEach(track => {
-        console.log('Adding local track:', track.kind);
-        pc.addTrack(track, stream);
-      });
-      
-      // Create offer
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: callType === 'video',
-      });
-      await pc.setLocalDescription(offer);
-      console.log('Created and set local offer');
-      
-      // Update call with offer
-      await supabase
-        .from('calls')
-        .update({ 
-          offer: JSON.parse(JSON.stringify(offer)),
-          status: 'ringing' 
-        })
-        .eq('id', call.id);
-      
-      setCallState(prev => ({ ...prev, status: 'ringing' }));
-      
-      // Send VoIP push notification to callee
-      try {
-        const { data: callerProfile } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .single();
-        
-        await supabase.functions.invoke('send-voip-push', {
-          body: {
-            callee_id: calleeId,
-            caller_id: user.id,
-            caller_name: callerProfile?.display_name || 'Неизвестный',
-            call_id: call.id,
-            is_video: callType === 'video',
-          },
-        });
-        console.log('VoIP push sent');
-      } catch (pushError) {
-        console.log('VoIP push not sent (may not be configured):', pushError);
-      }
-      
-      // Subscribe to call updates
-      subscribeToCall(call.id, true);
-      
-      return call.id;
-    } catch (error) {
-      console.error('Error starting call:', error);
-      cleanup();
-      throw error;
-    }
-  }, [user, getMediaStream, setupPeerConnection, subscribeToCall, cleanup]);
+        // If callee accepted before offer was available, handle offer once it arrives
+        if (!isCaller && call.offer && peerConnection.current) {
+          if (!peerConnection.current.remoteDescription) {
+            addLog('sdp', 'Callee received offer; setting remote description & creating answer');
+            try {
+              const offer = new RTCSessionDescription(call.offer);
+              await peerConnection.current.setRemoteDescription(offer);
+              addLog('sdp', 'Callee remote description (offer) set');
 
-  const acceptCall = useCallback(async (callId: string) => {
-    if (!user) throw new Error('Not authenticated');
-    
-    console.log('Accepting call:', callId);
-    isCleaningUp.current = false;
-    
-    try {
-      // Fetch call details
-      const { data: call, error } = await supabase
-        .from('calls')
-        .select('*')
-        .eq('id', callId)
-        .single();
-      
-      if (error || !call) {
-        throw error || new Error('Call not found');
-      }
-      
-      const callType = call.call_type as 'voice' | 'video';
-      
-      // Get media stream
-      const stream = await getMediaStream(callType);
-      localStreamRef.current = stream;
-      
-      setCallState({
-        callId: call.id,
-        status: 'connecting',
-        isMuted: false,
-        isVideoOff: false,
-        remoteUserId: call.caller_id,
-        callType,
-        localStream: stream,
-        remoteStream: null,
-        peerConnectionState: null,
-        error: null,
-      });
-      
-      // Subscribe to updates FIRST - so we don't miss any ICE candidates
-      subscribeToCall(callId, false);
-      
-      // Setup peer connection
-      const pc = setupPeerConnection(callId, callType);
-      
-      // Add tracks to peer connection BEFORE setting remote description
-      stream.getTracks().forEach(track => {
-        console.log('Adding local track:', track.kind);
-        pc.addTrack(track, stream);
-      });
-      
-      // Set remote description (offer)
-      if (call.offer) {
-        console.log('Setting remote description (offer)');
-        const offerData = call.offer as unknown as RTCSessionDescriptionInit;
-        await pc.setRemoteDescription(new RTCSessionDescription(offerData));
-        console.log('Remote description set');
-        
-        // Process existing ICE candidates
-        if (call.ice_candidates) {
-          console.log('Processing', call.ice_candidates.length, 'existing ICE candidates');
-          for (const candidate of call.ice_candidates as RTCIceCandidateInit[]) {
+              await addPendingCandidates();
+
+              const answer = await peerConnection.current.createAnswer();
+              await peerConnection.current.setLocalDescription(answer);
+              addLog('sdp', 'Callee created & set local answer');
+
+              const { error } = await supabase
+                .from('calls')
+                .update({
+                  answer: JSON.parse(JSON.stringify(answer)),
+                  status: 'active',
+                  started_at: new Date().toISOString(),
+                })
+                .eq('id', callId);
+
+              if (error) {
+                addLog('error', 'Failed to update call with answer', error.message);
+              } else {
+                addLog('connection', 'Call updated with answer');
+              }
+            } catch (err) {
+              console.error('Callee: error handling offer from update:', err);
+              addLog('error', 'Callee failed to handle offer', String(err));
+            }
+          }
+        }
+
+        // Process ICE candidates - for BOTH caller and callee
+        if (call.ice_candidates && call.ice_candidates.length > 0 && peerConnection.current) {
+          const total = call.ice_candidates.length as number;
+          addLog('ice', 'Remote ICE candidates update', `total in call: ${total}`);
+
+          for (const candidate of call.ice_candidates) {
             const candidateKey = JSON.stringify(candidate);
-            if (!processedCandidates.current.has(candidateKey)) {
-              processedCandidates.current.add(candidateKey);
+            if (processedCandidates.current.has(candidateKey)) continue;
+            processedCandidates.current.add(candidateKey);
+
+            if (peerConnection.current.remoteDescription) {
               try {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
-                console.log('Added existing ICE candidate');
+                await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
               } catch (err) {
                 console.error('Error adding ICE candidate:', err);
+                addLog('error', 'Failed to add remote ICE candidate', String(err));
               }
+            } else {
+              pendingCandidates.current.push(candidate);
             }
           }
         }
-        
-        // Add any pending ICE candidates that arrived via subscription
-        await addPendingCandidates();
-        
-        // Create answer
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        console.log('Created and set local answer');
-        
-        // Update call with answer
+      };
+
+      const channelName = `call-${callId}-${Date.now()}`;
+      callSubscription.current = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'calls',
+            filter: `id=eq.${callId}`,
+          },
+          async (payload) => {
+            const call = payload.new as any;
+            console.log('Call update received:', call.status, 'answer:', !!call.answer, 'offer:', !!call.offer, 'ice:', call.ice_candidates?.length || 0);
+            await handleCallUpdate(call);
+          }
+        )
+        .subscribe(async (status) => {
+          console.log('Call subscription status:', status);
+          addLog('info', 'Call subscription status', status);
+
+          // IMPORTANT: fetch current state after subscribe so we don't miss fast updates
+          if (status === 'SUBSCRIBED') {
+            const { data, error } = await supabase.from('calls').select('*').eq('id', callId).single();
+            if (error) {
+              addLog('error', 'Failed to fetch call after subscribe', error.message);
+            } else if (data) {
+              await handleCallUpdate(data);
+            }
+          }
+        });
+    },
+    [addLog, addPendingCandidates, cleanup, options, updatePeerConnectionState]
+  );
+
+  const startCall = useCallback(
+    async (calleeId: string, chatId: string, callType: 'voice' | 'video' = 'voice') => {
+      if (!user) return;
+
+      clearLogs();
+      processedCandidates.current.clear();
+      pendingCandidates.current = [];
+
+      console.log('Starting call to:', calleeId, 'type:', callType);
+      addLog('info', 'Starting outgoing call', `to: ${calleeId}, type: ${callType}`);
+      isCleaningUp.current = false;
+
+      try {
+        // Get media stream first
+        const stream = await getMediaStream(callType);
+        localStreamRef.current = stream;
+
+        // Create call record
+        const { data: call, error } = await supabase
+          .from('calls')
+          .insert({
+            caller_id: user.id,
+            callee_id: calleeId,
+            chat_id: chatId,
+            call_type: callType,
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (error || !call) {
+          stream.getTracks().forEach((t) => t.stop());
+          throw error || new Error('Failed to create call');
+        }
+
+        setCallState({
+          callId: call.id,
+          status: 'calling',
+          isMuted: false,
+          isVideoOff: false,
+          remoteUserId: calleeId,
+          callType,
+          localStream: stream,
+          remoteStream: null,
+          peerConnectionState: null,
+          error: null,
+        });
+
+        // Setup peer connection
+        const pc = setupPeerConnection(call.id, callType);
+
+        // Subscribe EARLY so we can't miss a fast answer update
+        subscribeToCall(call.id, true);
+
+        // Add tracks to peer connection
+        stream.getTracks().forEach((track) => {
+          console.log('Adding local track:', track.kind);
+          pc.addTrack(track, stream);
+        });
+
+        // Create offer
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: callType === 'video',
+        });
+        await pc.setLocalDescription(offer);
+        addLog('sdp', 'Created local offer');
+
+        // Update call with offer
         await supabase
           .from('calls')
           .update({
-            answer: JSON.parse(JSON.stringify(answer)),
-            status: 'active',
-            started_at: new Date().toISOString(),
+            offer: JSON.parse(JSON.stringify(offer)),
+            status: 'ringing',
           })
-          .eq('id', callId);
-        
-        console.log('Call updated with answer');
-      } else {
-        console.log('Offer not ready yet; waiting for realtime update...');
-        // Offer will be handled in subscribeToCall() once it arrives
+          .eq('id', call.id);
+
+        setCallState((prev) => ({ ...prev, status: 'ringing' }));
+
+        // Send VoIP push notification to callee
+        try {
+          const { data: callerProfile } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', user.id)
+            .single();
+
+          await supabase.functions.invoke('send-voip-push', {
+            body: {
+              callee_id: calleeId,
+              caller_id: user.id,
+              caller_name: callerProfile?.display_name || 'Неизвестный',
+              call_id: call.id,
+              is_video: callType === 'video',
+            },
+          });
+          console.log('VoIP push sent');
+        } catch (pushError) {
+          console.log('VoIP push not sent (may not be configured):', pushError);
+        }
+
+        return call.id;
+      } catch (error) {
+        console.error('Error starting call:', error);
+        addLog('error', 'Outgoing call start failed', String(error));
+        cleanup();
+        throw error;
       }
-      
-    } catch (error) {
-      console.error('Error accepting call:', error);
-      cleanup();
-      throw error;
-    }
-  }, [user, getMediaStream, setupPeerConnection, subscribeToCall, cleanup]);
+    },
+    [user, clearLogs, addLog, getMediaStream, setupPeerConnection, subscribeToCall, cleanup]
+  );
+
+  const acceptCall = useCallback(
+    async (callId: string) => {
+      if (!user) throw new Error('Not authenticated');
+
+      clearLogs();
+      processedCandidates.current.clear();
+      pendingCandidates.current = [];
+
+      console.log('Accepting call:', callId);
+      addLog('info', 'Accepting incoming call', `callId: ${callId}`);
+      isCleaningUp.current = false;
+
+      try {
+        // Fetch call details
+        const { data: call, error } = await supabase.from('calls').select('*').eq('id', callId).single();
+        if (error || !call) throw error || new Error('Call not found');
+
+        const callType = call.call_type as 'voice' | 'video';
+
+        // Immediately show call UI while we request mic/cam permissions
+        setCallState({
+          callId: call.id,
+          status: 'connecting',
+          isMuted: false,
+          isVideoOff: false,
+          remoteUserId: call.caller_id,
+          callType,
+          localStream: null,
+          remoteStream: null,
+          peerConnectionState: null,
+          error: null,
+        });
+
+        // Setup peer connection first
+        const pc = setupPeerConnection(callId, callType);
+
+        // Subscribe early (and fetch current state after subscribe) so we can't miss the offer/ICE
+        subscribeToCall(callId, false);
+
+        // Get media stream (may prompt for permission)
+        addLog('media', 'Requesting local media', callType);
+        const stream = await getMediaStream(callType);
+        localStreamRef.current = stream;
+
+        setCallState((prev) => (prev.callId === callId ? { ...prev, localStream: stream } : prev));
+
+        // Add tracks to peer connection BEFORE setting remote description
+        stream.getTracks().forEach((track) => {
+          console.log('Adding local track:', track.kind);
+          pc.addTrack(track, stream);
+        });
+
+        // If offer is already present in fetched call, handle it now.
+        // If not, subscribeToCall() will handle it once it arrives.
+        if (call.offer) {
+          addLog('sdp', 'Offer present; setting remote description');
+          const offerData = call.offer as unknown as RTCSessionDescriptionInit;
+          await pc.setRemoteDescription(new RTCSessionDescription(offerData));
+          addLog('sdp', 'Remote description (offer) set');
+
+          // Process existing ICE candidates
+          if (call.ice_candidates) {
+            addLog('ice', 'Processing existing ICE candidates', `count: ${call.ice_candidates.length}`);
+            for (const candidate of call.ice_candidates as RTCIceCandidateInit[]) {
+              const candidateKey = JSON.stringify(candidate);
+              if (processedCandidates.current.has(candidateKey)) continue;
+              processedCandidates.current.add(candidateKey);
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (err) {
+                console.error('Error adding ICE candidate:', err);
+                addLog('error', 'Failed to add existing ICE candidate', String(err));
+              }
+            }
+          }
+
+          await addPendingCandidates();
+
+          // Create answer
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          addLog('sdp', 'Created & set local answer');
+
+          // Update call with answer
+          const { error: updateError } = await supabase
+            .from('calls')
+            .update({
+              answer: JSON.parse(JSON.stringify(answer)),
+              status: 'active',
+              started_at: new Date().toISOString(),
+            })
+            .eq('id', callId);
+
+          if (updateError) {
+            addLog('error', 'Failed to update call with answer', updateError.message);
+          } else {
+            addLog('connection', 'Call updated with answer');
+          }
+        } else {
+          addLog('sdp', 'Offer not ready yet', 'Waiting for realtime update');
+        }
+      } catch (error) {
+        console.error('Error accepting call:', error);
+        addLog('error', 'Accept call failed', String(error));
+        cleanup();
+        throw error;
+      }
+    },
+    [user, clearLogs, addLog, getMediaStream, setupPeerConnection, subscribeToCall, addPendingCandidates, cleanup]
+  );
 
   const rejectCall = useCallback(async (callId: string) => {
     console.log('Rejecting call:', callId);
