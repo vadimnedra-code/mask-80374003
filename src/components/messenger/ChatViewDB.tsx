@@ -623,12 +623,19 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
             const showDateSeparator = shouldShowDateSeparator(currentDate, previousDate);
 
             return (
-              <div key={msg.id}>
+              <div 
+                key={msg.id}
+                className="animate-fade-in"
+                style={{ 
+                  animationDelay: index >= messages.length - 3 ? `${(index - (messages.length - 3)) * 50}ms` : '0ms',
+                  animationFillMode: 'backwards'
+                }}
+              >
                 {showDateSeparator && <DateSeparator date={currentDate} />}
                 <div
                   id={`message-${msg.id}`}
                   className={cn(
-                    'transition-all duration-500',
+                    'transition-all duration-300',
                     highlightedMessageId === msg.id && 'bg-primary/20 rounded-2xl -mx-2 px-2 py-1'
                   )}
                 >
