@@ -8,6 +8,7 @@ import {
   Mic, 
   Send, 
   ArrowLeft,
+  ArrowDown,
   Image,
   Camera,
   FileText,
@@ -82,6 +83,9 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const [messageToForward, setMessageToForward] = useState<MessageToForward | null>(null);
   const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const prevMessagesLengthRef = useRef(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -171,18 +175,46 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
     setMessageToForward(null);
   };
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+    setNewMessagesCount(0);
+  }, []);
+
+  // Check if scrolled to bottom
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    
+    const threshold = 100;
+    const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    setIsAtBottom(isBottom);
+    
+    if (isBottom) {
+      setNewMessagesCount(0);
+    }
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    // Auto-scroll only if at bottom or it's our own message
+    const lastMessage = messages[messages.length - 1];
+    const isOwnNewMessage = lastMessage?.sender_id === user?.id;
+    
+    if (isAtBottom || isOwnNewMessage) {
+      scrollToBottom();
+    } else if (messages.length > prevMessagesLengthRef.current) {
+      // New message arrived while scrolled up
+      const newCount = messages.length - prevMessagesLengthRef.current;
+      setNewMessagesCount(prev => prev + newCount);
+    }
+    
+    prevMessagesLengthRef.current = messages.length;
     markAsRead();
+    
     // Fetch reactions for visible messages
     if (messages.length > 0) {
       fetchReactions(messages.map(m => m.id));
     }
-  }, [messages]);
+  }, [messages, isAtBottom, user?.id]);
 
   // Scroll to highlighted message
   useEffect(() => {
@@ -535,10 +567,11 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       {/* Messages - WhatsApp Wallpaper */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin scroll-smooth chat-wallpaper"
+        className="flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin scroll-smooth chat-wallpaper relative"
         onTouchStart={handlePullStart}
         onTouchMove={handlePullMove}
         onTouchEnd={handlePullEnd}
+        onScroll={handleScroll}
       >
         {loading ? (
           <div className="flex items-center justify-center h-full">
@@ -598,6 +631,29 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* New Messages Indicator */}
+      {newMessagesCount > 0 && !isAtBottom && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-24 right-4 z-10 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-full shadow-lg animate-fade-in hover:bg-primary/90 transition-colors"
+        >
+          <ArrowDown className="w-4 h-4" />
+          <span className="text-sm font-medium">
+            {newMessagesCount} {newMessagesCount === 1 ? 'новое' : newMessagesCount < 5 ? 'новых' : 'новых'}
+          </span>
+        </button>
+      )}
+
+      {/* Scroll to Bottom Button (when scrolled up without new messages) */}
+      {!isAtBottom && newMessagesCount === 0 && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-24 right-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors"
+        >
+          <ArrowDown className="w-5 h-5" />
+        </button>
+      )}
 
       {/* File Preview */}
       {selectedFile && (
