@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,180 +6,180 @@
 
 @layer base {
   :root {
-    /* === REFINED ELEGANCE Design System === */
+    /* === ГОСУСЛУГИ Style Design System === */
     
-    /* Base surfaces - тёплые нейтральные тона */
-    --background: 40 20% 97%;           /* Мягкий кремовый */
-    --surface-elevated: 40 15% 99%;     /* Почти белый с теплотой */
-    --surface-overlay: 0 0% 100%;       /* Чистый белый для модалок */
-    --foreground: 220 15% 20%;          /* Глубокий графит */
+    /* Base surfaces - чистый белый фон */
+    --background: 0 0% 98%;
+    --surface-elevated: 0 0% 100%;
+    --surface-overlay: 0 0% 100%;
+    --foreground: 215 25% 17%;
 
-    --card: 40 15% 99%;
-    --card-foreground: 220 15% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    --popover-foreground: 215 25% 17%;
 
-    /* === MASK ACCENT COLORS - Приглушённые благородные тона === */
-    /* Business - сдержанный сланцево-синий */
-    --mask-business: 215 35% 45%;
-    --mask-business-soft: 215 25% 94%;
+    /* === MASK ACCENT COLORS - Госуслуги палитра === */
+    /* Business - основной синий Госуслуг */
+    --mask-business: 210 100% 35%;
+    --mask-business-soft: 210 60% 95%;
     
-    /* Personal - тёплый терракотовый */
-    --mask-personal: 25 45% 50%;
-    --mask-personal-soft: 25 35% 94%;
+    /* Personal - синий Госуслуг (основной) */
+    --mask-personal: 210 100% 35%;
+    --mask-personal-soft: 210 60% 95%;
     
-    /* Family - приглушённый шалфей */
-    --mask-family: 160 30% 42%;
-    --mask-family-soft: 160 25% 94%;
+    /* Family - бирюзовый акцент */
+    --mask-family: 185 70% 40%;
+    --mask-family-soft: 185 50% 94%;
     
-    /* Incognito - глубокий сливовый */
-    --mask-incognito: 280 25% 45%;
-    --mask-incognito-soft: 280 20% 94%;
+    /* Incognito - тёмно-синий */
+    --mask-incognito: 215 80% 25%;
+    --mask-incognito-soft: 215 40% 92%;
 
-    /* Current active mask (defaults to personal) */
+    /* Current active mask */
     --mask-current: var(--mask-personal);
     --mask-current-soft: var(--mask-personal-soft);
 
     --primary: var(--mask-current);
-    --primary-foreground: 40 20% 98%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 10% 93%;
-    --secondary-foreground: 220 15% 25%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 215 25% 20%;
 
-    --muted: 40 10% 94%;
-    --muted-foreground: 220 8% 50%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 45%;
 
     --accent: var(--mask-current-soft);
-    --accent-foreground: 220 15% 20%;
+    --accent-foreground: 215 25% 17%;
 
-    --destructive: 0 45% 50%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 12% 88%;
-    --input: 40 12% 88%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
     --ring: var(--mask-current);
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Message bubbles */
     --message-sent: var(--mask-current);
-    --message-sent-foreground: 40 20% 98%;
-    --message-received: 40 15% 96%;
-    --message-received-foreground: 220 15% 20%;
+    --message-sent-foreground: 0 0% 100%;
+    --message-received: 210 15% 96%;
+    --message-received-foreground: 215 25% 17%;
     
-    /* Status indicators - более мягкие */
-    --online: 160 40% 45%;
-    --offline: 220 8% 60%;
-    --away: 40 50% 50%;
+    /* Status indicators */
+    --online: 145 60% 42%;
+    --offline: 215 10% 55%;
+    --away: 35 85% 50%;
     
-    /* Glass effects - subtle elegance */
-    --glass: 40 15% 99% / 0.92;
-    --glass-border: 40 12% 85% / 0.5;
-    --glass-blur: 20px;
+    /* Glass effects */
+    --glass: 0 0% 100% / 0.95;
+    --glass-border: 210 20% 88% / 0.6;
+    --glass-blur: 16px;
     
-    /* Gradients - тонкие переходы */
-    --gradient-primary: linear-gradient(145deg, hsl(var(--mask-current)), hsl(var(--mask-current) / 0.85));
-    --gradient-surface: linear-gradient(180deg, hsl(40 20% 98%), hsl(40 20% 97%));
+    /* Gradients - Госуслуги стиль */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 35%), hsl(210 100% 42%));
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 15% 98%));
     
-    /* Shadows - мягкие и деликатные */
-    --shadow-xs: 0 1px 2px hsl(220 15% 20% / 0.03);
-    --shadow-sm: 0 2px 6px -1px hsl(220 15% 20% / 0.04), 0 1px 2px hsl(220 15% 20% / 0.02);
-    --shadow-md: 0 4px 12px -2px hsl(220 15% 20% / 0.05), 0 2px 4px hsl(220 15% 20% / 0.02);
-    --shadow-lg: 0 8px 24px -4px hsl(220 15% 20% / 0.06), 0 4px 8px hsl(220 15% 20% / 0.02);
-    --shadow-xl: 0 16px 40px -8px hsl(220 15% 20% / 0.08);
-    --shadow-glow: 0 0 24px hsl(var(--mask-current) / 0.12);
+    /* Shadows */
+    --shadow-xs: 0 1px 2px hsl(215 25% 17% / 0.04);
+    --shadow-sm: 0 1px 3px hsl(215 25% 17% / 0.06), 0 1px 2px hsl(215 25% 17% / 0.04);
+    --shadow-md: 0 4px 6px -1px hsl(215 25% 17% / 0.07), 0 2px 4px hsl(215 25% 17% / 0.04);
+    --shadow-lg: 0 10px 15px -3px hsl(215 25% 17% / 0.08), 0 4px 6px hsl(215 25% 17% / 0.04);
+    --shadow-xl: 0 20px 25px -5px hsl(215 25% 17% / 0.1);
+    --shadow-glow: 0 0 20px hsl(var(--mask-current) / 0.15);
 
     /* Sidebar */
-    --sidebar-background: 40 15% 99%;
-    --sidebar-foreground: 220 15% 20%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 17%;
     --sidebar-primary: var(--mask-current);
-    --sidebar-primary-foreground: 40 20% 98%;
-    --sidebar-accent: 40 12% 95%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 40 12% 90%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 215 25% 17%;
+    --sidebar-border: 210 20% 92%;
     --sidebar-ring: var(--mask-current);
 
-    /* Privacy levels - изысканные оттенки */
-    --privacy-open: 160 35% 45%;
-    --privacy-private: 215 35% 48%;
-    --privacy-secure: 280 30% 48%;
+    /* Privacy levels */
+    --privacy-open: 145 60% 42%;
+    --privacy-private: 210 100% 35%;
+    --privacy-secure: 215 80% 25%;
   }
 
   .dark {
-    /* Dark theme - глубокий благородный */
-    --background: 225 20% 8%;
-    --surface-elevated: 225 18% 12%;
-    --surface-overlay: 225 18% 15%;
-    --foreground: 40 10% 90%;
+    /* Dark theme - Госуслуги тёмная */
+    --background: 215 30% 8%;
+    --surface-elevated: 215 25% 12%;
+    --surface-overlay: 215 25% 15%;
+    --foreground: 210 20% 92%;
 
-    --card: 225 18% 12%;
-    --card-foreground: 40 10% 90%;
+    --card: 215 25% 12%;
+    --card-foreground: 210 20% 92%;
 
-    --popover: 225 18% 14%;
-    --popover-foreground: 40 10% 90%;
+    --popover: 215 25% 14%;
+    --popover-foreground: 210 20% 92%;
 
-    /* Mask colors - приглушённые для тёмной темы */
-    --mask-business: 215 40% 55%;
-    --mask-business-soft: 215 25% 18%;
+    /* Mask colors - для тёмной темы */
+    --mask-business: 210 90% 50%;
+    --mask-business-soft: 210 40% 18%;
     
-    --mask-personal: 25 50% 55%;
-    --mask-personal-soft: 25 30% 16%;
+    --mask-personal: 210 90% 50%;
+    --mask-personal-soft: 210 40% 18%;
     
-    --mask-family: 160 35% 48%;
-    --mask-family-soft: 160 25% 16%;
+    --mask-family: 185 65% 48%;
+    --mask-family-soft: 185 35% 16%;
     
-    --mask-incognito: 280 30% 55%;
-    --mask-incognito-soft: 280 22% 18%;
+    --mask-incognito: 215 70% 45%;
+    --mask-incognito-soft: 215 35% 18%;
 
     --primary: var(--mask-current);
-    --primary-foreground: 225 20% 8%;
+    --primary-foreground: 215 30% 8%;
 
-    --secondary: 225 16% 18%;
-    --secondary-foreground: 40 10% 85%;
+    --secondary: 215 22% 18%;
+    --secondary-foreground: 210 20% 88%;
 
-    --muted: 225 16% 16%;
-    --muted-foreground: 220 8% 55%;
+    --muted: 215 22% 16%;
+    --muted-foreground: 215 12% 55%;
 
     --accent: var(--mask-current-soft);
-    --accent-foreground: 40 10% 90%;
+    --accent-foreground: 210 20% 92%;
 
-    --destructive: 0 50% 45%;
+    --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 16% 18%;
-    --input: 225 16% 18%;
+    --border: 215 22% 18%;
+    --input: 215 22% 18%;
     --ring: var(--mask-current);
 
     --message-sent: var(--mask-current);
-    --message-sent-foreground: 40 20% 98%;
-    --message-received: 225 18% 15%;
-    --message-received-foreground: 40 10% 90%;
+    --message-sent-foreground: 0 0% 100%;
+    --message-received: 215 25% 16%;
+    --message-received-foreground: 210 20% 92%;
     
-    --online: 160 40% 48%;
-    --offline: 220 8% 45%;
-    --away: 40 55% 52%;
+    --online: 145 55% 48%;
+    --offline: 215 10% 45%;
+    --away: 35 80% 52%;
     
-    --glass: 225 18% 12% / 0.95;
-    --glass-border: 225 16% 22% / 0.5;
+    --glass: 215 25% 12% / 0.95;
+    --glass-border: 215 22% 22% / 0.5;
     
-    --gradient-primary: linear-gradient(145deg, hsl(var(--mask-current)), hsl(var(--mask-current) / 0.8));
-    --gradient-surface: linear-gradient(180deg, hsl(225 18% 10%), hsl(225 20% 8%));
+    --gradient-primary: linear-gradient(135deg, hsl(210 90% 50%), hsl(210 85% 55%));
+    --gradient-surface: linear-gradient(180deg, hsl(215 25% 10%), hsl(215 30% 8%));
 
-    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.12);
-    --shadow-sm: 0 2px 6px -1px hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.25);
-    --shadow-lg: 0 8px 24px -4px hsl(0 0% 0% / 0.3);
-    --shadow-xl: 0 16px 40px -8px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 24px hsl(var(--mask-current) / 0.1);
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.15);
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.35);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4);
+    --shadow-glow: 0 0 20px hsl(var(--mask-current) / 0.12);
 
-    --sidebar-background: 225 18% 10%;
-    --sidebar-foreground: 40 10% 90%;
+    --sidebar-background: 215 25% 10%;
+    --sidebar-foreground: 210 20% 92%;
     --sidebar-primary: var(--mask-current);
-    --sidebar-primary-foreground: 225 20% 8%;
-    --sidebar-accent: 225 16% 16%;
-    --sidebar-accent-foreground: 40 10% 85%;
-    --sidebar-border: 225 16% 16%;
+    --sidebar-primary-foreground: 215 30% 8%;
+    --sidebar-accent: 215 22% 16%;
+    --sidebar-accent-foreground: 210 20% 88%;
+    --sidebar-border: 215 22% 16%;
     --sidebar-ring: var(--mask-current);
   }
 
