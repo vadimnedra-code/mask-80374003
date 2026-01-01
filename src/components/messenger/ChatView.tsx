@@ -140,14 +140,15 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
           <ArrowLeft className="w-5 h-5 text-primary" />
         </div>
       )}
-      {/* Header */}
-      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-card border-b border-border shadow-soft safe-area-top">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+      
+      {/* Header - WhatsApp Style */}
+      <div className="whatsapp-header flex items-center justify-between px-2 py-2 safe-area-top">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={onBack}
-            className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95 md:hidden tap-target flex-shrink-0"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 md:hidden tap-target flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <Avatar
             src={otherParticipant.avatar}
@@ -156,36 +157,36 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
             status={otherParticipant.status}
           />
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-[15px] sm:text-base truncate">{otherParticipant.name}</h2>
+            <h2 className="font-medium text-[15px] text-white truncate">{otherParticipant.name}</h2>
             <p className={cn(
               'text-xs truncate',
-              otherParticipant.status === 'online' ? 'text-status-online' : 'text-muted-foreground'
+              otherParticipant.status === 'online' ? 'text-green-200' : 'text-white/70'
             )}>
               {getStatusText()}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-          <button 
-            onClick={() => onStartCall('voice')}
-            className="p-2 sm:p-2.5 rounded-full hover:bg-muted transition-colors active:scale-95 tap-target"
-          >
-            <Phone className="w-5 h-5 text-muted-foreground" />
-          </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button 
             onClick={() => onStartCall('video')}
-            className="p-2 sm:p-2.5 rounded-full hover:bg-muted transition-colors active:scale-95 tap-target hidden xs:flex"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 tap-target"
           >
-            <Video className="w-5 h-5 text-muted-foreground" />
+            <Video className="w-5 h-5 text-white" />
           </button>
-          <button className="p-2 sm:p-2.5 rounded-full hover:bg-muted transition-colors active:scale-95 tap-target">
-            <MoreVertical className="w-5 h-5 text-muted-foreground" />
+          <button 
+            onClick={() => onStartCall('voice')}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 tap-target"
+          >
+            <Phone className="w-5 h-5 text-white" />
+          </button>
+          <button className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 tap-target">
+            <MoreVertical className="w-5 h-5 text-white" />
           </button>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3 scrollbar-thin scroll-smooth bg-gradient-to-b from-background to-muted/20">
+      {/* Messages - WhatsApp Wallpaper */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 scrollbar-thin scroll-smooth chat-wallpaper">
         {messages.map((msg, index) => (
           <MessageBubble
             key={msg.id}
@@ -197,63 +198,60 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="px-2 sm:px-3 py-2 sm:py-3 bg-card border-t border-border safe-area-bottom">
-        <div className="flex items-end gap-1.5 sm:gap-2">
-          <div className="relative flex-shrink-0">
-            <button
-              onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="p-2 sm:p-2.5 rounded-full hover:bg-muted transition-colors active:scale-95 tap-target"
-            >
-              <Paperclip className="w-5 h-5 text-muted-foreground" />
+      {/* Input Area - WhatsApp Style */}
+      <div className="px-2 py-2 bg-background safe-area-bottom">
+        <div className="flex items-end gap-2">
+          <div className="flex-1 flex items-center gap-1 bg-card rounded-full px-3 py-1">
+            <button className="p-1.5 hover:scale-110 transition-transform active:scale-95">
+              <Smile className="w-5 h-5 text-muted-foreground" />
             </button>
-            
-            {/* Attachment Menu */}
-            {showAttachMenu && (
-              <div className="absolute bottom-full left-0 mb-2 p-2 bg-card rounded-2xl shadow-medium border border-border animate-scale-in z-10">
-                <div className="flex gap-1">
-                  <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
-                    <Image className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  </button>
-                  <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
-                    <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  </button>
-                  <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
-                    <FileText className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 relative min-w-0">
             <input
               ref={inputRef}
               type="text"
-              placeholder="Сообщение..."
+              placeholder="Сообщение"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 bg-muted rounded-2xl text-[15px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              className="flex-1 py-2 bg-transparent text-[15px] placeholder:text-muted-foreground focus:outline-none"
             />
-            <button className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1 hover:scale-110 transition-transform active:scale-95">
-              <Smile className="w-5 h-5 text-muted-foreground" />
+            <div className="relative">
+              <button
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className="p-1.5 hover:scale-110 transition-transform active:scale-95"
+              >
+                <Paperclip className="w-5 h-5 text-muted-foreground rotate-45" />
+              </button>
+              
+              {/* Attachment Menu */}
+              {showAttachMenu && (
+                <div className="absolute bottom-full right-0 mb-2 p-2 bg-card rounded-2xl shadow-lg border border-border animate-scale-in z-10">
+                  <div className="flex gap-1">
+                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
+                      <Image className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+                    </button>
+                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
+                      <Camera className="w-5 h-5 text-pink-500 group-hover:scale-110 transition-transform" />
+                    </button>
+                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
+                      <FileText className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button className="p-1.5 hover:scale-110 transition-transform active:scale-95">
+              <Camera className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
           <button
             onClick={message.trim() ? handleSendMessage : undefined}
-            className={cn(
-              'p-2.5 sm:p-3 rounded-full transition-all duration-200 flex-shrink-0 tap-target active:scale-95',
-              message.trim()
-                ? 'gradient-primary shadow-glow'
-                : 'bg-muted hover:bg-muted/80'
-            )}
+            className="p-3 rounded-full bg-primary transition-all duration-200 flex-shrink-0 tap-target active:scale-95"
           >
             {message.trim() ? (
               <Send className="w-5 h-5 text-primary-foreground" />
             ) : (
-              <Mic className="w-5 h-5 text-muted-foreground" />
+              <Mic className="w-5 h-5 text-primary-foreground" />
             )}
           </button>
         </div>

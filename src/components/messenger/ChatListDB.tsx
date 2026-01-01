@@ -149,40 +149,43 @@ export const ChatList = ({
   const unpinnedChats = filteredChats.filter(c => !c.pinned_at);
 
   return (
-    <div className="flex flex-col h-full layer-elevated">
-      {/* Header - Lucid Layers */}
-      <div className="flex items-center justify-between p-4 border-b border-border pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            МАСК
-          </h1>
-          <MaskSwitch />
-        </div>
-        <div className="flex items-center gap-1">
+    <div className="flex flex-col h-full bg-card">
+      {/* Header - WhatsApp Style */}
+      <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <h1 className="text-xl font-semibold text-white">
+          WhatsApp
+        </h1>
+        <div className="flex items-center gap-2">
           <button 
-            onClick={onOpenSettings}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
+            onClick={onOpenSearch}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
           >
-            <Settings className="w-5 h-5 text-muted-foreground" />
+            <Search className="w-5 h-5 text-white" />
           </button>
           <button 
             onClick={onNewChat}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
           >
-            <Edit className="w-5 h-5 text-muted-foreground" />
+            <Edit className="w-5 h-5 text-white" />
+          </button>
+          <button 
+            onClick={onOpenSettings}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-white" />
           </button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="p-3">
+      {/* Search - WhatsApp Style */}
+      <div className="px-3 py-2 bg-card">
         <button
           onClick={onOpenSearch}
           className="w-full relative"
         >
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <div className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-xl text-sm text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
-            Поиск...
+          <div className="w-full pl-10 pr-4 py-2 bg-muted rounded-full text-sm text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
+            Поиск
           </div>
         </button>
       </div>

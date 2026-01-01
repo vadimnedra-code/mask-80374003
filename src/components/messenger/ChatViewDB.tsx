@@ -355,14 +355,15 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           messagePreview={messageToForward.content || 'Медиафайл'}
         />
       )}
-      {/* Header - Lucid Layers style */}
-      <div className="flex items-center justify-between px-4 py-3 layer-elevated border-b border-border pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3">
+      
+      {/* Header - WhatsApp Style */}
+      <div className="whatsapp-header flex items-center justify-between px-2 py-2 safe-area-top">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={onBack}
-            className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors lg:hidden"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors lg:hidden"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <Avatar
             src={avatarUrl || ''}
@@ -370,19 +371,15 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
             size="md"
             status={otherParticipant?.status as 'online' | 'offline' | 'away'}
           />
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold">{displayName}</h2>
-              {/* Privacy Chip */}
-              <PrivacyChip settings={getDefaultPrivacySettings('private')} />
-            </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-medium text-[15px] text-white truncate">{displayName}</h2>
             <p className={cn(
-              'text-xs',
+              'text-xs truncate',
               typingText 
-                ? 'text-primary animate-pulse' 
+                ? 'text-green-200 animate-pulse' 
                 : !chat.is_group && otherParticipant?.status === 'online' 
-                  ? 'text-status-online' 
-                  : 'text-muted-foreground'
+                  ? 'text-green-200' 
+                  : 'text-white/70'
             )}>
               {getStatusText()}
             </p>
@@ -390,26 +387,26 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
         </div>
         <div className="flex items-center gap-1">
           <button 
-            onClick={() => onStartCall('voice')}
-            className="p-2.5 rounded-full hover:bg-muted transition-colors"
+            onClick={() => onStartCall('video')}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
             disabled={isOtherUserBlocked}
           >
-            <Phone className="w-5 h-5 text-muted-foreground" />
+            <Video className="w-5 h-5 text-white" />
           </button>
           <button 
-            onClick={() => onStartCall('video')}
-            className="p-2.5 rounded-full hover:bg-muted transition-colors"
+            onClick={() => onStartCall('voice')}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
             disabled={isOtherUserBlocked}
           >
-            <Video className="w-5 h-5 text-muted-foreground" />
+            <Phone className="w-5 h-5 text-white" />
           </button>
           
           {/* Chat Menu */}
           {!chat.is_group && otherParticipant && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2.5 rounded-full hover:bg-muted transition-colors">
-                  <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                <button className="p-2 rounded-full hover:bg-white/10 transition-colors">
+                  <MoreVertical className="w-5 h-5 text-white" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -431,8 +428,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           )}
           
           {chat.is_group && (
-            <button className="p-2.5 rounded-full hover:bg-muted transition-colors">
-              <MoreVertical className="w-5 h-5 text-muted-foreground" />
+            <button className="p-2 rounded-full hover:bg-white/10 transition-colors">
+              <MoreVertical className="w-5 h-5 text-white" />
             </button>
           )}
         </div>
@@ -453,10 +450,10 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
         </div>
       )}
 
-      {/* Messages */}
+      {/* Messages - WhatsApp Wallpaper */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scroll-smooth bg-gradient-to-b from-background to-muted/20"
+        className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scroll-smooth chat-wallpaper"
         onTouchStart={handlePullStart}
         onTouchMove={handlePullMove}
         onTouchEnd={handlePullEnd}
@@ -592,9 +589,9 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
         </div>
       )}
 
-      {/* Input Area */}
+      {/* Input Area - WhatsApp Style */}
       {!selectedFile && !isRecording && (
-        <div className="p-3 bg-card border-t border-border pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="px-2 py-2 bg-background safe-area-bottom">
           {/* Blocked user notice */}
           {isOtherUserBlocked && (
             <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground">
@@ -607,7 +604,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
             <>
           {/* Reply preview */}
           {replyToMessage && (
-            <div className="flex items-center gap-2 mb-2 p-2 bg-muted rounded-xl animate-fade-in">
+            <div className="flex items-center gap-2 mb-2 p-2 bg-card rounded-xl animate-fade-in">
               <Reply className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
                 <p className="text-xs text-primary font-medium">Ответ</p>
@@ -617,7 +614,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
               </div>
               <button
                 onClick={() => setReplyToMessage(null)}
-                className="p-1 rounded-full hover:bg-background transition-colors"
+                className="p-1 rounded-full hover:bg-muted transition-colors"
               >
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -625,70 +622,20 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           )}
           
           <div className="flex items-end gap-2">
-            <div className="relative" ref={attachMenuRef}>
-              <button
-                onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="p-2.5 rounded-full hover:bg-muted transition-colors tap-target touch-active"
-              >
-                <Paperclip className="w-5 h-5 text-muted-foreground" />
-              </button>
-              
-              {/* Hidden file inputs */}
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*,video/*"
-                className="hidden"
-                onChange={(e) => handleFileSelect(e, 'image')}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => handleFileSelect(e, 'file')}
-              />
-              
-              {/* Attachment Menu */}
-              {showAttachMenu && (
-                <div className="absolute bottom-full left-0 mb-2 p-2 bg-card rounded-2xl shadow-medium border border-border animate-scale-in z-50">
-                  <div className="flex gap-1">
-                    <button 
-                      onClick={() => {
-                        imageInputRef.current?.click();
-                        setShowAttachMenu(false);
-                      }}
-                      className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
-                    >
-                      <Image className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                    </button>
-                    <button 
-                      onClick={() => {
-                        imageInputRef.current?.click();
-                        setShowAttachMenu(false);
-                      }}
-                      className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
-                    >
-                      <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                    </button>
-                    <button 
-                      onClick={() => {
-                        fileInputRef.current?.click();
-                        setShowAttachMenu(false);
-                      }}
-                      className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target touch-active"
-                    >
-                      <FileText className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1 relative">
+            <div className="flex-1 flex items-center gap-1 bg-card rounded-full px-3 py-1">
+              <div className="relative">
+                <EmojiPicker 
+                  onSelect={(emoji) => {
+                    setMessageText(prev => prev + emoji);
+                    inputRef.current?.focus();
+                  }}
+                  align="start"
+                />
+              </div>
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={replyToMessage ? 'Ответить...' : 'Сообщение...'}
+                placeholder={replyToMessage ? 'Ответить...' : 'Сообщение'}
                 value={messageText}
                 onChange={(e) => {
                   setMessageText(e.target.value);
@@ -698,32 +645,82 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
                 }}
                 onKeyPress={handleKeyPress}
                 onBlur={handleTypingStop}
-                className="w-full px-4 py-3 pr-12 bg-muted rounded-2xl text-[15px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                className="flex-1 py-2 bg-transparent text-[15px] placeholder:text-muted-foreground focus:outline-none"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <EmojiPicker 
-                  onSelect={(emoji) => {
-                    setMessageText(prev => prev + emoji);
-                    inputRef.current?.focus();
-                  }}
-                  align="end"
+              <div className="relative" ref={attachMenuRef}>
+                <button
+                  onClick={() => setShowAttachMenu(!showAttachMenu)}
+                  className="p-1.5 hover:scale-110 transition-transform"
+                >
+                  <Paperclip className="w-5 h-5 text-muted-foreground rotate-45" />
+                </button>
+                
+                {/* Hidden file inputs */}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e, 'image')}
                 />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e, 'file')}
+                />
+                
+                {/* Attachment Menu */}
+                {showAttachMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 p-2 bg-card rounded-2xl shadow-lg border border-border animate-scale-in z-50">
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => {
+                          imageInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target"
+                      >
+                        <Image className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          imageInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target"
+                      >
+                        <Camera className="w-5 h-5 text-pink-500 group-hover:scale-110 transition-transform" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                        className="p-3 rounded-xl hover:bg-muted transition-colors group tap-target"
+                      >
+                        <FileText className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+              <button 
+                onClick={() => imageInputRef.current?.click()}
+                className="p-1.5 hover:scale-110 transition-transform"
+              >
+                <Camera className="w-5 h-5 text-muted-foreground" />
+              </button>
             </div>
 
             <button
               onClick={messageText.trim() ? handleSendMessage : handleStartRecording}
-              className={cn(
-                'p-3 rounded-full transition-all duration-200 tap-target touch-active',
-                messageText.trim()
-                  ? 'gradient-primary shadow-glow hover:scale-105'
-                  : 'bg-muted hover:bg-muted/80'
-              )}
+              className="p-3 rounded-full bg-primary transition-all duration-200 tap-target active:scale-95"
             >
               {messageText.trim() ? (
                 <Send className="w-5 h-5 text-primary-foreground" />
               ) : (
-                <Mic className="w-5 h-5 text-muted-foreground" />
+                <Mic className="w-5 h-5 text-primary-foreground" />
               )}
             </button>
           </div>
