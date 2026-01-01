@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 const signInSchema = z.object({
   email: z.string().email('Введите корректный email'),
   password: z.string().min(6, 'Пароль должен содержать минимум 6 символов'),
@@ -59,6 +60,9 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isNewUser, setIsNewUser] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('mask-onboarding-complete');
+  });
 
   const { signIn, signUp, signInWithGoogle, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
@@ -71,8 +75,14 @@ const Auth = () => {
 
     if (mode === 'reset' || type === 'recovery' || isRecoveryHash) {
       setAuthMode('reset-password');
+      setShowOnboarding(false); // Skip onboarding for password reset
     }
   }, [searchParams]);
+
+  // Show onboarding first
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={() => setShowOnboarding(false)} />;
+  }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
