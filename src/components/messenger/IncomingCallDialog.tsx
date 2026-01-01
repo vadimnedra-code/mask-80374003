@@ -39,6 +39,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
   }, [call, isVideoCall, onAccept, onReject, showIncomingCallNotification, closeNotification, startRingtoneSound, stopAllSounds]);
 
   const handleAccept = () => {
+    console.log('IncomingCallDialog: accept clicked for call', call.id);
     stopAllSounds();
     closeNotification();
     playConnectedSound();
@@ -46,6 +47,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
   };
 
   const handleReject = () => {
+    console.log('IncomingCallDialog: reject clicked for call', call.id);
     stopAllSounds();
     closeNotification();
     onReject();

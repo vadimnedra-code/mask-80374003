@@ -348,6 +348,38 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
               }
             }
           }
+
+          // If callee accepted before offer was available, handle offer once it arrives
+          if (!isCaller && call.offer && peerConnection.current) {
+            if (!peerConnection.current.remoteDescription) {
+              console.log('Callee: offer received via update, creating answer');
+              try {
+                const offer = new RTCSessionDescription(call.offer);
+                await peerConnection.current.setRemoteDescription(offer);
+                console.log('Callee: remote description (offer) set');
+
+                // Add any pending ICE candidates that arrived before we set remoteDescription
+                await addPendingCandidates();
+
+                const answer = await peerConnection.current.createAnswer();
+                await peerConnection.current.setLocalDescription(answer);
+                console.log('Callee: created and set local answer');
+
+                await supabase
+                  .from('calls')
+                  .update({
+                    answer: JSON.parse(JSON.stringify(answer)),
+                    status: 'active',
+                    started_at: new Date().toISOString(),
+                  })
+                  .eq('id', callId);
+
+                console.log('Callee: call updated with answer');
+              } catch (err) {
+                console.error('Callee: error handling offer from update:', err);
+              }
+            }
+          }
           
           // Process ICE candidates - for BOTH caller and callee
           if (call.ice_candidates && call.ice_candidates.length > 0 && peerConnection.current) {
@@ -483,7 +515,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   }, [user, getMediaStream, setupPeerConnection, subscribeToCall, cleanup]);
 
   const acceptCall = useCallback(async (callId: string) => {
-    if (!user) return;
+    if (!user) throw new Error('Not authenticated');
     
     console.log('Accepting call:', callId);
     isCleaningUp.current = false;
@@ -574,6 +606,9 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           .eq('id', callId);
         
         console.log('Call updated with answer');
+      } else {
+        console.log('Offer not ready yet; waiting for realtime update...');
+        // Offer will be handled in subscribeToCall() once it arrives
       }
       
     } catch (error) {
