@@ -109,6 +109,32 @@ export const ProfileEditPanel = ({ onClose }: ProfileEditPanelProps) => {
     }
   };
 
+  // Show loading state while profile is loading
+  if (profileLoading || !initialized) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background animate-slide-in-right flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card pt-[max(1rem,env(safe-area-inset-top))]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-semibold">Редактировать профиль</h1>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p className="text-muted-foreground">Загрузка профиля...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-background animate-slide-in-right flex flex-col">
       {/* Header */}
