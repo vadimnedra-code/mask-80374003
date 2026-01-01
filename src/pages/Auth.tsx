@@ -556,6 +556,16 @@ const Auth = () => {
               Войти по телефону
             </Button>
 
+            {/* Мгновенная регистрация */}
+            <Button
+              type="button"
+              onClick={() => { setAuthMode('qr-register'); resetForm(); }}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium"
+            >
+              <QrCode className="w-5 h-5 mr-2" />
+              Мгновенная регистрация
+            </Button>
+
             <p className="text-center text-sm text-muted-foreground">
               Нет аккаунта?{' '}
               <button
@@ -563,7 +573,7 @@ const Auth = () => {
                 onClick={() => { setAuthMode('email-signup'); resetForm(); }}
                 className="text-primary hover:underline font-medium"
               >
-                Зарегистрироваться
+                Регистрация по email
               </button>
             </p>
           </form>
