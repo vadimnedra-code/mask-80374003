@@ -29,7 +29,7 @@ const Messenger = () => {
   const [callParticipant, setCallParticipant] = useState<{ name: string; avatar: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
-  const { chats, loading: chatsLoading, createChat, deleteChat, togglePinChat } = useChats();
+  const { chats, loading: chatsLoading, createChat, deleteChat, togglePinChat, refetch: refetchChats } = useChats();
   const { updateStatus } = useProfile(user?.id);
   const navigate = useNavigate();
   
@@ -282,8 +282,11 @@ const Messenger = () => {
               if (error) {
                 toast.error('Не удалось изменить закрепление');
               } else {
-                toast.success(chat?.pinned_at ? 'Чат откреплён' : 'Чат закреплён');
+              toast.success(chat?.pinned_at ? 'Чат откреплён' : 'Чат закреплён');
               }
+            }}
+            onRefresh={async () => {
+              await refetchChats();
             }}
             loading={chatsLoading}
           />

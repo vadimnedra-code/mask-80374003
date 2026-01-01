@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw } from 'lucide-react';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
 import { Avatar } from './Avatar';
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 interface ChatListProps {
   chats: ChatWithDetails[];
@@ -19,6 +20,7 @@ interface ChatListProps {
   onStartChatWithUser?: (userId: string) => Promise<void>;
   onDeleteChat?: (chatId: string) => Promise<void>;
   onTogglePinChat?: (chatId: string) => Promise<void>;
+  onRefresh?: () => Promise<void>;
   loading?: boolean;
 }
 
@@ -32,6 +34,7 @@ export const ChatList = ({
   onStartChatWithUser,
   onDeleteChat,
   onTogglePinChat,
+  onRefresh,
   loading 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +46,19 @@ export const ChatList = ({
   const touchCurrentX = useRef<number>(0);
   const { user } = useAuth();
   const { users, searchUsers } = useUsers();
+
+  // Pull to refresh
+  const handleRefresh = useCallback(async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
+  }, [onRefresh]);
+
+  const { pullDistance, isPulling, isRefreshing, canRefresh, handlers: pullHandlers } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 60,
+    maxPull: 100,
+  });
 
   const filteredChats = chats.filter((chat) => {
     const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
@@ -172,7 +188,41 @@ export const ChatList = ({
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div 
+        className="flex-1 overflow-y-auto scrollbar-thin relative"
+        {...pullHandlers}
+      >
+        {/* Pull to refresh indicator */}
+        <div 
+          className={cn(
+            "absolute left-0 right-0 flex items-center justify-center transition-all duration-200 overflow-hidden",
+            pullDistance > 0 ? "opacity-100" : "opacity-0"
+          )}
+          style={{ 
+            height: pullDistance,
+            top: 0,
+          }}
+        >
+          <div 
+            className={cn(
+              "flex items-center gap-2 text-sm transition-all",
+              canRefresh ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            <RefreshCw 
+              className={cn(
+                "w-5 h-5 transition-transform",
+                isRefreshing && "animate-spin",
+                canRefresh && !isRefreshing && "rotate-180"
+              )} 
+            />
+            <span>
+              {isRefreshing ? "Обновление..." : canRefresh ? "Отпустите для обновления" : "Потяните для обновления"}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ transform: `translateY(${pullDistance}px)`, transition: isPulling ? 'none' : 'transform 0.2s ease-out' }}>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -265,6 +315,7 @@ export const ChatList = ({
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );
