@@ -167,6 +167,37 @@ const Auth = () => {
     }
   };
 
+  const handleExportKeyToFile = () => {
+    if (!secretKey) return;
+    
+    const content = `МАСК - Секретный ключ для входа
+================================
+
+Ваш секретный ключ:
+${secretKey}
+
+================================
+ВАЖНО:
+- Храните этот файл в безопасном месте
+- Не передавайте никому этот ключ
+- Без ключа вход в аккаунт невозможен
+- Ключ нельзя восстановить
+
+Дата создания: ${new Date().toLocaleString('ru-RU')}
+`;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mask-secret-key-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Ключ сохранён в файл!');
+  };
+
   const handleConfirmKeySaved = () => {
     setAuthMode('qr-confirm-saved');
   };
@@ -657,27 +688,38 @@ const Auth = () => {
             </div>
 
             <div className="space-y-3">
-              <Button
-                onClick={handleCopyKey}
-                variant="outline"
-                className={`w-full h-12 rounded-xl border-2 transition-all duration-300 ${
-                  keyCopied 
-                    ? 'border-green-500/50 bg-green-500/10 text-green-400' 
-                    : 'border-amber-500/30 hover:border-amber-500/50 text-amber-200 hover:bg-amber-500/10'
-                }`}
-              >
-                {keyCopied ? (
-                  <>
-                    <Check className="w-5 h-5 mr-2" />
-                    Скопировано!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-5 h-5 mr-2" />
-                    Скопировать ключ
-                  </>
-                )}
-              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={handleCopyKey}
+                  variant="outline"
+                  className={`h-12 rounded-xl border-2 transition-all duration-300 ${
+                    keyCopied 
+                      ? 'border-green-500/50 bg-green-500/10 text-green-400' 
+                      : 'border-amber-500/30 hover:border-amber-500/50 text-amber-200 hover:bg-amber-500/10'
+                  }`}
+                >
+                  {keyCopied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1.5" />
+                      Скопировано
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-1.5" />
+                      Копировать
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleExportKeyToFile}
+                  variant="outline"
+                  className="h-12 rounded-xl border-2 border-amber-500/30 hover:border-amber-500/50 text-amber-200 hover:bg-amber-500/10 transition-all duration-300"
+                >
+                  <Download className="w-4 h-4 mr-1.5" />
+                  Сохранить
+                </Button>
+              </div>
 
               <Button
                 onClick={handleConfirmKeySaved}
