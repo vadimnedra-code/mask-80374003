@@ -303,6 +303,7 @@ const Messenger = () => {
           {selectedChat ? (
             <ChatViewDB
               chat={selectedChat}
+              chats={chats}
               onBack={() => setSelectedChatId(null)}
               onStartCall={handleStartCall}
               highlightedMessageId={highlightedMessageId}

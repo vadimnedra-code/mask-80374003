@@ -61,6 +61,7 @@ import {
 
 interface ChatViewDBProps {
   chat: ChatWithDetails;
+  chats: ChatWithDetails[];
   onBack: () => void;
   onStartCall: (type: 'voice' | 'video') => void;
   highlightedMessageId?: string | null;
@@ -72,7 +73,7 @@ interface MessageToForward {
   mediaUrl: string | null;
 }
 
-export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: ChatViewDBProps) => {
+export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessageId }: ChatViewDBProps) => {
   const [messageText, setMessageText] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -97,7 +98,6 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   
   const { user } = useAuth();
   const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage, refetch } = useMessages(chat.id);
-  const { chats } = useChats();
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
@@ -214,7 +214,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
     if (messages.length > 0) {
       fetchReactions(messages.map(m => m.id));
     }
-  }, [messages, isAtBottom, user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, isAtBottom, user?.id, scrollToBottom]);
 
   // Scroll to highlighted message
   useEffect(() => {

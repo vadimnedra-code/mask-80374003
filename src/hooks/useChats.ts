@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -32,8 +32,9 @@ export const useChats = () => {
   const { user } = useAuth();
   const [chats, setChats] = useState<ChatWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchChats = async () => {
+  const fetchChats = useCallback(async () => {
     if (!user) return;
 
     // Get chats where user is a participant (including pinned_at)
@@ -136,12 +137,12 @@ export const useChats = () => {
 
     setChats(chatsWithDetails);
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchChats();
 
-    // Subscribe to chat updates
+    // Subscribe to chat updates - only to chat_participants for new chats
     if (!user) return;
 
     const channel = supabase
@@ -151,9 +152,22 @@ export const useChats = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'messages',
+          table: 'chat_participants',
+          filter: `user_id=eq.${user.id}`,
         },
         () => {
+          fetchChats();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chats',
+        },
+        () => {
+          // Debounce refetch to avoid excessive calls
           fetchChats();
         }
       )
