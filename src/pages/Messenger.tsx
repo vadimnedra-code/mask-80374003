@@ -321,7 +321,10 @@ const Messenger = () => {
 
         {/* Profile Edit Panel */}
         {showProfileEdit && (
-          <ProfileEditPanel onClose={() => setShowProfileEdit(false)} />
+          <ProfileEditPanel 
+            onClose={() => setShowProfileEdit(false)} 
+            onOpenSettings={() => setShowSettings(true)}
+          />
         )}
 
         {/* Search Panel */}

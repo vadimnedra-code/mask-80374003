@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, Loader2, Check, Trash2 } from 'lucide-react';
+import { X, Camera, Loader2, Check, Trash2, Settings } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,9 +12,10 @@ import { toast } from 'sonner';
 
 interface ProfileEditPanelProps {
   onClose: () => void;
+  onOpenSettings?: () => void;
 }
 
-export const ProfileEditPanel = ({ onClose }: ProfileEditPanelProps) => {
+export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelProps) => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, refetch } = useProfile(user?.id);
   
@@ -148,16 +149,30 @@ export const ProfileEditPanel = ({ onClose }: ProfileEditPanelProps) => {
           </button>
           <h1 className="text-xl font-semibold">Редактировать профиль</h1>
         </div>
-        <Button onClick={handleSave} disabled={saving} size="sm">
-          {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <>
-              <Check className="w-4 h-4 mr-1" />
-              Сохранить
-            </>
+        <div className="flex items-center gap-2">
+          {onOpenSettings && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenSettings();
+              }}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+              title="Настройки"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           )}
-        </Button>
+          <Button onClick={handleSave} disabled={saving} size="sm">
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-1" />
+                Сохранить
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 pb-[env(safe-area-inset-bottom)]">
