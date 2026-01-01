@@ -215,7 +215,8 @@
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   body {
@@ -229,9 +230,11 @@
   }
 
   #root {
-    height: 100dvh;
+    min-height: 100dvh;
     width: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
