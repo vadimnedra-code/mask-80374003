@@ -556,17 +556,6 @@ const Auth = () => {
               Войти по телефону
             </Button>
 
-            {/* Войти по QR-коду (для существующих пользователей) */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => { setAuthMode('qr-scan-login'); resetForm(); }}
-              className="w-full h-12 rounded-xl border-dashed"
-            >
-              <Upload className="w-5 h-5 mr-2" />
-              Войти по QR-коду
-            </Button>
-
             <p className="text-center text-sm text-muted-foreground">
               Нет аккаунта?{' '}
               <button
