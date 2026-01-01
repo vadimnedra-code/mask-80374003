@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Camera, Loader2, Check } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { Input } from '@/components/ui/input';
@@ -16,16 +16,28 @@ interface ProfileEditPanelProps {
 
 export const ProfileEditPanel = ({ onClose }: ProfileEditPanelProps) => {
   const { user } = useAuth();
-  const { profile, refetch } = useProfile(user?.id);
+  const { profile, loading: profileLoading, refetch } = useProfile(user?.id);
   
-  const [displayName, setDisplayName] = useState(profile?.display_name || '');
-  const [username, setUsername] = useState(profile?.username || '');
-  const [bio, setBio] = useState(profile?.bio || '');
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync form state when profile loads
+  useEffect(() => {
+    if (profile && !initialized) {
+      setDisplayName(profile.display_name || '');
+      setUsername(profile.username || '');
+      setBio(profile.bio || '');
+      setAvatarUrl(profile.avatar_url || '');
+      setInitialized(true);
+    }
+  }, [profile, initialized]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
