@@ -37,6 +37,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    // Handle "Remember me" - clear session on browser close if not remembered
+    const handleBeforeUnload = () => {
+      const rememberMe = localStorage.getItem('mask-remember-me');
+      if (rememberMe !== 'true') {
+        // Mark session for cleanup - actual cleanup happens on next load
+        sessionStorage.setItem('mask-session-active', 'true');
+      }
+    };
+
+    // Check if session should be cleared (browser was closed without "Remember me")
+    const sessionWasActive = sessionStorage.getItem('mask-session-active');
+    if (!sessionWasActive) {
+      const rememberMe = localStorage.getItem('mask-remember-me');
+      if (rememberMe !== 'true') {
+        // New browser session and user didn't want to be remembered
+        clearStaleSession();
+      }
+    }
+    sessionStorage.setItem('mask-session-active', 'true');
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -106,7 +128,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, displayName: string) => {
