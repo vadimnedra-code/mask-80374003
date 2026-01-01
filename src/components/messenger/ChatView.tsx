@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Phone, 
   Video, 
@@ -29,8 +29,13 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>(chat.messages);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isHorizontalSwipe = useRef<boolean | null>(null);
 
   const otherParticipant = chat.participants.find((p) => p.id !== 'user-1')!;
 
@@ -41,6 +46,41 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Swipe gesture handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isHorizontalSwipe.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const touchX = e.touches[0].clientX;
+    const touchY = e.touches[0].clientY;
+    const diffX = touchX - touchStartX.current;
+    const diffY = touchY - touchStartY.current;
+
+    // Determine swipe direction on first significant movement
+    if (isHorizontalSwipe.current === null && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
+      isHorizontalSwipe.current = Math.abs(diffX) > Math.abs(diffY);
+    }
+
+    // Only handle horizontal swipes from left edge (first 50px)
+    if (!isHorizontalSwipe.current || touchStartX.current > 50) return;
+
+    // Only allow swipe right (positive diffX)
+    if (diffX > 0) {
+      setSwipeOffset(Math.min(diffX * 0.5, 100));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (swipeOffset > 60) {
+      onBack();
+    }
+    setSwipeOffset(0);
+    isHorizontalSwipe.current = null;
+  }, [swipeOffset, onBack]);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -77,7 +117,29 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div 
+      ref={containerRef}
+      className="flex flex-col h-full bg-background transition-transform duration-150 ease-out md:transition-none"
+      style={{ 
+        transform: `translateX(${swipeOffset}px)`,
+        opacity: 1 - (swipeOffset / 200)
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Swipe indicator */}
+      {swipeOffset > 0 && (
+        <div 
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 transition-all"
+          style={{ 
+            opacity: Math.min(swipeOffset / 60, 1),
+            transform: `translateX(${Math.min(swipeOffset / 2, 24)}px) translateY(-50%) scale(${0.5 + Math.min(swipeOffset / 120, 0.5)})`
+          }}
+        >
+          <ArrowLeft className="w-5 h-5 text-primary" />
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-card border-b border-border shadow-soft safe-area-top">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -199,3 +261,5 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
     </div>
   );
 };
+
+export default ChatView;
