@@ -321,7 +321,12 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
     }
     
     if (chat.is_group) {
-      return `${chat.participants.length} участников`;
+      const onlineCount = chat.participants.filter(p => p.status === 'online').length;
+      const totalCount = chat.participants.length;
+      if (onlineCount > 0) {
+        return `${totalCount} участников, ${onlineCount} в сети`;
+      }
+      return `${totalCount} участников`;
     }
     if (otherParticipant?.status === 'online') {
       return 'в сети';

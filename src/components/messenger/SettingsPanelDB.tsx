@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
+import { PrivacySettingsPanel } from './PrivacySettingsPanel';
+import { NotificationSettingsPanel } from './NotificationSettingsPanel';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +35,8 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
     return false;
   });
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
   const navigate = useNavigate();
@@ -65,6 +69,14 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
 
   if (showProfileEdit) {
     return <ProfileEditPanel onClose={() => setShowProfileEdit(false)} />;
+  }
+
+  if (showPrivacy) {
+    return <PrivacySettingsPanel onClose={() => setShowPrivacy(false)} />;
+  }
+
+  if (showNotifications) {
+    return <NotificationSettingsPanel onClose={() => setShowNotifications(false)} />;
   }
 
   return (
@@ -140,6 +152,13 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
           {menuItems.map((item) => (
             <button
               key={item.label}
+              onClick={() => {
+                if (item.label === 'Конфиденциальность') {
+                  setShowPrivacy(true);
+                } else if (item.label === 'Уведомления') {
+                  setShowNotifications(true);
+                }
+              }}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors group"
             >
               <div className="flex items-center gap-4">

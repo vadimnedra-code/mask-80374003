@@ -265,6 +265,8 @@ export type Database = {
           id: string
           last_seen: string | null
           phone: string | null
+          show_last_seen: boolean
+          show_online_status: boolean
           status: string | null
           updated_at: string
           user_id: string
@@ -278,6 +280,8 @@ export type Database = {
           id?: string
           last_seen?: string | null
           phone?: string | null
+          show_last_seen?: boolean
+          show_online_status?: boolean
           status?: string | null
           updated_at?: string
           user_id: string
@@ -291,6 +295,8 @@ export type Database = {
           id?: string
           last_seen?: string | null
           phone?: string | null
+          show_last_seen?: boolean
+          show_online_status?: boolean
           status?: string | null
           updated_at?: string
           user_id?: string
@@ -305,6 +311,8 @@ export type Database = {
           created_at: string
           display_name: string
           last_seen: string | null
+          show_last_seen: boolean | null
+          show_online_status: boolean | null
           status: string | null
           updated_at: string
           user_id: string
@@ -316,6 +324,8 @@ export type Database = {
           created_at?: string
           display_name: string
           last_seen?: string | null
+          show_last_seen?: boolean | null
+          show_online_status?: boolean | null
           status?: string | null
           updated_at?: string
           user_id: string
@@ -327,6 +337,8 @@ export type Database = {
           created_at?: string
           display_name?: string
           last_seen?: string | null
+          show_last_seen?: boolean | null
+          show_online_status?: boolean | null
           status?: string | null
           updated_at?: string
           user_id?: string
