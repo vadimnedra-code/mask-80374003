@@ -394,6 +394,7 @@ const Auth = () => {
               </div>
             </div>
 
+            {/* Google OAuth button - uncomment when provider is configured
             <Button
               type="button"
               variant="outline"
@@ -415,6 +416,7 @@ const Auth = () => {
               </svg>
               Войти через Google
             </Button>
+            */}
 
             <Button
               type="button"
