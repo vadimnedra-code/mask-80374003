@@ -24,30 +24,30 @@ export const ChatList = ({ chats, selectedChatId, onSelectChat, onOpenSettings }
   return (
     <div className="flex flex-col h-full bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full hover:bg-muted transition-colors lg:hidden">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-border safe-area-top">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button className="p-2 rounded-full hover:bg-muted transition-colors active:scale-95 md:hidden tap-target">
             <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <h1 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Mask
           </h1>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <button 
             onClick={onOpenSettings}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
+            className="p-2.5 rounded-full hover:bg-muted transition-colors active:scale-95 tap-target"
           >
             <Settings className="w-5 h-5 text-muted-foreground" />
           </button>
-          <button className="p-2 rounded-full hover:bg-muted transition-colors">
+          <button className="p-2.5 rounded-full hover:bg-muted transition-colors active:scale-95 tap-target">
             <Edit className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
       </div>
 
       {/* Search */}
-      <div className="p-3">
+      <div className="px-3 py-2 sm:p-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -55,13 +55,13 @@ export const ChatList = ({ chats, selectedChatId, onSelectChat, onOpenSettings }
             placeholder="Поиск..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-muted rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
           />
         </div>
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scroll-smooth safe-area-bottom">
         {filteredChats.map((chat) => {
           const otherParticipant = chat.participants.find((p) => p.id !== 'user-1')!;
           const isSelected = chat.id === selectedChatId;
@@ -71,7 +71,7 @@ export const ChatList = ({ chats, selectedChatId, onSelectChat, onOpenSettings }
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
               className={cn(
-                'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200',
+                'w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 hover:bg-muted/50 transition-all duration-200 active:bg-muted/70 tap-target',
                 isSelected && 'bg-accent'
               )}
             >
@@ -82,10 +82,10 @@ export const ChatList = ({ chats, selectedChatId, onSelectChat, onOpenSettings }
                 status={otherParticipant.status}
               />
               <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium truncate">{otherParticipant.name}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium truncate text-[15px] sm:text-base">{otherParticipant.name}</span>
                   {chat.lastMessage && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
                       {formatDistanceToNow(chat.lastMessage.timestamp, { 
                         addSuffix: false, 
                         locale: ru 
@@ -93,12 +93,12 @@ export const ChatList = ({ chats, selectedChatId, onSelectChat, onOpenSettings }
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between mt-0.5">
-                  <p className="text-sm text-muted-foreground truncate pr-2">
+                <div className="flex items-center justify-between mt-0.5 gap-2">
+                  <p className="text-sm text-muted-foreground truncate">
                     {chat.lastMessage?.content}
                   </p>
                   {chat.unreadCount > 0 && (
-                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
+                    <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
                       {chat.unreadCount}
                     </span>
                   )}

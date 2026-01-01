@@ -36,7 +36,7 @@ const Index = () => {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-background">
+    <div className="h-[100dvh] w-full overflow-hidden bg-background">
       {/* Call Screen */}
       {activeCall && (
         <CallScreen
@@ -59,12 +59,12 @@ const Index = () => {
       )}
 
       {/* Main Layout */}
-      <div className="flex h-full">
+      <div className="flex h-full w-full">
         {/* Sidebar - Chat List */}
         <div
           className={cn(
-            'w-full lg:w-[380px] lg:min-w-[380px] border-r border-border transition-all duration-300',
-            selectedChatId ? 'hidden lg:block' : 'block'
+            'w-full md:w-[320px] lg:w-[380px] md:min-w-[320px] lg:min-w-[380px] border-r border-border transition-all duration-300 flex-shrink-0',
+            selectedChatId ? 'hidden md:block' : 'block'
           )}
         >
           <ChatList
@@ -77,8 +77,8 @@ const Index = () => {
 
         {/* Main Content */}
         <div className={cn(
-          'flex-1 transition-all duration-300',
-          !selectedChatId ? 'hidden lg:block' : 'block'
+          'flex-1 min-w-0 transition-all duration-300',
+          !selectedChatId ? 'hidden md:block' : 'block'
         )}>
           {selectedChat ? (
             <ChatView
@@ -93,7 +93,7 @@ const Index = () => {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className="fixed inset-0 z-40 lg:relative lg:w-[380px] lg:min-w-[380px] lg:border-l lg:border-border">
+          <div className="fixed inset-0 z-40 md:relative md:w-[320px] lg:w-[380px] md:min-w-[320px] lg:min-w-[380px] md:border-l md:border-border">
             <SettingsPanel onClose={() => setShowSettings(false)} />
           </div>
         )}
