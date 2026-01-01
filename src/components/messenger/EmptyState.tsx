@@ -9,7 +9,7 @@ export const EmptyState = () => {
           <MessageCircle className="w-16 h-16 text-primary" />
         </div>
       </div>
-      <h2 className="mt-8 text-2xl font-semibold text-foreground">Mask Messenger</h2>
+      <h2 className="mt-8 text-2xl font-semibold text-foreground">МАСК Messenger</h2>
       <p className="mt-2 text-muted-foreground text-center max-w-sm">
         Выберите чат из списка слева, чтобы начать общение
       </p>
