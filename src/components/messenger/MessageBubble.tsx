@@ -172,7 +172,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
 
       <div
         className={cn(
-          'max-w-[75%] px-4 py-2.5 shadow-soft',
+          'max-w-[85%] px-2.5 py-1.5',
           isOwn ? 'message-bubble-sent' : 'message-bubble-received'
         )}
       >
@@ -209,7 +209,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           </div>
         ) : (
           message.content && (
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+            <p className="text-[14.5px] leading-[19px] whitespace-pre-wrap break-words">
               {message.content}
             </p>
           )
@@ -217,25 +217,25 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
         
         <div
           className={cn(
-            'flex items-center gap-1 mt-1',
+            'flex items-center gap-0.5 mt-0.5 -mb-0.5',
             isOwn ? 'justify-end' : 'justify-start'
           )}
         >
           <span
             className={cn(
               'text-[11px]',
-              isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+              isOwn ? 'text-foreground/50' : 'text-muted-foreground'
             )}
           >
             {format(message.timestamp, 'HH:mm')}
           </span>
           {isOwn && (
             message.isRead ? (
-              <CheckCheck className="w-4 h-4 text-blue-400" />
+              <CheckCheck className="w-[16px] h-[16px] text-blue-500 ml-0.5" />
             ) : message.isDelivered !== false ? (
-              <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
+              <CheckCheck className="w-[16px] h-[16px] text-muted-foreground ml-0.5" />
             ) : (
-              <Check className="w-4 h-4 text-primary-foreground/70" />
+              <Check className="w-[16px] h-[16px] text-muted-foreground ml-0.5" />
             )
           )}
         </div>

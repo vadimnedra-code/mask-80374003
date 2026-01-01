@@ -15,44 +15,44 @@
     --whatsapp-light-green: 88 50% 85%;
     
     /* Base surfaces */
-    --background: 0 0% 93%;
+    --background: 0 0% 100%;
     --surface-elevated: 0 0% 100%;
     --surface-overlay: 0 0% 100%;
-    --foreground: 0 0% 15%;
+    --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card-foreground: 0 0% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
+    --popover-foreground: 0 0% 8%;
 
     /* Primary - WhatsApp Green */
-    --primary: var(--whatsapp-green);
+    --primary: 142 70% 45%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 20%;
 
-    --muted: 0 0% 94%;
+    --muted: 0 0% 95%;
     --muted-foreground: 0 0% 45%;
 
     --accent: 142 60% 94%;
-    --accent-foreground: 0 0% 15%;
+    --accent-foreground: 0 0% 8%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: var(--whatsapp-green);
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 142 70% 45%;
 
     --radius: 0.5rem;
 
     /* Message bubbles - WhatsApp style */
-    --message-sent: 88 47% 82%;
-    --message-sent-foreground: 0 0% 10%;
+    --message-sent: 120 35% 83%;
+    --message-sent-foreground: 0 0% 8%;
     --message-received: 0 0% 100%;
-    --message-received-foreground: 0 0% 10%;
+    --message-received-foreground: 0 0% 8%;
     
     /* Status indicators */
     --online: 142 70% 45%;
@@ -60,11 +60,11 @@
     --away: 45 80% 50%;
     
     /* WhatsApp header */
-    --header-bg: var(--whatsapp-teal);
+    --header-bg: 168 76% 36%;
     --header-foreground: 0 0% 100%;
     
-    /* Chat wallpaper */
-    --chat-wallpaper: 30 15% 92%;
+    /* Chat wallpaper - WhatsApp beige */
+    --chat-wallpaper: 35 30% 90%;
     
     /* Shadows */
     --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.06);
@@ -74,13 +74,13 @@
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: var(--whatsapp-green);
+    --sidebar-foreground: 0 0% 8%;
+    --sidebar-primary: 142 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 142 60% 94%;
-    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 8%;
     --sidebar-border: 0 0% 90%;
-    --sidebar-ring: var(--whatsapp-green);
+    --sidebar-ring: 142 70% 45%;
   }
 
   .dark {
@@ -336,7 +336,7 @@
   /* === WhatsApp Style Chat Wallpaper === */
   .chat-wallpaper {
     background-color: hsl(var(--chat-wallpaper));
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
   /* === MESSAGE BUBBLES - WhatsApp Style === */
@@ -344,8 +344,8 @@
     @apply relative;
     background: hsl(var(--message-sent));
     color: hsl(var(--message-sent-foreground));
-    border-radius: 8px 8px 0 8px;
-    box-shadow: var(--shadow-xs);
+    border-radius: 7.5px 7.5px 0 7.5px;
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   }
   
   /* WhatsApp tail for sent messages */
@@ -365,8 +365,8 @@
     @apply relative;
     background: hsl(var(--message-received));
     color: hsl(var(--message-received-foreground));
-    border-radius: 8px 8px 8px 0;
-    box-shadow: var(--shadow-xs);
+    border-radius: 7.5px 7.5px 7.5px 0;
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   }
   
   /* WhatsApp tail for received messages */
@@ -392,7 +392,6 @@
   .status-online { @apply bg-[hsl(var(--online))]; }
   .status-offline { @apply bg-[hsl(var(--offline))]; }
   .status-away { @apply bg-[hsl(var(--away))]; }
-  .text-status-online { color: hsl(var(--online)); }
   
   /* Privacy Chip */
   .privacy-chip {

@@ -162,49 +162,49 @@ export const ChatList = ({
   const unpinnedChats = filteredChats.filter(c => !c.pinned_at);
 
   return (
-    <div className="flex flex-col h-full bg-card">
+    <div className="flex flex-col h-full bg-background">
       {/* Header - WhatsApp Style */}
       <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-[22px] font-bold text-white tracking-tight">
           Mask
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button 
             onClick={onNewChat}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
           >
-            <Edit className="w-5 h-5 text-white" />
+            <Edit className="w-[22px] h-[22px] text-white" />
           </button>
           <button 
             onClick={onOpenSettings}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
           >
-            <Menu className="w-5 h-5 text-white" />
+            <Menu className="w-[22px] h-[22px] text-white" />
           </button>
         </div>
       </div>
 
       {/* Search - WhatsApp Style */}
-      <div className="px-2 py-2 bg-card">
+      <div className="px-2.5 py-2 bg-background">
         <button
           onClick={onOpenSearch}
           className="w-full relative"
         >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <div className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg text-sm text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground" />
+          <div className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-lg text-[15px] text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
             Поиск или новый чат
           </div>
         </button>
       </div>
 
       {/* Filter Tabs - WhatsApp Style */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-card overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-2 px-2.5 py-1.5 bg-background overflow-x-auto scrollbar-none">
         <button 
           onClick={() => setActiveFilter('all')}
           className={cn(
-            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
             activeFilter === 'all' 
-              ? "bg-primary/10 text-primary" 
+              ? "bg-primary/15 text-primary" 
               : "text-muted-foreground hover:bg-muted"
           )}
         >
@@ -213,9 +213,9 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('unread')}
           className={cn(
-            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
             activeFilter === 'unread' 
-              ? "bg-primary/10 text-primary" 
+              ? "bg-primary/15 text-primary" 
               : "text-muted-foreground hover:bg-muted"
           )}
         >
@@ -224,9 +224,9 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('favorites')}
           className={cn(
-            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
             activeFilter === 'favorites' 
-              ? "bg-primary/10 text-primary" 
+              ? "bg-primary/15 text-primary" 
               : "text-muted-foreground hover:bg-muted"
           )}
         >
@@ -235,9 +235,9 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('groups')}
           className={cn(
-            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
             activeFilter === 'groups' 
-              ? "bg-primary/10 text-primary" 
+              ? "bg-primary/15 text-primary" 
               : "text-muted-foreground hover:bg-muted"
           )}
         >
@@ -434,12 +434,12 @@ export const ChatList = ({
           onTouchMove={(e) => handleTouchMove(chat.id, e)}
           onTouchEnd={handleTouchEnd}
           className={cn(
-            'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-all duration-200 bg-card relative',
-            isSelected && 'bg-accent',
+            'w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-all duration-200 bg-background relative border-b border-border/30',
+            isSelected && 'bg-muted/50',
             isSwiped && '-translate-x-32'
           )}
         >
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Avatar
               src={avatarUrl || ''}
               alt={displayName || 'Chat'}
@@ -447,8 +447,8 @@ export const ChatList = ({
               status={otherParticipant?.status as 'online' | 'offline' | 'away'}
             />
             {isPinned && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                <Pin className="w-2.5 h-2.5 text-primary-foreground" />
+              <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                <Pin className="w-2 h-2 text-primary-foreground" />
               </div>
             )}
           </div>
