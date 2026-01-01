@@ -38,6 +38,7 @@ export const ChatList = ({
   loading 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'favorites' | 'groups'>('all');
   const [creatingChatWithUserId, setCreatingChatWithUserId] = useState<string | null>(null);
   const [swipedChatId, setSwipedChatId] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
@@ -63,7 +64,19 @@ export const ChatList = ({
   const filteredChats = chats.filter((chat) => {
     const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
     const name = chat.is_group ? chat.group_name : otherParticipant?.display_name;
-    return (name?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false);
+    const matchesSearch = (name?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false);
+    
+    // Apply filter based on active tab
+    if (activeFilter === 'unread') {
+      return matchesSearch && chat.unreadCount > 0;
+    }
+    if (activeFilter === 'favorites') {
+      return matchesSearch && !!chat.pinned_at;
+    }
+    if (activeFilter === 'groups') {
+      return matchesSearch && chat.is_group;
+    }
+    return matchesSearch;
   });
 
   // Get users that match search query (excluding current user and users already in chats)
@@ -186,16 +199,48 @@ export const ChatList = ({
 
       {/* Filter Tabs - WhatsApp Style */}
       <div className="flex items-center gap-2 px-3 py-2 bg-card overflow-x-auto scrollbar-none">
-        <button className="px-4 py-1.5 rounded-full text-sm font-medium bg-primary/10 text-primary whitespace-nowrap">
+        <button 
+          onClick={() => setActiveFilter('all')}
+          className={cn(
+            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            activeFilter === 'all' 
+              ? "bg-primary/10 text-primary" 
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
           Все
         </button>
-        <button className="px-4 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:bg-muted whitespace-nowrap transition-colors">
+        <button 
+          onClick={() => setActiveFilter('unread')}
+          className={cn(
+            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            activeFilter === 'unread' 
+              ? "bg-primary/10 text-primary" 
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
           Непрочитанное
         </button>
-        <button className="px-4 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:bg-muted whitespace-nowrap transition-colors">
+        <button 
+          onClick={() => setActiveFilter('favorites')}
+          className={cn(
+            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            activeFilter === 'favorites' 
+              ? "bg-primary/10 text-primary" 
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
           Избранное
         </button>
-        <button className="px-4 py-1.5 rounded-full text-sm font-medium text-muted-foreground hover:bg-muted whitespace-nowrap transition-colors">
+        <button 
+          onClick={() => setActiveFilter('groups')}
+          className={cn(
+            "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+            activeFilter === 'groups' 
+              ? "bg-primary/10 text-primary" 
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
           Группы
         </button>
       </div>
