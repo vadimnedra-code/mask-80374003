@@ -32,6 +32,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -348,15 +349,34 @@ ${secretKey}
       return;
     }
 
+    // Validate username if provided
+    const trimmedUsername = username.trim();
+    if (trimmedUsername && !/^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername)) {
+      setErrors({ username: 'Username: 3-20 символов, только латиница, цифры и _' });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await updateDisplayName(displayName);
       if (error) {
         toast.error('Ошибка сохранения имени');
-      } else {
-        toast.success('Добро пожаловать, ' + displayName + '!');
-        navigate('/');
+        return;
       }
+      
+      // Save username if provided
+      if (trimmedUsername) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          await supabase
+            .from('profiles')
+            .update({ username: trimmedUsername })
+            .eq('user_id', currentUser.id);
+        }
+      }
+      
+      toast.success('Добро пожаловать, ' + displayName + '!');
+      navigate('/');
     } catch (err) {
       toast.error('Что-то пошло не так');
     } finally {
@@ -848,6 +868,23 @@ ${secretKey}
                 />
               </div>
               {errors.displayName && <p className="text-sm text-red-400">{errors.displayName}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-green-200">Username (необязательно)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400/60 font-medium">@</span>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
+                  className="pl-8 h-12 rounded-xl bg-black/30 border-green-500/30 text-green-100 placeholder:text-green-400/40 focus:border-green-400/50"
+                />
+              </div>
+              <p className="text-xs text-green-300/60">Латинские буквы, цифры и подчёркивание (3-20 символов)</p>
+              {errors.username && <p className="text-sm text-red-400">{errors.username}</p>}
             </div>
 
             <Button
