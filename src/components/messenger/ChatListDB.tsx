@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useProfile } from '@/hooks/useProfile';
 
 interface ChatListProps {
   chats: ChatWithDetails[];
@@ -46,6 +47,7 @@ export const ChatList = ({
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const { user } = useAuth();
+  const { profile: currentUserProfile } = useProfile(user?.id);
   const { users, searchUsers } = useUsers();
 
   // Pull to refresh
@@ -160,6 +162,9 @@ export const ChatList = ({
   // Separate pinned and unpinned chats
   const pinnedChats = filteredChats.filter(c => c.pinned_at);
   const unpinnedChats = filteredChats.filter(c => !c.pinned_at);
+
+  const currentUserAvatarUrl = currentUserProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+  const currentUserDisplayName = currentUserProfile?.display_name || 'Вы';
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -374,6 +379,26 @@ export const ChatList = ({
           </>
         )}
         </div>
+      </div>
+
+      {/* Current User Profile - Bottom Section (WhatsApp Style) */}
+      <div 
+        onClick={onOpenSettings}
+        className="flex items-center gap-3 px-4 py-3 border-t border-border bg-card cursor-pointer hover:bg-muted/50 transition-colors pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      >
+        <Avatar
+          src={currentUserAvatarUrl}
+          alt={currentUserDisplayName}
+          size="md"
+          status="online"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-[15px] truncate">{currentUserDisplayName}</p>
+          {currentUserProfile?.username && (
+            <p className="text-sm text-muted-foreground truncate">@{currentUserProfile.username}</p>
+          )}
+        </div>
+        <Settings className="w-5 h-5 text-muted-foreground" />
       </div>
     </div>
   );
