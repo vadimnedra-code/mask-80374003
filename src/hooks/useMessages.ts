@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 export interface Message {
   id: string;
@@ -17,9 +18,11 @@ export interface Message {
 
 export const useMessages = (chatId: string | null) => {
   const { user } = useAuth();
+  const { playMessageSound } = useNotificationSound();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const initialLoadRef = useRef(true);
 
   const fetchMessages = useCallback(async () => {
     if (!chatId || !user) {
@@ -43,7 +46,10 @@ export const useMessages = (chatId: string | null) => {
   }, [chatId, user]);
 
   useEffect(() => {
-    fetchMessages();
+    initialLoadRef.current = true;
+    fetchMessages().then(() => {
+      initialLoadRef.current = false;
+    });
 
     if (!chatId) return;
 
@@ -59,7 +65,13 @@ export const useMessages = (chatId: string | null) => {
           filter: `chat_id=eq.${chatId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+          const newMessage = payload.new as Message;
+          setMessages((prev) => [...prev, newMessage]);
+          
+          // Play sound for incoming messages (not our own and not initial load)
+          if (!initialLoadRef.current && newMessage.sender_id !== user?.id) {
+            playMessageSound();
+          }
         }
       )
       .on(
