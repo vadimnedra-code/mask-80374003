@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { ChatList } from '@/components/messenger/ChatListDB';
 import { ChatViewDB } from '@/components/messenger/ChatViewDB';
 import { EmptyState } from '@/components/messenger/EmptyState';
@@ -46,9 +47,9 @@ const Messenger = () => {
   const { initialize: initializeCallKit, isAvailable: isCallKitAvailable } = useCallKit({
     onCallAnswered: async (connectionId) => {
       console.log('CallKit: Call answered via native UI:', connectionId);
-      // The connectionId is the call_id - accept it via WebRTC
+      // The connectionId is the call_id - accept it directly (incomingCall state may not be hydrated yet)
       if (connectionId) {
-        await handleAcceptIncomingCall();
+        await handleAcceptIncomingCall(connectionId);
       }
     },
     onTokenReceived: async (token) => {
@@ -150,21 +151,44 @@ const Messenger = () => {
     setCallParticipant(null);
   };
 
-  const handleAcceptIncomingCall = async () => {
-    if (!incomingCall) return;
-    
-    setCallParticipant({
-      name: incomingCall.caller_name || 'Unknown',
-      avatar: incomingCall.caller_avatar || '',
-    });
-    
+  const handleAcceptIncomingCall = async (callIdOverride?: string) => {
+    const callId = callIdOverride ?? incomingCall?.id;
+    if (!callId) return;
+
     try {
-      await acceptCall(incomingCall.id);
-      clearIncomingCall();
+      // Use already hydrated incomingCall if it matches, otherwise fetch minimal info
+      if (incomingCall && incomingCall.id === callId) {
+        setCallParticipant({
+          name: incomingCall.caller_name || 'Unknown',
+          avatar: incomingCall.caller_avatar || '',
+        });
+      } else {
+        const { data: call, error } = await supabase
+          .from('calls')
+          .select('caller_id')
+          .eq('id', callId)
+          .single();
+        if (error || !call) throw error || new Error('Call not found');
+
+        const { data: callerProfile } = await supabase
+          .from('profiles_public')
+          .select('display_name, avatar_url')
+          .eq('user_id', call.caller_id)
+          .maybeSingle();
+
+        setCallParticipant({
+          name: callerProfile?.display_name || 'Unknown',
+          avatar:
+            callerProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${call.caller_id}`,
+        });
+      }
+
+      await acceptCall(callId);
+      if (incomingCall?.id === callId) clearIncomingCall();
     } catch (error) {
       toast.error('Не удалось принять звонок. Проверьте доступ к микрофону и камере.');
       setCallParticipant(null);
-      clearIncomingCall();
+      if (incomingCall?.id === callId) clearIncomingCall();
     }
   };
 
