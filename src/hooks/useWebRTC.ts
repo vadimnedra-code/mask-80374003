@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { VIDEO_QUALITY_CONSTRAINTS, VideoQuality } from '@/hooks/useConnectionStats';
+import { useCallDiagnosticLogs } from '@/hooks/useCallDiagnosticLogs';
 
 export interface PeerConnectionState {
   iceConnectionState: string;
@@ -72,6 +73,8 @@ const ICE_SERVERS: RTCIceServer[] = [
 
 export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const { user } = useAuth();
+  const { logs: diagnosticLogs, addLog, clearLogs, copyReportToClipboard } = useCallDiagnosticLogs();
+  
   const [callState, setCallState] = useState<CallState>({
     callId: null,
     status: 'idle',
@@ -214,6 +217,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
 
   const setupPeerConnection = useCallback((callId: string, callType: 'voice' | 'video') => {
     console.log('Setting up peer connection for call:', callId, 'type:', callType);
+    addLog('info', 'Setting up peer connection', `callId: ${callId}, type: ${callType}`);
     
     // Create peer connection
     const pc = new RTCPeerConnection({ 
@@ -222,63 +226,80 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     });
     
     peerConnection.current = pc;
+    addLog('connection', 'RTCPeerConnection created');
     
     // Handle ICE candidates – use atomic RPC to avoid races
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         console.log('New ICE candidate generated');
+        addLog('ice', 'Local ICE candidate generated', `type: ${event.candidate.type}, protocol: ${event.candidate.protocol}`);
         try {
           const candidateJson = event.candidate.toJSON() as Record<string, unknown>;
           const { error } = await supabase.rpc('append_call_ice_candidate', {
             _call_id: callId,
             _candidate: candidateJson as any,
           });
-          if (error) console.error('Error appending ICE candidate via RPC:', error);
+          if (error) {
+            console.error('Error appending ICE candidate via RPC:', error);
+            addLog('error', 'Failed to send ICE candidate', error.message);
+          }
         } catch (err) {
           console.error('Error saving ICE candidate:', err);
+          addLog('error', 'Exception sending ICE candidate', String(err));
         }
       }
     };
     
     pc.onicegatheringstatechange = () => {
       console.log('ICE gathering state:', pc.iceGatheringState);
+      addLog('ice', 'ICE gathering state changed', pc.iceGatheringState);
       updatePeerConnectionState();
     };
     
     pc.oniceconnectionstatechange = () => {
       console.log('ICE connection state:', pc.iceConnectionState);
+      addLog('ice', 'ICE connection state changed', pc.iceConnectionState);
       updatePeerConnectionState();
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log('ICE connected!');
+        addLog('connection', 'ICE connected successfully');
         setCallState(prev => ({ ...prev, status: 'active' }));
         options.onCallAccepted?.();
       } else if (pc.iceConnectionState === 'failed') {
         console.log('ICE connection failed, restarting...');
+        addLog('error', 'ICE connection failed', 'Restarting ICE...');
         pc.restartIce();
+      } else if (pc.iceConnectionState === 'disconnected') {
+        addLog('connection', 'ICE disconnected', 'Connection may be temporarily lost');
       }
     };
     
     pc.onconnectionstatechange = () => {
       console.log('Connection state:', pc.connectionState);
+      addLog('connection', 'Connection state changed', pc.connectionState);
       updatePeerConnectionState();
     };
     
     pc.onsignalingstatechange = () => {
       console.log('Signaling state:', pc.signalingState);
+      addLog('sdp', 'Signaling state changed', pc.signalingState);
       updatePeerConnectionState();
     };
     
     // Handle incoming remote stream - CRITICAL
     pc.ontrack = (event) => {
       console.log('Received remote track:', event.track.kind, 'streams:', event.streams.length);
+      addLog('media', 'Remote track received', `kind: ${event.track.kind}, enabled: ${event.track.enabled}`);
       
       if (event.streams && event.streams[0]) {
         const remoteStream = event.streams[0];
         console.log('Setting remote stream with tracks:', remoteStream.getTracks().map(t => t.kind).join(', '));
+        addLog('media', 'Remote stream set', `tracks: ${remoteStream.getTracks().map(t => t.kind).join(', ')}`);
         setCallState(prev => ({ ...prev, remoteStream }));
       } else {
         // Create a new stream if none provided
         console.log('No stream in event, creating new MediaStream');
+        addLog('media', 'Creating new MediaStream for remote track');
         const newStream = new MediaStream([event.track]);
         setCallState(prev => {
           const existingStream = prev.remoteStream;
@@ -292,7 +313,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     };
     
     return pc;
-  }, [options]);
+  }, [options, addLog]);
 
   const subscribeToCall = useCallback((callId: string, isCaller: boolean) => {
     console.log('Subscribing to call updates:', callId, 'isCaller:', isCaller);
@@ -776,6 +797,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     callState,
     peerConnection: peerConnection.current,
     getPeerConnection,
+    diagnosticLogs,
+    copyDiagnosticReport: copyReportToClipboard,
     startCall,
     acceptCall,
     rejectCall,
