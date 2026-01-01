@@ -20,22 +20,22 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 15%;
 
-    /* === MASK ACCENT COLORS - Сдержанная палитра === */
+    /* === MASK ACCENT COLORS === */
     /* Business - синий */
-    --mask-business: 220 85% 50%;
+    --mask-business: 220 80% 50%;
     --mask-business-soft: 220 60% 95%;
     
-    /* Personal - голубой */
-    --mask-personal: 200 80% 48%;
-    --mask-personal-soft: 200 55% 94%;
+    /* Personal - зелёный */
+    --mask-personal: 150 65% 42%;
+    --mask-personal-soft: 150 50% 94%;
     
-    /* Family - зелёный */
-    --mask-family: 145 60% 42%;
-    --mask-family-soft: 145 45% 94%;
+    /* Family - фиолетовый */
+    --mask-family: 270 65% 55%;
+    --mask-family-soft: 270 50% 94%;
     
-    /* Incognito - тёмно-синий */
-    --mask-incognito: 235 50% 45%;
-    --mask-incognito-soft: 235 35% 93%;
+    /* Incognito - красный */
+    --mask-incognito: 0 75% 50%;
+    --mask-incognito-soft: 0 55% 94%;
 
     /* Current active mask */
     --mask-current: var(--mask-personal);
@@ -120,17 +120,17 @@
     --popover-foreground: 210 15% 92%;
 
     /* Mask colors - для тёмной темы */
-    --mask-business: 220 80% 58%;
+    --mask-business: 220 75% 58%;
     --mask-business-soft: 220 45% 18%;
     
-    --mask-personal: 200 75% 52%;
-    --mask-personal-soft: 200 40% 16%;
+    --mask-personal: 150 60% 48%;
+    --mask-personal-soft: 150 35% 16%;
     
-    --mask-family: 145 55% 48%;
-    --mask-family-soft: 145 35% 16%;
+    --mask-family: 270 60% 60%;
+    --mask-family-soft: 270 40% 18%;
     
-    --mask-incognito: 235 45% 52%;
-    --mask-incognito-soft: 235 30% 18%;
+    --mask-incognito: 0 70% 55%;
+    --mask-incognito-soft: 0 40% 18%;
 
     --primary: var(--mask-current);
     --primary-foreground: 220 20% 8%;
