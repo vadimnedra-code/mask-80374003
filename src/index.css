@@ -29,9 +29,9 @@
     --mask-personal: 200 80% 48%;
     --mask-personal-soft: 200 55% 94%;
     
-    /* Family - бирюзовый */
-    --mask-family: 175 65% 42%;
-    --mask-family-soft: 175 50% 94%;
+    /* Family - зелёный */
+    --mask-family: 145 60% 42%;
+    --mask-family-soft: 145 45% 94%;
     
     /* Incognito - тёмно-синий */
     --mask-incognito: 235 50% 45%;
@@ -126,8 +126,8 @@
     --mask-personal: 200 75% 52%;
     --mask-personal-soft: 200 40% 16%;
     
-    --mask-family: 175 60% 48%;
-    --mask-family-soft: 175 35% 16%;
+    --mask-family: 145 55% 48%;
+    --mask-family-soft: 145 35% 16%;
     
     --mask-incognito: 235 45% 52%;
     --mask-incognito-soft: 235 30% 18%;
