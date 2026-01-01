@@ -32,9 +32,6 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
   const [editContent, setEditContent] = useState(message.content || '');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isEdited = message.timestamp.getTime() !== new Date(message.timestamp).getTime() && 
-    message.content !== null;
-
   const handleEdit = async () => {
     if (!editContent.trim() || !onEdit) return;
     await onEdit(message.id, editContent.trim());
@@ -76,7 +73,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           <img
             src={message.mediaUrl}
             alt="Изображение"
-            className="rounded-lg mb-2 max-w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+            className="rounded-md max-w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
           />
         </a>
       );
@@ -87,14 +84,14 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
         <video
           src={message.mediaUrl}
           controls
-          className="rounded-lg mb-2 max-w-full max-h-64"
+          className="rounded-md max-w-full max-h-64"
         />
       );
     }
 
     if (message.type === 'voice') {
       return (
-        <div className="mb-2">
+        <div className="mb-1">
           <VoicePlayer src={message.mediaUrl} isOwn={isOwn} />
         </div>
       );
@@ -107,9 +104,9 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "flex items-center gap-2 p-2 rounded-lg mb-2 transition-colors",
+            "flex items-center gap-2 p-2 rounded-md mb-1 transition-colors",
             isOwn 
-              ? "bg-primary-foreground/10 hover:bg-primary-foreground/20" 
+              ? "bg-black/5 hover:bg-black/10" 
               : "bg-muted hover:bg-muted/80"
           )}
         >
@@ -123,36 +120,51 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
     return null;
   };
 
+  // WhatsApp-style timestamp with checkmarks
+  const renderTimestamp = () => (
+    <span className="inline-flex items-center gap-[2px] ml-2 align-bottom float-right mt-[3px] -mb-[3px]">
+      <span className={cn(
+        'text-[11px] leading-none',
+        isOwn ? 'text-[#667781]' : 'text-[#667781]'
+      )}>
+        {format(message.timestamp, 'HH:mm')}
+      </span>
+      {isOwn && (
+        message.isRead ? (
+          <CheckCheck className="w-[18px] h-[18px] text-[#53bdeb]" />
+        ) : message.isDelivered !== false ? (
+          <CheckCheck className="w-[18px] h-[18px] text-[#667781]" />
+        ) : (
+          <Check className="w-[18px] h-[18px] text-[#667781]" />
+        )
+      )}
+    </span>
+  );
+
   return (
     <div
       className={cn(
-        'flex items-end gap-2 animate-fade-in group',
+        'flex items-end gap-1 group px-[5%]',
         isOwn ? 'justify-end' : 'justify-start'
       )}
     >
-      {/* Action menu for messages */}
-      {!isEditing && (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+      {/* Action menu for messages - shown on hover */}
+      {!isEditing && !isOwn && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center order-2">
           {onReaction && (
-            <EmojiPicker onSelect={onReaction} align={isOwn ? "end" : "start"} />
+            <EmojiPicker onSelect={onReaction} align="start" />
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1.5 rounded-full hover:bg-muted transition-colors">
-                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+              <button className="p-1 rounded-full hover:bg-black/5 transition-colors">
+                <MoreVertical className="w-4 h-4 text-[#667781]" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={isOwn ? "end" : "start"} className="min-w-[140px]">
+            <DropdownMenuContent align="start" className="min-w-[140px]">
               {onForward && (
                 <DropdownMenuItem onClick={() => onForward(message)}>
                   <Forward className="w-4 h-4 mr-2" />
                   Переслать
-                </DropdownMenuItem>
-              )}
-              {canEdit && (
-                <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Редактировать
                 </DropdownMenuItem>
               )}
               {canDelete && (
@@ -172,7 +184,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
 
       <div
         className={cn(
-          'max-w-[85%] px-2.5 py-1.5',
+          'max-w-[75%] min-w-[80px] px-[9px] py-[6px] relative',
           isOwn ? 'message-bubble-sent' : 'message-bubble-received'
         )}
       >
@@ -208,40 +220,36 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
             </div>
           </div>
         ) : (
-          message.content && (
-            <p className="text-[14.5px] leading-[19px] whitespace-pre-wrap break-words">
-              {message.content}
-            </p>
-          )
+          <div className="relative">
+            {message.content && (
+              <span className="text-[14.2px] leading-[19px] whitespace-pre-wrap break-words">
+                {message.content}
+                {/* Invisible spacer for timestamp */}
+                <span className="inline-block w-[70px]" aria-hidden="true" />
+              </span>
+            )}
+            {/* Absolute positioned timestamp at bottom right */}
+            <span className={cn(
+              'absolute bottom-0 right-0 flex items-center gap-[2px]',
+            )}>
+              <span className="text-[11px] leading-none text-[#667781]">
+                {format(message.timestamp, 'HH:mm')}
+              </span>
+              {isOwn && (
+                message.isRead ? (
+                  <CheckCheck className="w-[16px] h-[16px] text-[#53bdeb]" />
+                ) : message.isDelivered !== false ? (
+                  <CheckCheck className="w-[16px] h-[16px] text-[#667781]" />
+                ) : (
+                  <Check className="w-[16px] h-[16px] text-[#667781]" />
+                )
+              )}
+            </span>
+          </div>
         )}
         
-        <div
-          className={cn(
-            'flex items-center gap-0.5 mt-0.5 -mb-0.5',
-            isOwn ? 'justify-end' : 'justify-start'
-          )}
-        >
-          <span
-            className={cn(
-              'text-[11px]',
-              isOwn ? 'text-foreground/50' : 'text-muted-foreground'
-            )}
-          >
-            {format(message.timestamp, 'HH:mm')}
-          </span>
-          {isOwn && (
-            message.isRead ? (
-              <CheckCheck className="w-[16px] h-[16px] text-blue-500 ml-0.5" />
-            ) : message.isDelivered !== false ? (
-              <CheckCheck className="w-[16px] h-[16px] text-muted-foreground ml-0.5" />
-            ) : (
-              <Check className="w-[16px] h-[16px] text-muted-foreground ml-0.5" />
-            )
-          )}
-        </div>
-        
         {/* Reactions */}
-        {onReaction && (
+        {onReaction && reactions.length > 0 && (
           <MessageReactions 
             reactions={reactions} 
             onToggle={onReaction}
@@ -249,6 +257,46 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           />
         )}
       </div>
+
+      {/* Action menu for own messages - shown on hover */}
+      {!isEditing && isOwn && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center order-first">
+          {onReaction && (
+            <EmojiPicker onSelect={onReaction} align="end" />
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1 rounded-full hover:bg-black/5 transition-colors">
+                <MoreVertical className="w-4 h-4 text-[#667781]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[140px]">
+              {onForward && (
+                <DropdownMenuItem onClick={() => onForward(message)}>
+                  <Forward className="w-4 h-4 mr-2" />
+                  Переслать
+                </DropdownMenuItem>
+              )}
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Редактировать
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem 
+                  onClick={handleDelete}
+                  className="text-destructive focus:text-destructive"
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Удалить
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 };
