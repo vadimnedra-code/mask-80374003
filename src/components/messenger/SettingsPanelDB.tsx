@@ -8,9 +8,11 @@ import {
   LogOut,
   ChevronRight,
   Moon,
-  Sun
+  Sun,
+  Edit2
 } from 'lucide-react';
 import { Avatar } from './Avatar';
+import { ProfileEditPanel } from './ProfileEditPanel';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +32,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
     }
     return false;
   });
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
   const navigate = useNavigate();
@@ -60,6 +63,10 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
     { icon: HelpCircle, label: 'Помощь', description: 'FAQ, связь с поддержкой' },
   ];
 
+  if (showProfileEdit) {
+    return <ProfileEditPanel onClose={() => setShowProfileEdit(false)} />;
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-background animate-slide-in-right lg:relative lg:animate-none flex flex-col">
       {/* Header */}
@@ -75,19 +82,28 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
 
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-[env(safe-area-inset-bottom)]">
         {/* Profile Section */}
-        <div className="p-6 flex flex-col items-center border-b border-border bg-card">
-          <Avatar
-            src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`}
-            alt={profile?.display_name || 'User'}
-            size="xl"
-            className="w-24 h-24"
-          />
+        <button 
+          onClick={() => setShowProfileEdit(true)}
+          className="w-full p-6 flex flex-col items-center border-b border-border bg-card hover:bg-muted/30 transition-colors group"
+        >
+          <div className="relative">
+            <Avatar
+              src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`}
+              alt={profile?.display_name || 'User'}
+              size="xl"
+              className="w-24 h-24"
+            />
+            <div className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              <Edit2 className="w-3 h-3" />
+            </div>
+          </div>
           <h2 className="mt-4 text-xl font-semibold">{profile?.display_name || 'Пользователь'}</h2>
           <p className="text-sm text-muted-foreground">{user?.email}</p>
           {profile?.username && (
             <p className="text-sm text-primary">@{profile.username}</p>
           )}
-        </div>
+          <p className="mt-2 text-xs text-muted-foreground">Нажмите для редактирования</p>
+        </button>
 
         {/* Theme Toggle */}
         <div className="p-4 border-b border-border">

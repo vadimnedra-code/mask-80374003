@@ -23,28 +23,30 @@ export const useProfile = (userId?: string) => {
     userIdRef.current = userId;
   }, [userId]);
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
     }
 
-    const fetchProfile = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data as Profile);
-      }
-      setLoading(false);
-    };
+    if (error) {
+      console.error('Error fetching profile:', error);
+    } else {
+      setProfile(data as Profile);
+    }
+    setLoading(false);
+  }, [userId]);
 
+  useEffect(() => {
     fetchProfile();
+
+    if (!userId) return;
 
     // Subscribe to profile changes
     const channel = supabase
@@ -68,7 +70,7 @@ export const useProfile = (userId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, fetchProfile]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     const currentUserId = userIdRef.current;
@@ -92,5 +94,5 @@ export const useProfile = (userId?: string) => {
       .eq('user_id', currentUserId);
   }, []);
 
-  return { profile, loading, updateProfile, updateStatus };
+  return { profile, loading, updateProfile, updateStatus, refetch: fetchProfile };
 };

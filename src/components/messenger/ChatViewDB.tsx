@@ -26,6 +26,7 @@ import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
 import { ForwardMessageDialog } from './ForwardMessageDialog';
 import { EmojiPicker } from './EmojiPicker';
+import { DateSeparator, shouldShowDateSeparator } from './DateSeparator';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -458,43 +459,51 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
             Начните разговор
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              id={`message-${msg.id}`}
-              className={cn(
-                'transition-all duration-500',
-                highlightedMessageId === msg.id && 'bg-primary/20 rounded-2xl -mx-2 px-2 py-1'
-              )}
-            >
-              <SwipeableMessage 
-                isOwn={msg.sender_id === user?.id}
-                onSwipeReply={() => handleReply(msg)}
-              >
-                <MessageBubble
-                  message={{
-                    id: msg.id,
-                    senderId: msg.sender_id,
-                    content: msg.content || '',
-                    timestamp: new Date(msg.created_at),
-                    type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
-                    mediaUrl: msg.media_url || undefined,
-                    isRead: msg.is_read,
-                  }}
-                  isOwn={msg.sender_id === user?.id}
-                  onEdit={async (messageId, newContent) => {
-                    await editMessage(messageId, newContent);
-                  }}
-                  onDelete={async (messageId) => {
-                    await deleteMessage(messageId);
-                  }}
-                  onForward={() => handleForwardMessage(msg)}
-                  reactions={getReactionGroups(msg.id)}
-                  onReaction={(emoji) => toggleReaction(msg.id, emoji)}
-                />
-              </SwipeableMessage>
-            </div>
-          ))
+          messages.map((msg, index) => {
+            const currentDate = new Date(msg.created_at);
+            const previousDate = index > 0 ? new Date(messages[index - 1].created_at) : null;
+            const showDateSeparator = shouldShowDateSeparator(currentDate, previousDate);
+
+            return (
+              <div key={msg.id}>
+                {showDateSeparator && <DateSeparator date={currentDate} />}
+                <div
+                  id={`message-${msg.id}`}
+                  className={cn(
+                    'transition-all duration-500',
+                    highlightedMessageId === msg.id && 'bg-primary/20 rounded-2xl -mx-2 px-2 py-1'
+                  )}
+                >
+                  <SwipeableMessage 
+                    isOwn={msg.sender_id === user?.id}
+                    onSwipeReply={() => handleReply(msg)}
+                  >
+                    <MessageBubble
+                      message={{
+                        id: msg.id,
+                        senderId: msg.sender_id,
+                        content: msg.content || '',
+                        timestamp: currentDate,
+                        type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
+                        mediaUrl: msg.media_url || undefined,
+                        isRead: msg.is_read,
+                      }}
+                      isOwn={msg.sender_id === user?.id}
+                      onEdit={async (messageId, newContent) => {
+                        await editMessage(messageId, newContent);
+                      }}
+                      onDelete={async (messageId) => {
+                        await deleteMessage(messageId);
+                      }}
+                      onForward={() => handleForwardMessage(msg)}
+                      reactions={getReactionGroups(msg.id)}
+                      onReaction={(emoji) => toggleReaction(msg.id, emoji)}
+                    />
+                  </SwipeableMessage>
+                </div>
+              </div>
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>

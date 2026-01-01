@@ -16,6 +16,7 @@ import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { useCallKit } from '@/hooks/useCallKit';
 import { useVoipToken } from '@/hooks/useVoipToken';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -35,8 +36,9 @@ const Messenger = () => {
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
   const { saveToken } = useVoipToken();
   
-  // Initialize push notifications
+  // Initialize push notifications and document title
   usePushNotifications();
+  useDocumentTitle();
   
   // CallKit integration for iOS native call UI
   const { initialize: initializeCallKit, isAvailable: isCallKitAvailable } = useCallKit({
