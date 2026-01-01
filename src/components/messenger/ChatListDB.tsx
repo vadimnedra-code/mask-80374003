@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw } from 'lucide-react';
+import maskLogo from '@/assets/mask-logo.png';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
 import { Avatar } from './Avatar';
@@ -172,9 +173,12 @@ export const ChatList = ({
     <div className="flex flex-col h-full bg-background">
       {/* Header - WhatsApp Style */}
       <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <h1 className="text-[22px] font-bold text-white tracking-tight">
-          Mask
-        </h1>
+        <div className="flex items-center gap-2">
+          <img src={maskLogo} alt="МАСК" className="w-8 h-8 object-contain" />
+          <h1 className="text-[22px] font-bold text-white tracking-tight">
+            МАСК
+          </h1>
+        </div>
         <div className="flex items-center gap-1">
           <button 
             onClick={onNewChat}

@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MessageCircle, Lock, User, Eye, EyeOff, ArrowLeft, Zap, Copy, Check, AlertTriangle, Key, Shield } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, ArrowLeft, Zap, Copy, Check, AlertTriangle, Key, Shield } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import maskLogo from '@/assets/mask-logo.png';
 
 const newPasswordSchema = z.object({
   password: z.string().min(6, 'Пароль должен содержать минимум 6 символов'),
@@ -297,9 +298,7 @@ const Auth = () => {
           
           {/* Logo Header */}
           <div className="p-8 pb-6 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#00a884] mb-4">
-              <MessageCircle className="w-10 h-10 text-white" />
-            </div>
+            <img src={maskLogo} alt="МАСК" className="w-24 h-24 mx-auto object-contain mb-4" />
             <h1 className="text-2xl font-semibold text-[#e9edef]">МАСК</h1>
             <p className="text-sm text-[#8696a0] mt-1">Безопасный мессенджер</p>
           </div>
