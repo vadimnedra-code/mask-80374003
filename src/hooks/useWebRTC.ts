@@ -94,6 +94,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const processedCandidates = useRef<Set<string>>(new Set());
   const isCleaningUp = useRef(false);
+  const tracksAddedRef = useRef(false);
+  const answerSentRef = useRef(false);
 
   const isMountedRef = useRef(true);
 
@@ -141,6 +143,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
 
     pendingCandidates.current = [];
     processedCandidates.current.clear();
+    tracksAddedRef.current = false;
+    answerSentRef.current = false;
 
     isCleaningUp.current = false;
   }, []);
@@ -364,11 +368,19 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           }
         }
 
-        // If callee accepted before offer was available, handle offer once it arrives
-        if (!isCaller && call.offer && peerConnection.current) {
+        // If callee and offer received: only handle if tracks are added AND we haven't sent answer yet
+        if (!isCaller && call.offer && peerConnection.current && !answerSentRef.current) {
+          // Wait for tracks to be added before processing offer
+          if (!tracksAddedRef.current) {
+            addLog('info', 'Offer received but tracks not ready yet; will be handled by acceptCall');
+            return;
+          }
+
           if (!peerConnection.current.remoteDescription) {
-            addLog('sdp', 'Callee received offer; setting remote description & creating answer');
+            addLog('sdp', 'Callee received offer via subscription; setting remote description & creating answer');
             try {
+              answerSentRef.current = true; // Mark that we're handling answer
+
               const offer = new RTCSessionDescription(call.offer);
               await peerConnection.current.setRemoteDescription(offer);
               addLog('sdp', 'Callee remote description (offer) set');
@@ -390,12 +402,14 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
 
               if (error) {
                 addLog('error', 'Failed to update call with answer', error.message);
+                answerSentRef.current = false; // Reset on failure
               } else {
                 addLog('connection', 'Call updated with answer');
               }
             } catch (err) {
               console.error('Callee: error handling offer from update:', err);
               addLog('error', 'Callee failed to handle offer', String(err));
+              answerSentRef.current = false; // Reset on failure
             }
           }
         }
@@ -445,8 +459,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           console.log('Call subscription status:', status);
           addLog('info', 'Call subscription status', status);
 
-          // IMPORTANT: fetch current state after subscribe so we don't miss fast updates
-          if (status === 'SUBSCRIBED') {
+          // Note: We don't process offer here for callee - let acceptCall handle it after tracks are ready
+          if (status === 'SUBSCRIBED' && isCaller) {
             const { data, error } = await supabase.from('calls').select('*').eq('id', callId).single();
             if (error) {
               addLog('error', 'Failed to fetch call after subscribe', error.message);
@@ -578,6 +592,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       clearLogs();
       processedCandidates.current.clear();
       pendingCandidates.current = [];
+      tracksAddedRef.current = false;
+      answerSentRef.current = false;
 
       console.log('Accepting call:', callId);
       addLog('info', 'Accepting incoming call', `callId: ${callId}`);
@@ -604,13 +620,10 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           error: null,
         });
 
-        // Setup peer connection first
+        // Setup peer connection
         const pc = setupPeerConnection(callId, callType);
 
-        // Subscribe early (and fetch current state after subscribe) so we can't miss the offer/ICE
-        subscribeToCall(callId, false);
-
-        // Get media stream (may prompt for permission)
+        // Get media stream FIRST (may prompt for permission)
         addLog('media', 'Requesting local media', callType);
         const stream = await getMediaStream(callType);
         localStreamRef.current = stream;
@@ -623,18 +636,32 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           pc.addTrack(track, stream);
         });
 
-        // If offer is already present in fetched call, handle it now.
-        // If not, subscribeToCall() will handle it once it arrives.
-        if (call.offer) {
+        // Mark tracks as ready - subscription handler can now process offers if needed
+        tracksAddedRef.current = true;
+        addLog('media', 'Local tracks added', `count: ${stream.getTracks().length}`);
+
+        // Subscribe to call updates AFTER tracks are ready
+        subscribeToCall(callId, false);
+
+        // Re-fetch call to get latest state (offer might have arrived while we were getting media)
+        const { data: freshCall, error: freshError } = await supabase.from('calls').select('*').eq('id', callId).single();
+        if (freshError) {
+          addLog('error', 'Failed to re-fetch call', freshError.message);
+          throw freshError;
+        }
+
+        // If offer is present, handle it now
+        if (freshCall.offer && !answerSentRef.current) {
+          answerSentRef.current = true;
           addLog('sdp', 'Offer present; setting remote description');
-          const offerData = call.offer as unknown as RTCSessionDescriptionInit;
+          const offerData = freshCall.offer as unknown as RTCSessionDescriptionInit;
           await pc.setRemoteDescription(new RTCSessionDescription(offerData));
           addLog('sdp', 'Remote description (offer) set');
 
           // Process existing ICE candidates
-          if (call.ice_candidates) {
-            addLog('ice', 'Processing existing ICE candidates', `count: ${call.ice_candidates.length}`);
-            for (const candidate of call.ice_candidates as RTCIceCandidateInit[]) {
+          if (freshCall.ice_candidates) {
+            addLog('ice', 'Processing existing ICE candidates', `count: ${freshCall.ice_candidates.length}`);
+            for (const candidate of freshCall.ice_candidates as RTCIceCandidateInit[]) {
               const candidateKey = JSON.stringify(candidate);
               if (processedCandidates.current.has(candidateKey)) continue;
               processedCandidates.current.add(candidateKey);
@@ -666,10 +693,11 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
 
           if (updateError) {
             addLog('error', 'Failed to update call with answer', updateError.message);
+            answerSentRef.current = false;
           } else {
             addLog('connection', 'Call updated with answer');
           }
-        } else {
+        } else if (!freshCall.offer) {
           addLog('sdp', 'Offer not ready yet', 'Waiting for realtime update');
         }
       } catch (error) {
