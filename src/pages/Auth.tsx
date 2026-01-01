@@ -209,11 +209,15 @@ ${secretKey}
     try {
       const { error, user: newUser } = await signInAnonymously();
       if (error) {
+        console.error('Anonymous signup error:', error);
         toast.error('Ошибка регистрации. Попробуйте позже.');
         return;
       }
       
       if (newUser) {
+        console.log('New user created:', newUser.id);
+        console.log('Storing secret key:', secretKey.substring(0, 10) + '...');
+        
         // Store the SECRET KEY that user saved - not a new generated one
         const { data, error: tokenError } = await supabase.functions.invoke('verify-login-token', {
           body: { action: 'generate', userId: newUser.id, secretKey: secretKey }
@@ -223,7 +227,7 @@ ${secretKey}
           console.error('Token generation error:', tokenError);
           toast.error('Ошибка сохранения ключа');
         } else {
-          console.log('Secret key stored successfully');
+          console.log('Secret key stored successfully, response:', data);
         }
         
         setLoginToken(secretKey);
@@ -399,14 +403,14 @@ ${secretKey}
   };
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="min-h-[100dvh] overflow-y-auto bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px]" />
       </div>
 
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-md mx-auto min-h-[100dvh] flex flex-col justify-center">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 mb-4">

@@ -28,6 +28,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (action === 'generate') {
       // Generate/store a login token for a user
+      console.log("Generate action called with userId:", userId, "secretKey provided:", !!secretKey);
+      
       if (!userId) {
         return new Response(
           JSON.stringify({ error: "userId is required" }),
@@ -45,27 +47,36 @@ const handler = async (req: Request): Promise<Response> => {
           .join('');
       }
 
+      console.log("Token to store (first 10 chars):", tokenToStore.substring(0, 10) + "...");
+
       // Delete any existing tokens for this user first
-      await supabase
+      const { error: deleteError } = await supabase
         .from('login_tokens')
         .delete()
         .eq('user_id', userId);
+      
+      if (deleteError) {
+        console.error("Error deleting old tokens:", deleteError);
+      }
 
       // Store the token
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('login_tokens')
         .insert({
           user_id: userId,
           token: tokenToStore
-        });
+        })
+        .select();
 
       if (insertError) {
         console.error("Error inserting token:", insertError);
         return new Response(
-          JSON.stringify({ error: "Failed to generate token" }),
+          JSON.stringify({ error: "Failed to generate token", details: insertError.message }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
+
+      console.log("Token inserted successfully:", insertData);
 
       return new Response(
         JSON.stringify({ token: tokenToStore, success: true }),
