@@ -7,6 +7,7 @@ import {
   Video, 
   VideoOff,
   Volume2,
+  Volume1,
   SwitchCamera,
   MessageSquare,
   Settings
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { PeerConnectionState } from '@/hooks/useWebRTC';
 import { useConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { useAudioRouting } from '@/hooks/useAudioRouting';
 import { DiagnosticLogEntry } from '@/hooks/useCallDiagnosticLogs';
 
 interface CallScreenProps {
@@ -69,8 +71,8 @@ export const CallScreen = ({
     onQualityChange: onChangeVideoQuality,
   });
   const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
+  const { isSpeakerOn, toggleSpeaker, applyAudioRoute } = useAudioRouting('earpiece'); // Default to earpiece for calls
   const [callDuration, setCallDuration] = useState(0);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const previousStatus = useRef(callStatus);
@@ -116,12 +118,12 @@ export const CallScreen = ({
     try {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.muted = false;
-        remoteVideoRef.current.volume = 1;
+        applyAudioRoute(remoteVideoRef.current as unknown as HTMLAudioElement);
         await remoteVideoRef.current.play();
       }
       if (remoteAudioRef.current) {
         remoteAudioRef.current.muted = false;
-        remoteAudioRef.current.volume = 1;
+        applyAudioRoute(remoteAudioRef.current);
         await remoteAudioRef.current.play();
       }
       setNeedsTapToPlay(false);
@@ -130,7 +132,7 @@ export const CallScreen = ({
       console.log('Remote media autoplay blocked. Waiting for user gesture.', err);
       setNeedsTapToPlay(true);
     }
-  }, []);
+  }, [applyAudioRoute]);
 
   // Connect local stream to video element
   useEffect(() => {
@@ -363,13 +365,14 @@ export const CallScreen = ({
       <div className="relative z-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-4 bg-gradient-to-t from-black/80 to-transparent">
         {/* Control buttons row */}
         <div className="flex items-center justify-center gap-6 mb-6">
-          {/* Speaker */}
+          {/* Speaker Toggle */}
           <button 
             onClick={() => {
-              setIsSpeakerOn(!isSpeakerOn);
-              // Best-effort volume control (routing to speaker is not controllable in most mobile browsers)
-              if (remoteVideoRef.current) remoteVideoRef.current.volume = 1;
-              if (remoteAudioRef.current) remoteAudioRef.current.volume = 1;
+              toggleSpeaker();
+              // Re-apply audio route after toggle
+              if (remoteAudioRef.current) {
+                applyAudioRoute(remoteAudioRef.current);
+              }
               tryPlayRemoteMedia();
             }}
             className={cn(
@@ -377,10 +380,11 @@ export const CallScreen = ({
               isSpeakerOn ? "bg-white" : "bg-white/20"
             )}
           >
-            <Volume2 className={cn(
-              "w-6 h-6",
-              isSpeakerOn ? "text-[#0b141a]" : "text-white"
-            )} />
+            {isSpeakerOn ? (
+              <Volume2 className="w-6 h-6 text-[#0b141a]" />
+            ) : (
+              <Volume1 className="w-6 h-6 text-white" />
+            )}
           </button>
           
           {/* Video toggle */}
