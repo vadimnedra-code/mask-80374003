@@ -13,6 +13,8 @@ interface AuthContextType {
   verifyOtp: (phone: string, token: string, displayName?: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  signInAnonymously: () => Promise<{ error: Error | null; user: User | null }>;
+  updateDisplayName: (displayName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -180,8 +182,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signInAnonymously = async () => {
+    const { data, error } = await supabase.auth.signInAnonymously();
+    return { error, user: data?.user ?? null };
+  };
+
+  const updateDisplayName = async (displayName: string) => {
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName }
+    });
+    
+    // Also update the profiles table
+    if (!error && user) {
+      await supabase
+        .from('profiles')
+        .update({ display_name: displayName })
+        .eq('user_id', user.id);
+    }
+    
+    return { error };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithPhone, verifyOtp, signOut, resetPassword, updatePassword }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithPhone, verifyOtp, signOut, resetPassword, updatePassword, signInAnonymously, updateDisplayName }}>
       {children}
     </AuthContext.Provider>
   );
