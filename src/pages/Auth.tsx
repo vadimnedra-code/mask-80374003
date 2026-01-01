@@ -58,6 +58,47 @@ const Auth = () => {
     }
   }, [searchParams]);
 
+  // Mobile scroll fix: app-wide CSS locks scrolling (overflow: hidden).
+  // Enable scrolling while on /auth.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+
+    const prev = {
+      htmlOverflow: html.style.overflow,
+      htmlOverflowY: html.style.overflowY,
+      bodyOverflow: body.style.overflow,
+      bodyOverflowY: body.style.overflowY,
+      rootOverflow: root?.style.overflow,
+      rootOverflowY: root?.style.overflowY,
+      rootWebkitOverflowScrolling: (root as any)?.style?.WebkitOverflowScrolling,
+    };
+
+    html.style.overflow = 'auto';
+    html.style.overflowY = 'auto';
+    body.style.overflow = 'auto';
+    body.style.overflowY = 'auto';
+
+    if (root) {
+      root.style.overflow = 'auto';
+      root.style.overflowY = 'auto';
+      (root as any).style.WebkitOverflowScrolling = 'touch';
+    }
+
+    return () => {
+      html.style.overflow = prev.htmlOverflow;
+      html.style.overflowY = prev.htmlOverflowY;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.overflowY = prev.bodyOverflowY;
+      if (root) {
+        root.style.overflow = prev.rootOverflow ?? '';
+        root.style.overflowY = prev.rootOverflowY ?? '';
+        (root as any).style.WebkitOverflowScrolling = prev.rootWebkitOverflowScrolling ?? '';
+      }
+    };
+  }, []);
+
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -403,7 +444,7 @@ ${secretKey}
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-y-auto bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <div className="h-[100dvh] overflow-y-auto scroll-smooth touch-action-pan-y bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
