@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Lock, User, Eye, EyeOff, ArrowLeft, Zap, Copy, Check, AlertTriangle, Key, Shield, Download } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import maskLogo from '@/assets/mask-logo.png';
@@ -33,6 +34,9 @@ const Auth = () => {
   const [secretKey, setSecretKey] = useState<string | null>(null);
   const [inputSecretKey, setInputSecretKey] = useState('');
   const [keyCopied, setKeyCopied] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('mask-remember-me') === 'true';
+  });
 
   const { updatePassword, signInAnonymously, updateDisplayName, user } = useAuth();
   const navigate = useNavigate();
@@ -353,6 +357,24 @@ ${secretKey}
                     />
                   </div>
                   {errors.secretKey && <p className="text-sm text-red-400">{errors.secretKey}</p>}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => {
+                      setRememberMe(checked === true);
+                      localStorage.setItem('mask-remember-me', String(checked === true));
+                    }}
+                    className="border-[#8696a0] data-[state=checked]:bg-[#00a884] data-[state=checked]:border-[#00a884]"
+                  />
+                  <Label 
+                    htmlFor="remember-me" 
+                    className="text-sm text-[#8696a0] cursor-pointer select-none"
+                  >
+                    Запомнить меня
+                  </Label>
                 </div>
 
                 <Button
