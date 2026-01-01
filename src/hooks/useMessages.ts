@@ -66,7 +66,29 @@ export const useMessages = (chatId: string | null) => {
         },
         (payload) => {
           const newMessage = payload.new as Message;
-          setMessages((prev) => [...prev, newMessage]);
+          setMessages((prev) => {
+            // Check if message already exists (avoid duplicates from optimistic updates)
+            const exists = prev.some(m => m.id === newMessage.id);
+            // Also check for temp messages that should be replaced
+            const hasTempVersion = prev.some(m => m.id.startsWith('temp-') && m.sender_id === newMessage.sender_id && m.content === newMessage.content);
+            
+            if (exists) {
+              // Update existing message if needed
+              return prev.map(m => m.id === newMessage.id ? newMessage : m);
+            }
+            
+            if (hasTempVersion) {
+              // Replace temp message with real one
+              return prev.map(m => {
+                if (m.id.startsWith('temp-') && m.sender_id === newMessage.sender_id && m.content === newMessage.content) {
+                  return newMessage;
+                }
+                return m;
+              });
+            }
+            
+            return [...prev, newMessage];
+          });
           
           // Play sound for incoming messages (not our own and not initial load)
           if (!initialLoadRef.current && newMessage.sender_id !== user?.id) {
