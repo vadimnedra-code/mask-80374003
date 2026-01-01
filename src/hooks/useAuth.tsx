@@ -71,7 +71,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // THEN check for existing session
     supabase.auth
       .getSession()
-      .then(({ data: { session } }) => {
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.warn('Session retrieval error:', error.message);
+          // Don't clear session on temporary network errors
+          if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            setLoading(false);
+            return;
+          }
+          clearStaleSession();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -83,7 +97,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn('Session check failed:', err);
+        // On network errors, don't log out - just stop loading
         clearStaleSession();
         setSession(null);
         setUser(null);
