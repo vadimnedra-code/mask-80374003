@@ -54,7 +54,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+const PublicRouteContent = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
 
@@ -78,6 +78,10 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
+
+const PublicRoute = ({ children }: { children: React.ReactNode }) => (
+  <PublicRouteContent>{children}</PublicRouteContent>
+);
 
 const AppRoutes = () => {
   return (
@@ -110,7 +114,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <TooltipProvider>
           <Toaster />
           <AppRoutes />
