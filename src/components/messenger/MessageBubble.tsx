@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { VoicePlayer } from './VoicePlayer';
 import {
@@ -10,6 +10,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { EmojiPicker } from './EmojiPicker';
@@ -31,6 +41,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || '');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleEdit = async () => {
     if (!editContent.trim() || !onEdit) return;
@@ -43,6 +54,11 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
     setIsDeleting(true);
     await onDelete(message.id);
     setIsDeleting(false);
+    setShowDeleteDialog(false);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteDialog(true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -142,12 +158,42 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
   );
 
   return (
-    <div
-      className={cn(
-        'flex items-end gap-1 group px-[5%]',
-        isOwn ? 'justify-end' : 'justify-start'
-      )}
-    >
+    <>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить сообщение?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это сообщение будет удалено безвозвратно. Это действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Удаление...
+                </>
+              ) : (
+                'Удалить'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div
+        className={cn(
+          'flex items-end gap-1 group px-[5%]',
+          isOwn ? 'justify-end' : 'justify-start'
+        )}
+      >
       {/* Action menu for messages - shown on hover */}
       {!isEditing && !isOwn && (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center order-2">
@@ -169,9 +215,8 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
               )}
               {canDelete && (
                 <DropdownMenuItem 
-                  onClick={handleDelete}
+                  onClick={confirmDelete}
                   className="text-destructive focus:text-destructive"
-                  disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Удалить
@@ -285,9 +330,8 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
               )}
               {canDelete && (
                 <DropdownMenuItem 
-                  onClick={handleDelete}
+                  onClick={confirmDelete}
                   className="text-destructive focus:text-destructive"
-                  disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Удалить
@@ -297,6 +341,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           </DropdownMenu>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
