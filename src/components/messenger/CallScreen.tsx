@@ -9,7 +9,7 @@ import {
   Volume2,
   SwitchCamera,
   MessageSquare,
-  Settings2
+  Settings
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { CallDiagnostics } from './CallDiagnostics';
@@ -269,9 +269,10 @@ export const CallScreen = ({
           )}
           <button 
             onClick={() => setShowDiagnostics(!showDiagnostics)}
-            className="p-2 rounded-full hover:bg-white/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
           >
-            <Settings2 className="w-5 h-5 text-white/70" />
+            <Settings className="w-4 h-4 text-white/80" />
+            <span className="text-white/80 text-xs font-medium">Диагностика</span>
           </button>
         </div>
       </div>
