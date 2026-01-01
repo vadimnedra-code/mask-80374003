@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Lock, User, Eye, EyeOff, ArrowLeft, Zap, Copy, Check, AlertTriangle, Key, Shield } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, ArrowLeft, Zap, Copy, Check, AlertTriangle, Key, Shield, Download } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import maskLogo from '@/assets/mask-logo.png';
@@ -152,6 +152,37 @@ const Auth = () => {
         toast.error('Не удалось скопировать');
       }
     }
+  };
+
+  const handleExportKeyToFile = () => {
+    if (!secretKey) return;
+    
+    const content = `МАСК - Секретный ключ
+========================================
+Ваш секретный ключ для входа:
+
+${secretKey}
+
+========================================
+ВАЖНО:
+- Храните этот файл в надёжном месте
+- Ключ нельзя восстановить
+- Без ключа вход в аккаунт невозможен
+========================================
+Дата создания: ${new Date().toLocaleString('ru-RU')}
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mask-secret-key-${Date.now()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Ключ сохранён в файл');
   };
 
   const handleConfirmKeySaved = () => {
@@ -494,27 +525,38 @@ const Auth = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handleCopyKey}
-                variant="outline"
-                className={`w-full h-12 rounded-lg transition-all ${
-                  keyCopied 
-                    ? 'border-[#00a884] text-[#00a884] bg-[#00a884]/10' 
-                    : 'border-[#8696a0]/30 text-[#e9edef] hover:bg-[#2a3942]'
-                }`}
-              >
-                {keyCopied ? (
-                  <>
-                    <Check className="w-5 h-5 mr-2" />
-                    Скопировано
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-5 h-5 mr-2" />
-                    Копировать ключ
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCopyKey}
+                  variant="outline"
+                  className={`flex-1 h-12 rounded-lg transition-all ${
+                    keyCopied 
+                      ? 'border-[#00a884] text-[#00a884] bg-[#00a884]/10' 
+                      : 'border-[#8696a0]/30 text-[#e9edef] hover:bg-[#2a3942]'
+                  }`}
+                >
+                  {keyCopied ? (
+                    <>
+                      <Check className="w-5 h-5 mr-2" />
+                      Скопировано
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-5 h-5 mr-2" />
+                      Копировать
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleExportKeyToFile}
+                  variant="outline"
+                  className="flex-1 h-12 rounded-lg border-[#8696a0]/30 text-[#e9edef] hover:bg-[#2a3942]"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Сохранить
+                </Button>
+              </div>
 
               <Button
                 onClick={handleConfirmKeySaved}
