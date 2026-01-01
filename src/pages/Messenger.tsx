@@ -4,6 +4,7 @@ import { ChatList } from '@/components/messenger/ChatListDB';
 import { ChatViewDB } from '@/components/messenger/ChatViewDB';
 import { EmptyState } from '@/components/messenger/EmptyState';
 import { SettingsPanelDB } from '@/components/messenger/SettingsPanelDB';
+import { ProfileEditPanel } from '@/components/messenger/ProfileEditPanel';
 import { CallScreen } from '@/components/messenger/CallScreen';
 import { NewChatDialog } from '@/components/messenger/NewChatDialog';
 import { SearchPanel } from '@/components/messenger/SearchPanel';
@@ -23,6 +24,7 @@ import { toast } from 'sonner';
 const Messenger = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -237,6 +239,7 @@ const Messenger = () => {
             selectedChatId={selectedChatId}
             onSelectChat={setSelectedChatId}
             onOpenSettings={() => setShowSettings(true)}
+            onOpenProfileEdit={() => setShowProfileEdit(true)}
             onNewChat={() => setShowNewChat(true)}
             onOpenSearch={() => setShowSearch(true)}
             onStartChatWithUser={async (userId) => {
@@ -314,6 +317,11 @@ const Messenger = () => {
           <div className="fixed inset-0 z-40 lg:relative lg:w-[380px] lg:min-w-[380px] lg:border-l lg:border-border">
             <SettingsPanelDB onClose={() => setShowSettings(false)} />
           </div>
+        )}
+
+        {/* Profile Edit Panel */}
+        {showProfileEdit && (
+          <ProfileEditPanel onClose={() => setShowProfileEdit(false)} />
         )}
 
         {/* Search Panel */}

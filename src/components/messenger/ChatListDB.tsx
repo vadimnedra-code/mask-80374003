@@ -16,6 +16,7 @@ interface ChatListProps {
   selectedChatId: string | null;
   onSelectChat: (chatId: string) => void;
   onOpenSettings: () => void;
+  onOpenProfileEdit?: () => void;
   onNewChat: () => void;
   onOpenSearch?: () => void;
   onStartChatWithUser?: (userId: string) => Promise<void>;
@@ -30,6 +31,7 @@ export const ChatList = ({
   selectedChatId, 
   onSelectChat, 
   onOpenSettings,
+  onOpenProfileEdit,
   onNewChat,
   onOpenSearch,
   onStartChatWithUser,
@@ -383,7 +385,7 @@ export const ChatList = ({
 
       {/* Current User Profile - Bottom Section (WhatsApp Style) */}
       <div 
-        onClick={onOpenSettings}
+        onClick={onOpenProfileEdit || onOpenSettings}
         className="flex items-center gap-3 px-4 py-3 border-t border-border bg-card cursor-pointer hover:bg-muted/50 transition-colors pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
         <Avatar
