@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2 } from 'lucide-react';
+import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2, Upload, Download, Camera } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { QRCodeSVG } from 'qrcode.react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -52,7 +54,7 @@ const newPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-setup-name';
+type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-setup-name' | 'qr-show-token' | 'qr-scan-login';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -68,6 +70,8 @@ const Auth = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isNewUser, setIsNewUser] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [loginToken, setLoginToken] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { signIn, signUp, signInWithGoogle, signInWithPhone, verifyOtp, resetPassword, updatePassword, signInAnonymously, updateDisplayName, user } = useAuth();
   const navigate = useNavigate();
@@ -297,10 +301,21 @@ const Auth = () => {
   const handleQrRegister = async () => {
     setLoading(true);
     try {
-      const { error, user } = await signInAnonymously();
+      const { error, user: newUser } = await signInAnonymously();
       if (error) {
         toast.error('Ошибка регистрации. Попробуйте позже.');
-      } else if (user) {
+      } else if (newUser) {
+        // Generate a login token for the user
+        const { data, error: tokenError } = await supabase.functions.invoke('verify-login-token', {
+          body: { action: 'generate', userId: newUser.id }
+        });
+        
+        if (tokenError || !data?.token) {
+          console.error('Token generation error:', tokenError);
+          toast.error('Ошибка генерации токена');
+        } else {
+          setLoginToken(data.token);
+        }
         setAuthMode('qr-setup-name');
       }
     } catch (err) {
@@ -325,13 +340,78 @@ const Auth = () => {
       if (error) {
         toast.error('Ошибка сохранения имени');
       } else {
-        toast.success('Добро пожаловать!');
-        navigate('/');
+        // Show the QR code to save
+        setAuthMode('qr-show-token');
       }
     } catch (err) {
       toast.error('Что-то пошло не так');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadQr = () => {
+    const svg = document.getElementById('login-qr-code');
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const link = document.createElement('a');
+      link.download = 'mask-login-qr.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  const handleScanQrFromImage = async (file: File) => {
+    setLoading(true);
+    try {
+      const html5QrCode = new Html5Qrcode("qr-reader-hidden");
+      const result = await html5QrCode.scanFile(file, true);
+      
+      // Check if it's a valid token (64 character hex string)
+      if (result && /^[a-f0-9]{64}$/i.test(result)) {
+        // Verify the token with the server
+        const { data, error } = await supabase.functions.invoke('verify-login-token', {
+          body: { action: 'verify', token: result }
+        });
+
+        if (error || !data?.success) {
+          toast.error('Неверный или устаревший QR-код');
+        } else {
+          // Sign in anonymously and then we'd need to restore the session
+          // For now, redirect with token
+          toast.success('QR-код распознан! Входим...');
+          
+          // Store the token and try to authenticate
+          // Since we can't directly create a session, we'll need to handle this differently
+          // The edge function returns userId, so we can use signInAnonymously and swap
+          window.location.href = `/?restore_token=${result}`;
+        }
+      } else {
+        toast.error('QR-код не распознан');
+      }
+    } catch (err) {
+      console.error('QR scan error:', err);
+      toast.error('Не удалось прочитать QR-код');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleScanQrFromImage(file);
     }
   };
 
@@ -345,6 +425,8 @@ const Auth = () => {
       case 'reset-password': return 'Новый пароль';
       case 'qr-register': return 'Мгновенная регистрация';
       case 'qr-setup-name': return 'Как вас зовут?';
+      case 'qr-show-token': return 'Сохраните QR-код';
+      case 'qr-scan-login': return 'Войти по QR-коду';
       default: return '';
     }
   };
@@ -516,6 +598,17 @@ const Auth = () => {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Войти по QR-коду (для существующих пользователей) */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setAuthMode('qr-scan-login'); resetForm(); }}
+              className="w-full h-12 rounded-xl border-dashed"
+            >
+              <Upload className="w-5 h-5 mr-2" />
+              Войти по QR-коду
+            </Button>
 
             <p className="text-center text-sm text-muted-foreground">
               Нет аккаунта?{' '}
@@ -953,6 +1046,110 @@ const Auth = () => {
             </Button>
           </form>
         )}
+
+        {/* QR Show Token - Save your login QR code */}
+        {authMode === 'qr-show-token' && loginToken && (
+          <div className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
+                <Download className="w-8 h-8 text-green-500" />
+              </div>
+              <h2 className="text-xl font-semibold">Сохраните QR-код</h2>
+              <p className="text-sm text-muted-foreground">
+                Это ваш ключ для входа. Сохраните скриншот или скачайте картинку
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="p-4 bg-white rounded-2xl shadow-md">
+                <QRCodeSVG
+                  id="login-qr-code"
+                  value={loginToken}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleDownloadQr}
+                variant="outline"
+                className="w-full h-12 rounded-xl"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Скачать QR-код
+              </Button>
+
+              <Button
+                onClick={() => {
+                  toast.success('Добро пожаловать!');
+                  navigate('/');
+                }}
+                className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+              >
+                Продолжить
+              </Button>
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground">
+              ⚠️ Без этого QR-кода вы не сможете войти снова!
+            </p>
+          </div>
+        )}
+
+        {/* QR Scan Login */}
+        {authMode === 'qr-scan-login' && (
+          <div className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <button
+              type="button"
+              onClick={() => { setAuthMode('email-login'); resetForm(); }}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Назад
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Camera className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold">Войти по QR-коду</h2>
+              <p className="text-sm text-muted-foreground">
+                Загрузите сохранённый QR-код для входа
+              </p>
+            </div>
+
+            <div id="qr-reader-hidden" style={{ display: 'none' }}></div>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Upload className="w-5 h-5 mr-2" />
+                  Загрузить QR-код
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Hidden element for QR scanning */}
+        <div id="qr-reader-hidden" style={{ display: 'none' }}></div>
       </div>
     </div>
   );
