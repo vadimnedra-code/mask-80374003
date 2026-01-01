@@ -14,6 +14,7 @@ export interface Message {
   type: 'text' | 'image' | 'video' | 'voice' | 'file';
   mediaUrl?: string;
   isRead: boolean;
+  isDelivered?: boolean;
   replyTo?: string;
 }
 

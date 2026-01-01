@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X, Eye, EyeOff, Clock, Shield } from 'lucide-react';
+import { X, Eye, Clock, Shield, ChevronRight, UserX } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BlockedUsersPanel } from './BlockedUsersPanel';
 
 interface PrivacySettingsPanelProps {
   onClose: () => void;
@@ -12,8 +14,10 @@ interface PrivacySettingsPanelProps {
 
 export const PrivacySettingsPanel = ({ onClose }: PrivacySettingsPanelProps) => {
   const { user } = useAuth();
+  const { blockedUsers } = useBlockedUsers();
   const [showLastSeen, setShowLastSeen] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -65,6 +69,10 @@ export const PrivacySettingsPanel = ({ onClose }: PrivacySettingsPanelProps) => 
       setSaving(false);
     }
   };
+
+  if (showBlockedUsers) {
+    return <BlockedUsersPanel onClose={() => setShowBlockedUsers(false)} />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-background animate-slide-in-right flex flex-col">
@@ -142,6 +150,25 @@ export const PrivacySettingsPanel = ({ onClose }: PrivacySettingsPanelProps) => 
                 disabled={saving}
               />
             </div>
+
+            {/* Blocked Users */}
+            <button
+              onClick={() => setShowBlockedUsers(true)}
+              className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-destructive/10">
+                  <UserX className="w-5 h-5 text-destructive" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">Заблокированные</p>
+                  <p className="text-xs text-muted-foreground">
+                    {blockedUsers.length} заблокировано
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
 
             {/* Privacy note */}
             <p className="text-xs text-muted-foreground text-center px-4">

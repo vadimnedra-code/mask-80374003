@@ -201,6 +201,7 @@ export type Database = {
           content: string | null
           created_at: string
           id: string
+          is_delivered: boolean
           is_read: boolean
           media_url: string | null
           message_type: string
@@ -213,6 +214,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           id?: string
+          is_delivered?: boolean
           is_read?: boolean
           media_url?: string | null
           message_type?: string
@@ -225,6 +227,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           id?: string
+          is_delivered?: boolean
           is_read?: boolean
           media_url?: string | null
           message_type?: string

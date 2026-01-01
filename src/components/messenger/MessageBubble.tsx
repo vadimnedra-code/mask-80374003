@@ -231,6 +231,8 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           </span>
           {isOwn && (
             message.isRead ? (
+              <CheckCheck className="w-4 h-4 text-blue-400" />
+            ) : message.isDelivered !== false ? (
               <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
             ) : (
               <Check className="w-4 h-4 text-primary-foreground/70" />
