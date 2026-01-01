@@ -29,7 +29,7 @@ interface CallScreenProps {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   peerConnectionState: PeerConnectionState | null;
-  peerConnection: RTCPeerConnection | null;
+  getPeerConnection?: () => RTCPeerConnection | null;
   error: string | null;
   onEndCall: () => void;
   onToggleMute: () => void;
@@ -48,7 +48,7 @@ export const CallScreen = ({
   localStream,
   remoteStream,
   peerConnectionState,
-  peerConnection,
+  getPeerConnection,
   error,
   onEndCall,
   onToggleMute,
@@ -56,6 +56,9 @@ export const CallScreen = ({
   onSwitchCamera,
   onChangeVideoQuality
 }: CallScreenProps) => {
+  // Get peerConnection from getter to always have current value
+  const peerConnection = getPeerConnection?.() ?? null;
+  
   const { stats: connectionStats, setVideoQuality } = useConnectionStats(peerConnection, {
     autoAdaptQuality: true,
     onQualityChange: onChangeVideoQuality,

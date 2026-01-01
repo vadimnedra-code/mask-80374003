@@ -59,7 +59,7 @@ const Messenger = () => {
   
   const {
     callState,
-    peerConnection,
+    getPeerConnection,
     startCall,
     acceptCall,
     rejectCall,
@@ -204,7 +204,7 @@ const Messenger = () => {
           localStream={callState.localStream}
           remoteStream={callState.remoteStream}
           peerConnectionState={callState.peerConnectionState}
-          peerConnection={peerConnection}
+          getPeerConnection={getPeerConnection}
           error={callState.error}
           onEndCall={handleEndCall}
           onToggleMute={toggleMute}

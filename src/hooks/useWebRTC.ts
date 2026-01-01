@@ -297,6 +297,12 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const subscribeToCall = useCallback((callId: string, isCaller: boolean) => {
     console.log('Subscribing to call updates:', callId, 'isCaller:', isCaller);
     
+    // Remove existing subscription first
+    if (callSubscription.current) {
+      supabase.removeChannel(callSubscription.current);
+      callSubscription.current = null;
+    }
+    
     const channelName = `call-${callId}-${Date.now()}`;
     callSubscription.current = supabase
       .channel(channelName)
@@ -310,7 +316,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         },
         async (payload) => {
           const call = payload.new as any;
-          console.log('Call update:', call.status, 'answer:', !!call.answer, 'ice:', call.ice_candidates?.length || 0);
+          console.log('Call update received:', call.status, 'answer:', !!call.answer, 'ice:', call.ice_candidates?.length || 0);
           
           if (call.status === 'rejected') {
             console.log('Call was rejected');
@@ -334,6 +340,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
                 const answer = new RTCSessionDescription(call.answer);
                 await peerConnection.current.setRemoteDescription(answer);
                 console.log('Remote description set successfully');
+                setCallState(prev => ({ ...prev, status: 'connecting' }));
                 // Add any pending ICE candidates
                 await addPendingCandidates();
               } catch (err) {
@@ -342,8 +349,9 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
             }
           }
           
-          // Process ICE candidates
+          // Process ICE candidates - for BOTH caller and callee
           if (call.ice_candidates && call.ice_candidates.length > 0 && peerConnection.current) {
+            console.log('Processing', call.ice_candidates.length, 'ICE candidates from update');
             for (const candidate of call.ice_candidates) {
               const candidateKey = JSON.stringify(candidate);
               if (!processedCandidates.current.has(candidateKey)) {
@@ -511,6 +519,9 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         error: null,
       });
       
+      // Subscribe to updates FIRST - so we don't miss any ICE candidates
+      subscribeToCall(callId, false);
+      
       // Setup peer connection
       const pc = setupPeerConnection(callId, callType);
       
@@ -544,6 +555,9 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           }
         }
         
+        // Add any pending ICE candidates that arrived via subscription
+        await addPendingCandidates();
+        
         // Create answer
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
@@ -561,9 +575,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         
         console.log('Call updated with answer');
       }
-      
-      // Subscribe to updates
-      subscribeToCall(callId, false);
       
     } catch (error) {
       console.error('Error accepting call:', error);
@@ -723,9 +734,13 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     }
   }, [callState.callType]);
 
+  // Return peerConnection ref getter to always get current value
+  const getPeerConnection = useCallback(() => peerConnection.current, []);
+
   return {
     callState,
     peerConnection: peerConnection.current,
+    getPeerConnection,
     startCall,
     acceptCall,
     rejectCall,
