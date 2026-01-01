@@ -52,7 +52,7 @@ const newPasswordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password';
+type AuthMode = 'email-login' | 'email-signup' | 'phone-login' | 'phone-otp' | 'forgot-password' | 'reset-password' | 'qr-register' | 'qr-setup-name';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -69,7 +69,7 @@ const Auth = () => {
   const [isNewUser, setIsNewUser] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle, signInWithPhone, verifyOtp, resetPassword, updatePassword } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithPhone, verifyOtp, resetPassword, updatePassword, signInAnonymously, updateDisplayName, user } = useAuth();
   const navigate = useNavigate();
 
   // Check URL params for mode
@@ -82,6 +82,9 @@ const Auth = () => {
       setAuthMode('reset-password');
     } else if (mode === 'signup') {
       setAuthMode('email-signup');
+    } else if (mode === 'qr') {
+      // QR-code instant registration mode
+      setAuthMode('qr-register');
     }
   }, [searchParams]);
 
@@ -291,6 +294,47 @@ const Auth = () => {
     }
   };
 
+  const handleQrRegister = async () => {
+    setLoading(true);
+    try {
+      const { error, user } = await signInAnonymously();
+      if (error) {
+        toast.error('Ошибка регистрации. Попробуйте позже.');
+      } else if (user) {
+        setAuthMode('qr-setup-name');
+      }
+    } catch (err) {
+      toast.error('Что-то пошло не так. Попробуйте позже.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetupName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    if (!displayName.trim() || displayName.length < 2) {
+      setErrors({ displayName: 'Имя должно содержать минимум 2 символа' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await updateDisplayName(displayName);
+      if (error) {
+        toast.error('Ошибка сохранения имени');
+      } else {
+        toast.success('Добро пожаловать!');
+        navigate('/');
+      }
+    } catch (err) {
+      toast.error('Что-то пошло не так');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getTitle = () => {
     switch (authMode) {
       case 'email-login': return 'Войдите в аккаунт';
@@ -299,6 +343,8 @@ const Auth = () => {
       case 'phone-otp': return 'Введите код из SMS';
       case 'forgot-password': return 'Восстановление пароля';
       case 'reset-password': return 'Новый пароль';
+      case 'qr-register': return 'Мгновенная регистрация';
+      case 'qr-setup-name': return 'Как вас зовут?';
       default: return '';
     }
   };
@@ -442,24 +488,24 @@ const Auth = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-center">QR-код для регистрации</DialogTitle>
+                  <DialogTitle className="text-center">QR-код для мгновенной регистрации</DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                   <div className="p-4 bg-white rounded-2xl shadow-md">
                     <QRCodeSVG
-                      value={`${window.location.origin}/auth?mode=signup`}
+                      value={`${window.location.origin}/auth?mode=qr`}
                       size={200}
                       level="H"
                       includeMargin={true}
                     />
                   </div>
                   <p className="text-sm text-muted-foreground text-center">
-                    Отсканируйте QR-код камерой телефона, чтобы открыть страницу регистрации
+                    Отсканируйте QR-код — сразу попадёте в сеть и выберете имя
                   </p>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/auth?mode=signup`);
+                      navigator.clipboard.writeText(`${window.location.origin}/auth?mode=qr`);
                       toast.success('Ссылка скопирована');
                     }}
                     className="w-full"
@@ -825,9 +871,92 @@ const Auth = () => {
             </Button>
           </form>
         )}
+
+        {/* QR Instant Registration */}
+        {authMode === 'qr-register' && (
+          <div className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <QrCode className="w-10 h-10 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold">Мгновенная регистрация</h2>
+              <p className="text-sm text-muted-foreground">
+                Нажмите кнопку ниже, чтобы мгновенно зарегистрироваться и начать общение
+              </p>
+            </div>
+
+            <Button
+              onClick={handleQrRegister}
+              disabled={loading}
+              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                'Войти в сеть'
+              )}
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Уже есть аккаунт?{' '}
+              <button
+                type="button"
+                onClick={() => { setAuthMode('email-login'); resetForm(); }}
+                className="text-primary hover:underline font-medium"
+              >
+                Войти
+              </button>
+            </p>
+          </div>
+        )}
+
+        {/* QR Setup Name */}
+        {authMode === 'qr-setup-name' && (
+          <form onSubmit={handleSetupName} className="space-y-5 bg-card p-8 rounded-3xl shadow-medium border border-border">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <User className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold">Как вас зовут?</h2>
+              <p className="text-sm text-muted-foreground">
+                Выберите имя, которое увидят другие пользователи
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="displayName">Ваше имя</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Введите имя"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                  autoFocus
+                />
+              </div>
+              {errors.displayName && <p className="text-sm text-destructive">{errors.displayName}</p>}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading || !displayName.trim()}
+              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium shadow-glow hover:opacity-90 transition-opacity"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                'Начать общение'
+              )}
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );
 };
+
 
 export default Auth;
