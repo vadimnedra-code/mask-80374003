@@ -332,6 +332,10 @@ const Messenger = () => {
           <SearchPanel
             onClose={() => setShowSearch(false)}
             onSelectMessage={handleSearchSelectMessage}
+            onStartChat={(chatId) => {
+              setSelectedChatId(chatId);
+              setShowSearch(false);
+            }}
           />
         )}
       </div>
