@@ -65,7 +65,7 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [messageToForward, setMessageToForward] = useState<MessageToForward | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -172,14 +172,11 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
       if (showAttachMenu && attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
         setShowAttachMenu(false);
       }
-      if (showEmojiPicker) {
-        setShowEmojiPicker(false);
-      }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAttachMenu, showEmojiPicker]);
+  }, [showAttachMenu]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
     const file = e.target.files?.[0];

@@ -80,12 +80,12 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
           {isVideoCall ? (
             <>
               <Video className="w-4 h-4" />
-              Видеозвонок WhatsApp
+              Входящий видеозвонок
             </>
           ) : (
             <>
               <Phone className="w-4 h-4" />
-              Звонок WhatsApp
+              Входящий звонок
             </>
           )}
         </p>
