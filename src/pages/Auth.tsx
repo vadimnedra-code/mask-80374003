@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2, Upload, Download, Camera } from 'lucide-react';
+import { MessageCircle, Mail, Lock, User, Eye, EyeOff, Phone, ArrowLeft, QrCode, Share2, Upload, Download, Camera, Zap } from 'lucide-react';
 import { z } from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { QRCodeSVG } from 'qrcode.react';
@@ -560,9 +560,9 @@ const Auth = () => {
             <Button
               type="button"
               onClick={() => { setAuthMode('qr-register'); resetForm(); }}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium"
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 text-white font-bold text-base shadow-lg shadow-orange-500/30 animate-pulse hover:animate-none transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-orange-500/40"
             >
-              <QrCode className="w-5 h-5 mr-2" />
+              <Zap className="w-6 h-6 mr-2 animate-bounce" />
               Мгновенная регистрация
             </Button>
 
