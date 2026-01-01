@@ -575,8 +575,42 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
         onScroll={handleScroll}
       >
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <div className="flex flex-col gap-3 p-4 animate-fade-in">
+            {/* Loading skeleton messages */}
+            {[...Array(6)].map((_, i) => (
+              <div 
+                key={i} 
+                className={cn(
+                  "flex",
+                  i % 3 === 0 ? "justify-start" : "justify-end"
+                )}
+              >
+                <div 
+                  className={cn(
+                    "rounded-2xl p-3 space-y-2 animate-pulse",
+                    i % 3 === 0 
+                      ? "bg-card/80 rounded-tl-md" 
+                      : "bg-primary/20 rounded-tr-md"
+                  )}
+                  style={{ 
+                    width: `${Math.random() * 30 + 40}%`,
+                    animationDelay: `${i * 100}ms`
+                  }}
+                >
+                  <div className="h-3 bg-muted-foreground/20 rounded-full" style={{ width: '100%' }} />
+                  {i % 2 === 0 && (
+                    <div className="h-3 bg-muted-foreground/20 rounded-full" style={{ width: '70%' }} />
+                  )}
+                  <div className="flex justify-end">
+                    <div className="h-2 w-10 bg-muted-foreground/10 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center justify-center pt-4">
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              <span className="ml-2 text-sm text-muted-foreground">Загрузка сообщений...</span>
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
