@@ -27,6 +27,8 @@ import { SwipeableMessage } from './SwipeableMessage';
 import { ForwardMessageDialog } from './ForwardMessageDialog';
 import { EmojiPicker } from './EmojiPicker';
 import { DateSeparator, shouldShowDateSeparator } from './DateSeparator';
+import { PrivacyChip, getDefaultPrivacySettings } from './PrivacyChip';
+import { MaskIndicator } from './MaskSwitch';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -353,8 +355,8 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
           messagePreview={messageToForward.content || 'Медиафайл'}
         />
       )}
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shadow-soft pt-[max(0.75rem,env(safe-area-inset-top))]">
+      {/* Header - Lucid Layers style */}
+      <div className="flex items-center justify-between px-4 py-3 layer-elevated border-b border-border pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -369,7 +371,11 @@ export const ChatViewDB = ({ chat, onBack, onStartCall, highlightedMessageId }: 
             status={otherParticipant?.status as 'online' | 'offline' | 'away'}
           />
           <div>
-            <h2 className="font-semibold">{displayName}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold">{displayName}</h2>
+              {/* Privacy Chip */}
+              <PrivacyChip settings={getDefaultPrivacySettings('private')} />
+            </div>
             <p className={cn(
               'text-xs',
               typingText 
