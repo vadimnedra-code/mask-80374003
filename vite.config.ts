@@ -13,6 +13,16 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Polyfill Node.js events module for browser
+      "events": "events",
+    },
+  },
+  optimizeDeps: {
+    include: ['events'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/events/, /node_modules/],
     },
   },
 }));

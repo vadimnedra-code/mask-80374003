@@ -31,13 +31,16 @@ interface UseWebRTCOptions {
 }
 
 const ICE_SERVERS: RTCIceServer[] = [
-  // STUN servers
+  // STUN servers - multiple for redundancy
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' },
-  // Free TURN servers from OpenRelay
+  // Additional public STUN servers for mobile networks
+  { urls: 'stun:stun.stunprotocol.org:3478' },
+  { urls: 'stun:stun.voip.blackberry.com:3478' },
+  // Free TURN servers from OpenRelay - critical for mobile/NAT
   {
     urls: 'turn:openrelay.metered.ca:80',
     username: 'openrelayproject',
@@ -53,7 +56,7 @@ const ICE_SERVERS: RTCIceServer[] = [
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
-  // Additional free TURN from Metered
+  // Additional free TURN from Metered - better for mobile
   {
     urls: 'turn:a.relay.metered.ca:80',
     username: 'e8dd65c92d865b653b024fe8',
@@ -69,7 +72,18 @@ const ICE_SERVERS: RTCIceServer[] = [
     username: 'e8dd65c92d865b653b024fe8',
     credential: 'uWdWNmkhvyqTmhWu',
   },
+  // UDP relay - often works better on mobile
+  {
+    urls: 'turn:relay.metered.ca:80?transport=udp',
+    username: 'e8dd65c92d865b653b024fe8',
+    credential: 'uWdWNmkhvyqTmhWu',
+  },
 ];
+
+// Detect if running on mobile
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const { user } = useAuth();
@@ -158,6 +172,35 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     [cleanupResources, resetCallState]
   );
 
+  // Handle network changes on mobile (WiFi <-> Cellular switches)
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('Network online');
+      if (peerConnection.current && callState.status === 'active') {
+        console.log('Restarting ICE after network change');
+        peerConnection.current.restartIce();
+      }
+    };
+    
+    const handleOffline = () => {
+      console.log('Network offline');
+      if (callState.status === 'active') {
+        setCallState(prev => ({ 
+          ...prev, 
+          error: 'Нет подключения к сети' 
+        }));
+      }
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [callState.status]);
+
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -168,24 +211,49 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   }, []);
 
   const getMediaStream = useCallback(async (callType: 'voice' | 'video'): Promise<MediaStream> => {
-    const constraints: MediaStreamConstraints = {
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-      video: callType === 'video' ? {
-        width: { ideal: 1280, max: 1920 },
-        height: { ideal: 720, max: 1080 },
-        facingMode: 'user',
-        frameRate: { ideal: 30 },
-      } : false,
+    const mobile = isMobile();
+    
+    // More conservative constraints for mobile
+    const audioConstraints: MediaTrackConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      // Lower sample rate for mobile to reduce bandwidth
+      ...(mobile && { sampleRate: 16000 }),
     };
     
-    console.log('Requesting media with constraints:', JSON.stringify(constraints));
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    console.log('Got media stream with tracks:', stream.getTracks().map(t => `${t.kind}:${t.enabled}`).join(', '));
-    return stream;
+    const videoConstraints: MediaTrackConstraints | boolean = callType === 'video' ? {
+      // Lower resolution for mobile to save bandwidth
+      width: { ideal: mobile ? 640 : 1280, max: mobile ? 1280 : 1920 },
+      height: { ideal: mobile ? 480 : 720, max: mobile ? 720 : 1080 },
+      facingMode: 'user',
+      frameRate: { ideal: mobile ? 24 : 30, max: 30 },
+    } : false;
+    
+    const constraints: MediaStreamConstraints = {
+      audio: audioConstraints,
+      video: videoConstraints,
+    };
+    
+    console.log('Requesting media with constraints:', JSON.stringify(constraints), 'mobile:', mobile);
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Got media stream with tracks:', stream.getTracks().map(t => `${t.kind}:${t.enabled}`).join(', '));
+      return stream;
+    } catch (err) {
+      console.error('Failed to get media stream:', err);
+      // Fallback to basic constraints on mobile
+      if (mobile) {
+        console.log('Retrying with basic constraints...');
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: callType === 'video',
+        });
+        return fallbackStream;
+      }
+      throw err;
+    }
   }, []);
 
   const addPendingCandidates = useCallback(async () => {
@@ -220,17 +288,22 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   }, []);
 
   const setupPeerConnection = useCallback((callId: string, callType: 'voice' | 'video') => {
-    console.log('Setting up peer connection for call:', callId, 'type:', callType);
-    addLog('info', 'Setting up peer connection', `callId: ${callId}, type: ${callType}`);
+    const mobile = isMobile();
+    console.log('Setting up peer connection for call:', callId, 'type:', callType, 'mobile:', mobile);
+    addLog('info', 'Setting up peer connection', `callId: ${callId}, type: ${callType}, mobile: ${mobile}`);
     
-    // Create peer connection
+    // Create peer connection with mobile-optimized settings
     const pc = new RTCPeerConnection({ 
       iceServers: ICE_SERVERS,
-      iceCandidatePoolSize: 10,
+      iceCandidatePoolSize: mobile ? 5 : 10,
+      // Enable ICE transport policy to relay for mobile (more reliable on cellular)
+      // iceTransportPolicy: mobile ? 'relay' : 'all',
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require',
     });
     
     peerConnection.current = pc;
-    addLog('connection', 'RTCPeerConnection created');
+    addLog('connection', 'RTCPeerConnection created', `bundlePolicy: max-bundle, mobile: ${mobile}`);
     
     // Handle ICE candidates – use atomic RPC to avoid races
     pc.onicecandidate = async (event) => {
@@ -264,17 +337,36 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       console.log('ICE connection state:', pc.iceConnectionState);
       addLog('ice', 'ICE connection state changed', pc.iceConnectionState);
       updatePeerConnectionState();
+      
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log('ICE connected!');
         addLog('connection', 'ICE connected successfully');
-        setCallState(prev => ({ ...prev, status: 'active' }));
+        setCallState(prev => ({ ...prev, status: 'active', error: null }));
         options.onCallAccepted?.();
       } else if (pc.iceConnectionState === 'failed') {
         console.log('ICE connection failed, restarting...');
         addLog('error', 'ICE connection failed', 'Restarting ICE...');
-        pc.restartIce();
+        // On mobile, ICE failures are more common - retry aggressively
+        setTimeout(() => {
+          if (peerConnection.current === pc && pc.iceConnectionState === 'failed') {
+            pc.restartIce();
+          }
+        }, 500);
       } else if (pc.iceConnectionState === 'disconnected') {
         addLog('connection', 'ICE disconnected', 'Connection may be temporarily lost');
+        // On mobile, disconnection can happen briefly during network switches
+        // Wait a bit before showing error
+        setTimeout(() => {
+          if (peerConnection.current === pc && pc.iceConnectionState === 'disconnected') {
+            setCallState(prev => ({ 
+              ...prev, 
+              error: 'Соединение потеряно. Попытка восстановления...' 
+            }));
+            pc.restartIce();
+          }
+        }, 2000);
+      } else if (pc.iceConnectionState === 'checking') {
+        setCallState(prev => ({ ...prev, status: 'connecting', error: null }));
       }
     };
     
