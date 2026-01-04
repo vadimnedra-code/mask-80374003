@@ -16,6 +16,7 @@ export interface Message {
   isRead: boolean;
   isDelivered?: boolean;
   replyTo?: string;
+  isEncrypted?: boolean;
 }
 
 export interface Chat {
