@@ -20,11 +20,13 @@ import {
   Ban,
   CheckCircle,
   MessageSquareX,
-  ChevronLeft
+  ChevronLeft,
+  ShieldCheck
 } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { ChatWithDetails, useChats } from '@/hooks/useChats';
 import { Message, useMessages } from '@/hooks/useMessages';
+import { useEncryptedMessages, EncryptedMessage } from '@/hooks/useEncryptedMessages';
 import { Avatar } from './Avatar';
 import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
@@ -33,6 +35,7 @@ import { EmojiPicker } from './EmojiPicker';
 import { DateSeparator, shouldShowDateSeparator } from './DateSeparator';
 import { PrivacyChip, getDefaultPrivacySettings } from './PrivacyChip';
 import { MaskIndicator } from './MaskSwitch';
+import { E2EEIndicator } from './E2EEIndicator';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -99,7 +102,28 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
   const pullStartY = useRef<number>(0);
   
   const { user } = useAuth();
-  const { messages, loading, uploading, sendMessage, sendMediaMessage, sendVoiceMessage, markAsRead, editMessage, deleteMessage, refetch } = useMessages(chat.id);
+  const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
+  
+  // Use encrypted messages hook with E2EE support
+  const { 
+    messages, 
+    loading, 
+    uploading, 
+    sendMessage, 
+    sendMediaMessage, 
+    sendVoiceMessage, 
+    markAsRead, 
+    editMessage, 
+    deleteMessage, 
+    refetch,
+    isE2EEEnabled,
+    recipientHasE2EE,
+    getDisplayContent
+  } = useEncryptedMessages(chat.id, {
+    recipientId: otherParticipant?.user_id,
+    enableE2EE: !chat.is_group // E2EE only for direct chats
+  });
+  
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
@@ -112,7 +136,6 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
     onSwipeRight: onBack,
   });
 
-  const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
   const isOtherUserBlocked = otherParticipant ? isBlocked(otherParticipant.user_id) : false;
 
   const handleBlockUser = async () => {
@@ -502,7 +525,15 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
           status={otherParticipant?.status as 'online' | 'offline' | 'away'}
         />
         <div className="min-w-0 flex-1 ml-1">
-          <h2 className="font-medium text-[16px] text-white truncate leading-tight">{displayName}</h2>
+          <div className="flex items-center gap-1.5">
+            <h2 className="font-medium text-[16px] text-white truncate leading-tight">{displayName}</h2>
+            {!chat.is_group && (
+              <E2EEIndicator 
+                isEnabled={isE2EEEnabled} 
+                recipientHasE2EE={recipientHasE2EE} 
+              />
+            )}
+          </div>
           <p className={cn(
             'text-[12px] truncate leading-tight',
             typingText 
@@ -682,12 +713,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
                       message={{
                         id: msg.id,
                         senderId: msg.sender_id,
-                        content: msg.content || '',
+                        content: getDisplayContent(msg),
                         timestamp: currentDate,
                         type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
                         mediaUrl: msg.media_url || undefined,
                         isRead: msg.is_read,
                         isDelivered: !msg.id.startsWith('temp-'),
+                        isEncrypted: msg.is_encrypted,
                       }}
                       isOwn={msg.sender_id === user?.id}
                       onEdit={async (messageId, newContent) => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2 } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { VoicePlayer } from './VoicePlayer';
 import {
@@ -136,9 +136,12 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
     return null;
   };
 
-  // WhatsApp-style timestamp with checkmarks
+  // WhatsApp-style timestamp with checkmarks and encryption indicator
   const renderTimestamp = () => (
     <span className="inline-flex items-center gap-[2px] ml-2 align-bottom float-right mt-[3px] -mb-[3px]">
+      {message.isEncrypted && (
+        <Lock className="w-[12px] h-[12px] text-[#667781] mr-[2px]" />
+      )}
       <span className={cn(
         'text-[11px] leading-none',
         isOwn ? 'text-[#667781]' : 'text-[#667781]'

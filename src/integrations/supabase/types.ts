@@ -163,6 +163,114 @@ export type Database = {
         }
         Relationships: []
       }
+      e2ee_identity_keys: {
+        Row: {
+          created_at: string
+          id: string
+          identity_key: string
+          registration_id: number
+          signing_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identity_key: string
+          registration_id: number
+          signing_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identity_key?: string
+          registration_id?: number
+          signing_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      e2ee_one_time_prekeys: {
+        Row: {
+          created_at: string
+          id: string
+          key_id: number
+          public_key: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_id: number
+          public_key: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_id?: number
+          public_key?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      e2ee_prekey_bundles: {
+        Row: {
+          bundle: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bundle: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bundle?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      e2ee_signed_prekeys: {
+        Row: {
+          created_at: string
+          id: string
+          key_id: number
+          public_key: string
+          signature: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_id: number
+          public_key: string
+          signature: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_id?: number
+          public_key?: string
+          signature?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       login_tokens: {
         Row: {
           created_at: string
@@ -224,39 +332,48 @@ export type Database = {
           chat_id: string
           content: string | null
           created_at: string
+          encrypted_content: string | null
           id: string
           is_delivered: boolean
+          is_encrypted: boolean | null
           is_read: boolean
           media_url: string | null
           message_type: string
           reply_to: string | null
           sender_id: string
+          sender_ratchet_key: string | null
           updated_at: string
         }
         Insert: {
           chat_id: string
           content?: string | null
           created_at?: string
+          encrypted_content?: string | null
           id?: string
           is_delivered?: boolean
+          is_encrypted?: boolean | null
           is_read?: boolean
           media_url?: string | null
           message_type?: string
           reply_to?: string | null
           sender_id: string
+          sender_ratchet_key?: string | null
           updated_at?: string
         }
         Update: {
           chat_id?: string
           content?: string | null
           created_at?: string
+          encrypted_content?: string | null
           id?: string
           is_delivered?: boolean
+          is_encrypted?: boolean | null
           is_read?: boolean
           media_url?: string | null
           message_type?: string
           reply_to?: string | null
           sender_id?: string
+          sender_ratchet_key?: string | null
           updated_at?: string
         }
         Relationships: [
