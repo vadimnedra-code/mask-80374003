@@ -318,8 +318,13 @@ export const CallScreen = ({
             </div>
             <h2 className="mt-6 text-2xl font-medium text-white">{participantName}</h2>
             <p className="mt-2 text-white/60 text-base">
-              {getStatusText()}
+              {error || getStatusText()}
             </p>
+            {error && (
+              <p className="mt-1 text-yellow-400 text-sm animate-pulse">
+                Попытка переподключения...
+              </p>
+            )}
           </div>
         )}
         
