@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { VIDEO_QUALITY_CONSTRAINTS, VideoQuality } from '@/hooks/useConnectionStats';
 import { useCallDiagnosticLogs } from '@/hooks/useCallDiagnosticLogs';
+import { useAutoReconnect, ReconnectionState } from '@/hooks/useAutoReconnect';
 
 export interface PeerConnectionState {
   iceConnectionState: string;
@@ -22,6 +23,7 @@ export interface CallState {
   remoteStream: MediaStream | null;
   peerConnectionState: PeerConnectionState | null;
   error: string | null;
+  reconnectionState: ReconnectionState | null;
 }
 
 interface UseWebRTCOptions {
@@ -100,6 +102,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     remoteStream: null,
     peerConnectionState: null,
     error: null,
+    reconnectionState: null,
   });
   
   const peerConnection = useRef<RTCPeerConnection | null>(null);
@@ -110,6 +113,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const isCleaningUp = useRef(false);
   const tracksAddedRef = useRef(false);
   const answerSentRef = useRef(false);
+  const autoReconnectHandlerRef = useRef<((state: RTCIceConnectionState) => void) | null>(null);
 
   const isMountedRef = useRef(true);
 
@@ -127,6 +131,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       remoteStream: null,
       peerConnectionState: null,
       error: null,
+      reconnectionState: null,
     });
   }, []);
 
@@ -200,6 +205,62 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       window.removeEventListener('offline', handleOffline);
     };
   }, [callState.status]);
+
+  // Auto-reconnect integration
+  const {
+    reconnectionState,
+    handleConnectionStateChange,
+    cancelReconnect,
+    forceReconnect,
+  } = useAutoReconnect(
+    peerConnection.current,
+    callState.callId,
+    callState.status,
+    {
+      maxAttempts: 5,
+      baseDelay: 1000,
+      maxDelay: 10000,
+      onReconnecting: (attempt) => {
+        console.log(`[WebRTC] Reconnecting attempt ${attempt}`);
+        addLog('connection', 'Auto-reconnect attempt', `Attempt ${attempt}`);
+        setCallState(prev => ({
+          ...prev,
+          error: `Переподключение (${attempt}/5)...`,
+        }));
+      },
+      onReconnected: () => {
+        console.log('[WebRTC] Reconnected successfully');
+        addLog('connection', 'Auto-reconnect successful');
+        setCallState(prev => ({
+          ...prev,
+          error: null,
+        }));
+      },
+      onReconnectFailed: () => {
+        console.log('[WebRTC] Reconnection failed after max attempts');
+        addLog('error', 'Auto-reconnect failed', 'Max attempts reached');
+        setCallState(prev => ({
+          ...prev,
+          error: 'Не удалось восстановить соединение',
+        }));
+        // End call after failed reconnection
+        options.onCallEnded?.();
+      },
+    }
+  );
+
+  // Update reconnection state in call state
+  useEffect(() => {
+    setCallState(prev => ({
+      ...prev,
+      reconnectionState,
+    }));
+  }, [reconnectionState]);
+
+  // Store handler ref for peer connection to use
+  useEffect(() => {
+    autoReconnectHandlerRef.current = handleConnectionStateChange;
+  }, [handleConnectionStateChange]);
 
   useEffect(() => {
     return () => {
@@ -338,36 +399,20 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       addLog('ice', 'ICE connection state changed', pc.iceConnectionState);
       updatePeerConnectionState();
       
+      // Notify auto-reconnect handler about state changes
+      if (autoReconnectHandlerRef.current) {
+        autoReconnectHandlerRef.current(pc.iceConnectionState as RTCIceConnectionState);
+      }
+      
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log('ICE connected!');
         addLog('connection', 'ICE connected successfully');
         setCallState(prev => ({ ...prev, status: 'active', error: null }));
         options.onCallAccepted?.();
-      } else if (pc.iceConnectionState === 'failed') {
-        console.log('ICE connection failed, restarting...');
-        addLog('error', 'ICE connection failed', 'Restarting ICE...');
-        // On mobile, ICE failures are more common - retry aggressively
-        setTimeout(() => {
-          if (peerConnection.current === pc && pc.iceConnectionState === 'failed') {
-            pc.restartIce();
-          }
-        }, 500);
-      } else if (pc.iceConnectionState === 'disconnected') {
-        addLog('connection', 'ICE disconnected', 'Connection may be temporarily lost');
-        // On mobile, disconnection can happen briefly during network switches
-        // Wait a bit before showing error
-        setTimeout(() => {
-          if (peerConnection.current === pc && pc.iceConnectionState === 'disconnected') {
-            setCallState(prev => ({ 
-              ...prev, 
-              error: 'Соединение потеряно. Попытка восстановления...' 
-            }));
-            pc.restartIce();
-          }
-        }, 2000);
       } else if (pc.iceConnectionState === 'checking') {
         setCallState(prev => ({ ...prev, status: 'connecting', error: null }));
       }
+      // Note: 'failed' and 'disconnected' states are now handled by useAutoReconnect
     };
     
     pc.onconnectionstatechange = () => {
@@ -611,6 +656,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           remoteStream: null,
           peerConnectionState: null,
           error: null,
+          reconnectionState: null,
         });
 
         // Setup peer connection
@@ -710,6 +756,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           remoteStream: null,
           peerConnectionState: null,
           error: null,
+          reconnectionState: null,
         });
 
         // Setup peer connection
@@ -971,5 +1018,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     switchCamera,
     changeVideoQuality,
     cleanup,
+    cancelReconnect,
+    forceReconnect,
   };
 };

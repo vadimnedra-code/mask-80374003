@@ -71,6 +71,8 @@ const Messenger = () => {
     toggleVideo,
     switchCamera,
     changeVideoQuality,
+    cancelReconnect,
+    forceReconnect,
   } = useWebRTC({
     onCallEnded: () => {
       setCallParticipant(null);
@@ -230,6 +232,7 @@ const Messenger = () => {
           localStream={callState.localStream}
           remoteStream={callState.remoteStream}
           peerConnectionState={callState.peerConnectionState}
+          reconnectionState={callState.reconnectionState}
           getPeerConnection={getPeerConnection}
           diagnosticLogs={diagnosticLogs}
           onCopyDiagnosticReport={copyDiagnosticReport}
@@ -239,6 +242,8 @@ const Messenger = () => {
           onToggleVideo={toggleVideo}
           onSwitchCamera={switchCamera}
           onChangeVideoQuality={changeVideoQuality}
+          onForceReconnect={forceReconnect}
+          onCancelReconnect={cancelReconnect}
         />
       )}
 
