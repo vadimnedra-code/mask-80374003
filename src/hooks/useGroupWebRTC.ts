@@ -875,11 +875,93 @@ export const useGroupWebRTC = (options: UseGroupWebRTCOptions = {}) => {
     }
   }, [callState.callType]);
 
+  // Invite new participants to active call
+  const inviteToCall = useCallback(async (participantIds: string[]) => {
+    if (!callState.callId || !user || participantIds.length === 0) return;
+    
+    console.log('[GroupWebRTC] Inviting participants:', participantIds);
+    
+    try {
+      // Add participants as pending/ringing
+      for (const participantId of participantIds) {
+        await supabase
+          .from('call_participants')
+          .upsert({
+            call_id: callState.callId,
+            user_id: participantId,
+            status: 'ringing',
+          }, {
+            onConflict: 'call_id,user_id',
+          });
+      }
+      
+      // Fetch profiles for the new participants
+      const { data: profiles } = await supabase
+        .from('profiles_public')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', participantIds);
+      
+      const newParticipants: GroupCallParticipant[] = participantIds.map(id => ({
+        id: '',
+        call_id: callState.callId!,
+        user_id: id,
+        status: 'ringing',
+        joined_at: null,
+        left_at: null,
+        is_muted: false,
+        is_video_off: false,
+        is_screen_sharing: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        display_name: profiles?.find(p => p.user_id === id)?.display_name || 'Unknown',
+        avatar_url: profiles?.find(p => p.user_id === id)?.avatar_url,
+      }));
+      
+      setCallState(prev => ({
+        ...prev,
+        participants: [
+          ...prev.participants.filter(p => !participantIds.includes(p.user_id)),
+          ...newParticipants,
+        ],
+      }));
+      
+      // Send push notifications
+      const { data: inviterProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+      
+      for (const participantId of participantIds) {
+        try {
+          await supabase.functions.invoke('send-voip-push', {
+            body: {
+              callee_id: participantId,
+              caller_id: user.id,
+              caller_name: inviterProfile?.display_name || 'Группа',
+              call_id: callState.callId,
+              is_video: callState.callType === 'video',
+              is_group: true,
+            },
+          });
+        } catch (e) {
+          console.log('[GroupWebRTC] Push not sent to:', participantId);
+        }
+      }
+      
+      console.log('[GroupWebRTC] Invited', participantIds.length, 'participants');
+    } catch (error) {
+      console.error('[GroupWebRTC] Error inviting participants:', error);
+      throw error;
+    }
+  }, [callState.callId, callState.callType, user]);
+
   return {
     callState,
     startGroupCall,
     joinGroupCall,
     leaveCall,
+    inviteToCall,
     toggleMute,
     toggleVideo,
     startScreenShare,
