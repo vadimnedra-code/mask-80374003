@@ -11,7 +11,9 @@ import {
   Headphones,
   SwitchCamera,
   MessageSquare,
-  Settings
+  Settings,
+  RefreshCw,
+  WifiOff
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { CallDiagnostics } from './CallDiagnostics';
@@ -22,6 +24,7 @@ import { useConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { useAudioRouting, AudioRoute } from '@/hooks/useAudioRouting';
 import { DiagnosticLogEntry } from '@/hooks/useCallDiagnosticLogs';
+import { ReconnectionState } from '@/hooks/useAutoReconnect';
 
 interface CallScreenProps {
   participantName: string;
@@ -33,6 +36,7 @@ interface CallScreenProps {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   peerConnectionState: PeerConnectionState | null;
+  reconnectionState?: ReconnectionState | null;
   getPeerConnection?: () => RTCPeerConnection | null;
   diagnosticLogs?: DiagnosticLogEntry[];
   onCopyDiagnosticReport?: () => Promise<boolean>;
@@ -42,6 +46,8 @@ interface CallScreenProps {
   onToggleVideo: () => void;
   onSwitchCamera?: () => void;
   onChangeVideoQuality?: (quality: VideoQuality) => void;
+  onForceReconnect?: () => void;
+  onCancelReconnect?: () => void;
 }
 
 export const CallScreen = ({ 
@@ -54,6 +60,7 @@ export const CallScreen = ({
   localStream,
   remoteStream,
   peerConnectionState,
+  reconnectionState,
   getPeerConnection,
   diagnosticLogs = [],
   onCopyDiagnosticReport,
@@ -62,7 +69,9 @@ export const CallScreen = ({
   onToggleMute,
   onToggleVideo,
   onSwitchCamera,
-  onChangeVideoQuality
+  onChangeVideoQuality,
+  onForceReconnect,
+  onCancelReconnect
 }: CallScreenProps) => {
   // Get peerConnection from getter to always have current value
   const peerConnection = getPeerConnection?.() ?? null;
@@ -298,6 +307,48 @@ export const CallScreen = ({
         </div>
       )}
 
+      {/* Reconnection overlay */}
+      {reconnectionState?.isReconnecting && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-[#1f2c34] border border-white/10">
+            <div className="relative">
+              <WifiOff className="w-12 h-12 text-yellow-400" />
+              <RefreshCw className="absolute -bottom-1 -right-1 w-5 h-5 text-white animate-spin" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-white">Соединение потеряно</h3>
+              <p className="mt-1 text-sm text-white/60">
+                Попытка {reconnectionState.reconnectAttempt} из {reconnectionState.maxAttempts}
+              </p>
+            </div>
+            <div className="w-48 bg-white/10 rounded-full h-2 overflow-hidden">
+              <div 
+                className="h-full bg-yellow-400 transition-all duration-300"
+                style={{ width: `${(reconnectionState.reconnectAttempt / reconnectionState.maxAttempts) * 100}%` }}
+              />
+            </div>
+            <div className="flex gap-3 mt-2">
+              {onForceReconnect && (
+                <button
+                  onClick={onForceReconnect}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#00a884] text-white text-sm font-medium hover:bg-[#00a884]/80 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Повторить
+                </button>
+              )}
+              <button
+                onClick={onEndCall}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#f15c6d] text-white text-sm font-medium hover:bg-[#f15c6d]/80 transition-colors"
+              >
+                <PhoneOff className="w-4 h-4" />
+                Завершить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
         {/* Show avatar for voice calls or when connecting */}
@@ -310,9 +361,14 @@ export const CallScreen = ({
                 size="xl"
                 className="w-36 h-36 ring-4 ring-white/10"
               />
-              {callStatus !== 'active' && (
+              {callStatus !== 'active' && !reconnectionState?.isReconnecting && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-40 h-40 border-4 border-[#00a884]/30 rounded-full animate-ping" />
+                </div>
+              )}
+              {reconnectionState?.isReconnecting && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-40 h-40 border-4 border-yellow-400/30 rounded-full animate-pulse" />
                 </div>
               )}
             </div>
@@ -320,7 +376,7 @@ export const CallScreen = ({
             <p className="mt-2 text-white/60 text-base">
               {error || getStatusText()}
             </p>
-            {error && (
+            {error && !reconnectionState?.isReconnecting && (
               <p className="mt-1 text-yellow-400 text-sm animate-pulse">
                 Попытка переподключения...
               </p>
