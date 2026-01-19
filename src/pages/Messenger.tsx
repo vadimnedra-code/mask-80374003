@@ -92,6 +92,7 @@ const Messenger = () => {
     startGroupCall,
     joinGroupCall,
     leaveCall: leaveGroupCall,
+    inviteToCall,
     toggleMute: toggleGroupMute,
     toggleVideo: toggleGroupVideo,
     startScreenShare,
@@ -288,15 +289,17 @@ const Messenger = () => {
       )}
 
       {/* Group Call Screen */}
-      {isInGroupCall && (
+      {isInGroupCall && selectedChat && (
         <GroupCallScreen
           callState={groupCallState}
+          chatId={selectedChat.id}
           onLeaveCall={handleEndGroupCall}
           onToggleMute={toggleGroupMute}
           onToggleVideo={toggleGroupVideo}
           onSwitchCamera={switchGroupCamera}
           onStartScreenShare={startScreenShare}
           onStopScreenShare={stopScreenShare}
+          onInviteParticipants={inviteToCall}
         />
       )}
 

@@ -12,39 +12,46 @@ import {
   MonitorOff,
   Users,
   MoreVertical,
-  Grid3X3
+  Grid3X3,
+  UserPlus
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
 import { GroupCallState, GroupCallParticipant } from '@/types/groupCall';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { InviteToCallDialog } from './InviteToCallDialog';
 
 interface GroupCallScreenProps {
   callState: GroupCallState;
+  chatId: string;
   onLeaveCall: () => void;
   onToggleMute: () => void;
   onToggleVideo: () => void;
   onSwitchCamera?: () => void;
   onStartScreenShare?: () => void;
   onStopScreenShare?: () => void;
+  onInviteParticipants?: (participantIds: string[]) => Promise<void>;
 }
 
 type LayoutMode = 'grid' | 'spotlight';
 
 export const GroupCallScreen = ({
   callState,
+  chatId,
   onLeaveCall,
   onToggleMute,
   onToggleVideo,
   onSwitchCamera,
   onStartScreenShare,
   onStopScreenShare,
+  onInviteParticipants,
 }: GroupCallScreenProps) => {
   const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
   const [callDuration, setCallDuration] = useState(0);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid');
   const [spotlightUserId, setSpotlightUserId] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(true);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const previousStatus = useRef(callState.status);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -195,6 +202,18 @@ export const GroupCallScreen = ({
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Invite button */}
+          {onInviteParticipants && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowInviteDialog(true);
+              }}
+              className="p-2 rounded-full bg-[#00a884] hover:bg-[#00a884]/80 transition-colors"
+            >
+              <UserPlus className="w-5 h-5 text-white" />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -463,6 +482,18 @@ export const GroupCallScreen = ({
           </button>
         </div>
       </div>
+
+      {/* Invite Dialog */}
+      {chatId && onInviteParticipants && (
+        <InviteToCallDialog
+          isOpen={showInviteDialog}
+          onClose={() => setShowInviteDialog(false)}
+          chatId={chatId}
+          currentParticipants={callState.participants}
+          onInvite={onInviteParticipants}
+          maxParticipants={8}
+        />
+      )}
     </div>
   );
 };
