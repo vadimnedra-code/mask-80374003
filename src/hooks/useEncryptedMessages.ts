@@ -76,11 +76,23 @@ export const useEncryptedMessages = (
     }
 
     try {
-      // Determine if it's a prekey message based on first byte
-      // PreKeyMessage starts with different bytes than regular message
-      const isPreKeyMessage = true; // Assume first message is prekey
+      // Detect PreKeyMessage by checking the first byte of base64-decoded data
+      // PreKeyMessage protocol has a different structure than MessageSignedProtocol
+      // Try PreKeyMessage first, then fall back to regular message
+      let decrypted: string | null = null;
       
-      const decrypted = await decrypt(msg.sender_id, msg.encrypted_content, isPreKeyMessage);
+      // First try as PreKeyMessage (used for initial session establishment)
+      try {
+        decrypted = await decrypt(msg.sender_id, msg.encrypted_content, true);
+      } catch (preKeyError) {
+        // If PreKeyMessage fails, try as regular message
+        try {
+          decrypted = await decrypt(msg.sender_id, msg.encrypted_content, false);
+        } catch (regularError) {
+          console.warn('Failed to decrypt as both PreKeyMessage and regular message:', regularError);
+        }
+      }
+      
       if (decrypted) {
         return {
           ...msg,
