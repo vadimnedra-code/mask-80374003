@@ -21,7 +21,8 @@ import {
   CheckCircle,
   MessageSquareX,
   ChevronLeft,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { ChatWithDetails, useChats } from '@/hooks/useChats';
@@ -36,6 +37,7 @@ import { DateSeparator, shouldShowDateSeparator } from './DateSeparator';
 import { PrivacyChip, getDefaultPrivacySettings } from './PrivacyChip';
 import { MaskIndicator } from './MaskSwitch';
 import { E2EEIndicator } from './E2EEIndicator';
+import { StartGroupCallDialog } from './StartGroupCallDialog';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -69,6 +71,7 @@ interface ChatViewDBProps {
   chats: ChatWithDetails[];
   onBack: () => void;
   onStartCall: (type: 'voice' | 'video') => void;
+  onStartGroupCall?: (participantIds: string[], callType: 'voice' | 'video') => void;
   highlightedMessageId?: string | null;
 }
 
@@ -78,7 +81,7 @@ interface MessageToForward {
   mediaUrl: string | null;
 }
 
-export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessageId }: ChatViewDBProps) => {
+export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall, highlightedMessageId }: ChatViewDBProps) => {
   const [messageText, setMessageText] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -91,6 +94,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, highlightedMessag
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [showGroupCallDialog, setShowGroupCallDialog] = useState(false);
   const prevMessagesLengthRef = useRef(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);

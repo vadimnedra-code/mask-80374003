@@ -35,6 +35,103 @@ export type Database = {
         }
         Relationships: []
       }
+      call_participants: {
+        Row: {
+          call_id: string
+          created_at: string
+          id: string
+          is_muted: boolean
+          is_screen_sharing: boolean
+          is_video_off: boolean
+          joined_at: string | null
+          left_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          id?: string
+          is_muted?: boolean
+          is_screen_sharing?: boolean
+          is_video_off?: boolean
+          joined_at?: string | null
+          left_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          id?: string
+          is_muted?: boolean
+          is_screen_sharing?: boolean
+          is_video_off?: boolean
+          joined_at?: string | null
+          left_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_participants_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_peer_connections: {
+        Row: {
+          answer: Json | null
+          call_id: string
+          connection_state: string | null
+          created_at: string
+          from_user_id: string
+          ice_candidates: Json[] | null
+          id: string
+          offer: Json | null
+          to_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer?: Json | null
+          call_id: string
+          connection_state?: string | null
+          created_at?: string
+          from_user_id: string
+          ice_candidates?: Json[] | null
+          id?: string
+          offer?: Json | null
+          to_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: Json | null
+          call_id?: string
+          connection_state?: string | null
+          created_at?: string
+          from_user_id?: string
+          ice_candidates?: Json[] | null
+          id?: string
+          offer?: Json | null
+          to_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_peer_connections_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calls: {
         Row: {
           answer: Json | null
@@ -46,6 +143,8 @@ export type Database = {
           ended_at: string | null
           ice_candidates: Json[] | null
           id: string
+          is_group_call: boolean
+          max_participants: number | null
           offer: Json | null
           started_at: string | null
           status: string
@@ -61,6 +160,8 @@ export type Database = {
           ended_at?: string | null
           ice_candidates?: Json[] | null
           id?: string
+          is_group_call?: boolean
+          max_participants?: number | null
           offer?: Json | null
           started_at?: string | null
           status?: string
@@ -76,6 +177,8 @@ export type Database = {
           ended_at?: string | null
           ice_candidates?: Json[] | null
           id?: string
+          is_group_call?: boolean
+          max_participants?: number | null
           offer?: Json | null
           started_at?: string | null
           status?: string
@@ -613,6 +716,15 @@ export type Database = {
     Functions: {
       append_call_ice_candidate: {
         Args: { _call_id: string; _candidate: Json }
+        Returns: undefined
+      }
+      append_group_call_ice_candidate: {
+        Args: {
+          _call_id: string
+          _candidate: Json
+          _from_user_id: string
+          _to_user_id: string
+        }
         Returns: undefined
       }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
