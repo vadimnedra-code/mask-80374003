@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/messenger/EmptyState';
 import { SettingsPanelDB } from '@/components/messenger/SettingsPanelDB';
 import { ProfileEditPanel } from '@/components/messenger/ProfileEditPanel';
 import { CallScreen } from '@/components/messenger/CallScreen';
+import { GroupCallScreen } from '@/components/messenger/GroupCallScreen';
 import { NewChatDialog } from '@/components/messenger/NewChatDialog';
 import { SearchPanel } from '@/components/messenger/SearchPanel';
 import { IncomingCallDialog } from '@/components/messenger/IncomingCallDialog';
@@ -14,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
 import { useWebRTC } from '@/hooks/useWebRTC';
+import { useGroupWebRTC } from '@/hooks/useGroupWebRTC';
 import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { useCallKit } from '@/hooks/useCallKit';
 import { useVoipToken } from '@/hooks/useVoipToken';
@@ -81,6 +83,29 @@ const Messenger = () => {
     onCallRejected: () => {
       setCallParticipant(null);
       toast.info('Звонок отклонён');
+    },
+  });
+
+  // Group call WebRTC
+  const {
+    callState: groupCallState,
+    startGroupCall,
+    joinGroupCall,
+    leaveCall: leaveGroupCall,
+    toggleMute: toggleGroupMute,
+    toggleVideo: toggleGroupVideo,
+    startScreenShare,
+    stopScreenShare,
+    switchCamera: switchGroupCamera,
+  } = useGroupWebRTC({
+    onCallEnded: () => {
+      toast.info('Групповой звонок завершён');
+    },
+    onParticipantJoined: (participant) => {
+      toast.info(`${participant.display_name || 'Участник'} присоединился`);
+    },
+    onParticipantLeft: (participant) => {
+      toast.info(`${participant.display_name || 'Участник'} покинул звонок`);
     },
   });
 
@@ -153,6 +178,20 @@ const Messenger = () => {
     setCallParticipant(null);
   };
 
+  const handleStartGroupCall = async (participantIds: string[], type: 'voice' | 'video') => {
+    if (!selectedChat) return;
+    
+    try {
+      await startGroupCall(selectedChat.id, participantIds, type);
+    } catch (error) {
+      toast.error('Не удалось начать групповой звонок. Проверьте доступ к микрофону и камере.');
+    }
+  };
+
+  const handleEndGroupCall = () => {
+    leaveGroupCall();
+  };
+
   const handleAcceptIncomingCall = async (callIdOverride?: string) => {
     const callId = callIdOverride ?? incomingCall?.id;
     if (!callId) return;
@@ -208,6 +247,7 @@ const Messenger = () => {
   };
 
   const isInCall = callState.status !== 'idle' && callParticipant;
+  const isInGroupCall = groupCallState.status !== 'idle';
 
   return (
     <div className="h-full w-full overflow-hidden bg-background flex flex-col">
@@ -244,6 +284,19 @@ const Messenger = () => {
           onChangeVideoQuality={changeVideoQuality}
           onForceReconnect={forceReconnect}
           onCancelReconnect={cancelReconnect}
+        />
+      )}
+
+      {/* Group Call Screen */}
+      {isInGroupCall && (
+        <GroupCallScreen
+          callState={groupCallState}
+          onLeaveCall={handleEndGroupCall}
+          onToggleMute={toggleGroupMute}
+          onToggleVideo={toggleGroupVideo}
+          onSwitchCamera={switchGroupCamera}
+          onStartScreenShare={startScreenShare}
+          onStopScreenShare={stopScreenShare}
         />
       )}
 
@@ -339,6 +392,7 @@ const Messenger = () => {
               chats={chats}
               onBack={() => setSelectedChatId(null)}
               onStartCall={handleStartCall}
+              onStartGroupCall={handleStartGroupCall}
               highlightedMessageId={highlightedMessageId}
             />
           ) : (

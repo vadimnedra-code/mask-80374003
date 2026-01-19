@@ -513,6 +513,20 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Group Call Dialog */}
+      {chat.is_group && onStartGroupCall && (
+        <StartGroupCallDialog
+          isOpen={showGroupCallDialog}
+          onClose={() => setShowGroupCallDialog(false)}
+          chatId={chat.id}
+          chatParticipants={chat.participants}
+          onStartCall={(participantIds, callType) => {
+            onStartGroupCall(participantIds, callType);
+            setShowGroupCallDialog(false);
+          }}
+        />
+      )}
       
       {/* Header - WhatsApp Style */}
       <div className="whatsapp-header flex items-center gap-1 px-1 py-1.5 safe-area-top">
@@ -550,20 +564,33 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           </p>
         </div>
         <div className="flex items-center">
-          <button 
-            onClick={() => onStartCall('video')}
-            className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
-            disabled={isOtherUserBlocked}
-          >
-            <Video className="w-[22px] h-[22px] text-white" />
-          </button>
-          <button 
-            onClick={() => onStartCall('voice')}
-            className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
-            disabled={isOtherUserBlocked}
-          >
-            <Phone className="w-[22px] h-[22px] text-white" />
-          </button>
+          {/* Call buttons - different for 1:1 and group chats */}
+          {!chat.is_group ? (
+            <>
+              <button 
+                onClick={() => onStartCall('video')}
+                className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+                disabled={isOtherUserBlocked}
+              >
+                <Video className="w-[22px] h-[22px] text-white" />
+              </button>
+              <button 
+                onClick={() => onStartCall('voice')}
+                className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+                disabled={isOtherUserBlocked}
+              >
+                <Phone className="w-[22px] h-[22px] text-white" />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => setShowGroupCallDialog(true)}
+              className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+              title="Групповой звонок"
+            >
+              <Users className="w-[22px] h-[22px] text-white" />
+            </button>
+          )}
           
           {/* Chat Menu */}
           {!chat.is_group && otherParticipant && (
