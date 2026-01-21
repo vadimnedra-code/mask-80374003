@@ -196,27 +196,36 @@ export type Database = {
       }
       chat_participants: {
         Row: {
+          archived_at: string | null
           chat_id: string
           id: string
           joined_at: string
           last_read_at: string | null
+          muted_until: string | null
           pinned_at: string | null
+          role: string | null
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           chat_id: string
           id?: string
           joined_at?: string
           last_read_at?: string | null
+          muted_until?: string | null
           pinned_at?: string | null
+          role?: string | null
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           chat_id?: string
           id?: string
           joined_at?: string
           last_read_at?: string | null
+          muted_until?: string | null
           pinned_at?: string | null
+          role?: string | null
           user_id?: string
         }
         Relationships: [
@@ -240,6 +249,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          description: string | null
           group_avatar: string | null
           group_name: string | null
           id: string
@@ -249,6 +259,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          description?: string | null
           group_avatar?: string | null
           group_name?: string | null
           id?: string
@@ -258,6 +269,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          description?: string | null
           group_avatar?: string | null
           group_name?: string | null
           id?: string
@@ -265,6 +277,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      disappear_policies: {
+        Row: {
+          chat_id: string
+          id: string
+          set_by: string
+          ttl_seconds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          set_by: string
+          ttl_seconds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          set_by?: string
+          ttl_seconds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disappear_policies_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: true
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       e2ee_identity_keys: {
         Row: {
@@ -374,6 +418,82 @@ export type Database = {
         }
         Relationships: []
       }
+      group_invites: {
+        Row: {
+          chat_id: string
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          password_hash: string | null
+          revoked_at: string | null
+          token: string
+          use_count: number | null
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          password_hash?: string | null
+          revoked_at?: string | null
+          token: string
+          use_count?: number | null
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          password_hash?: string | null
+          revoked_at?: string | null
+          token?: string
+          use_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invites_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locked_chats: {
+        Row: {
+          chat_id: string
+          id: string
+          locked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          locked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          locked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locked_chats_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_tokens: {
         Row: {
           created_at: string
@@ -435,7 +555,10 @@ export type Database = {
           chat_id: string
           content: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_for_everyone: boolean | null
           encrypted_content: string | null
+          expires_at: string | null
           id: string
           is_delivered: boolean
           is_encrypted: boolean | null
@@ -451,7 +574,10 @@ export type Database = {
           chat_id: string
           content?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_for_everyone?: boolean | null
           encrypted_content?: string | null
+          expires_at?: string | null
           id?: string
           is_delivered?: boolean
           is_encrypted?: boolean | null
@@ -467,7 +593,10 @@ export type Database = {
           chat_id?: string
           content?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_for_everyone?: boolean | null
           encrypted_content?: string | null
+          expires_at?: string | null
           id?: string
           is_delivered?: boolean
           is_encrypted?: boolean | null
@@ -650,6 +779,69 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string
+          reported_user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason: string
+          reported_user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string
+          reported_user_id?: string
+        }
+        Relationships: []
+      }
+      saved_messages: {
+        Row: {
+          chat_id: string
+          id: string
+          message_id: string
+          saved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          message_id: string
+          saved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          message_id?: string
+          saved_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_messages_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       typing_status: {
         Row: {
           chat_id: string
@@ -728,6 +920,7 @@ export type Database = {
         Returns: undefined
       }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
+      cleanup_expired_messages: { Args: never; Returns: undefined }
       is_chat_participant: {
         Args: { _chat_id: string; _user_id: string }
         Returns: boolean
@@ -736,9 +929,13 @@ export type Database = {
         Args: { _by_user_id: string; _user_id: string }
         Returns: boolean
       }
+      join_group_via_invite: {
+        Args: { _password?: string; _token: string }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      group_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -865,6 +1062,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      group_role: ["owner", "admin", "member"],
+    },
   },
 } as const

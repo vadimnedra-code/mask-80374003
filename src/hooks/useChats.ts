@@ -18,14 +18,18 @@ export interface ChatWithDetails extends Chat {
     avatar_url: string | null;
     status: string;
     last_seen: string;
+    role?: string;
   }[];
   lastMessage?: {
     content: string | null;
     created_at: string;
     sender_id: string;
+    deleted_for_everyone?: boolean;
   };
   unreadCount: number;
   pinned_at: string | null;
+  archived_at: string | null;
+  muted_until: string | null;
 }
 
 export const useChats = () => {
@@ -37,10 +41,10 @@ export const useChats = () => {
   const fetchChats = useCallback(async () => {
     if (!user) return;
 
-    // Get chats where user is a participant (including pinned_at)
+    // Get chats where user is a participant (including pinned_at, archived_at, muted_until)
     const { data: participations, error: partError } = await supabase
       .from('chat_participants')
-      .select('chat_id, pinned_at')
+      .select('chat_id, pinned_at, archived_at, muted_until, role')
       .eq('user_id', user.id);
 
     if (partError) {
@@ -49,8 +53,11 @@ export const useChats = () => {
       return;
     }
 
-    // Create a map of chat_id to pinned_at
+    // Create maps for participant-specific data
     const pinnedMap = new Map(participations.map(p => [p.chat_id, p.pinned_at]));
+    const archivedMap = new Map(participations.map(p => [p.chat_id, p.archived_at]));
+    const mutedMap = new Map(participations.map(p => [p.chat_id, p.muted_until]));
+    const roleMap = new Map(participations.map(p => [p.chat_id, p.role]));
 
     const chatIds = participations.map(p => p.chat_id);
 
@@ -76,10 +83,10 @@ export const useChats = () => {
     // Get participants for each chat
     const chatsWithDetails: ChatWithDetails[] = await Promise.all(
       (chatsData || []).map(async (chat) => {
-        // Get participants first
+        // Get participants first (including roles)
         const { data: participantsData } = await supabase
           .from('chat_participants')
-          .select('user_id')
+          .select('user_id, role')
           .eq('chat_id', chat.id);
 
         // Then get profiles for each participant
@@ -91,7 +98,7 @@ export const useChats = () => {
 
         const { data: lastMessages } = await supabase
           .from('messages')
-          .select('content, created_at, sender_id')
+          .select('content, created_at, sender_id, deleted_for_everyone')
           .eq('chat_id', chat.id)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -103,8 +110,9 @@ export const useChats = () => {
           .eq('is_read', false)
           .neq('sender_id', user.id);
 
-        // Map participants with their profiles
+        // Map participants with their profiles and roles
         const profilesMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+        const participantRolesMap = new Map((participantsData || []).map(p => [p.user_id, p.role]));
         
         return {
           ...chat,
@@ -116,11 +124,14 @@ export const useChats = () => {
               avatar_url: profile?.avatar_url,
               status: profile?.status || 'offline',
               last_seen: profile?.last_seen,
+              role: participantRolesMap.get(userId) || 'member',
             };
           }),
           lastMessage: lastMessages?.[0],
           unreadCount: unreadCount || 0,
           pinned_at: pinnedMap.get(chat.id) || null,
+          archived_at: archivedMap.get(chat.id) || null,
+          muted_until: mutedMap.get(chat.id) || null,
         };
       })
     );
