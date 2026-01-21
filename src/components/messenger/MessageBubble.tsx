@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { EmojiPicker } from './EmojiPicker';
 import { MessageReactions } from './MessageReactions';
 import { ReactionGroup } from '@/hooks/useMessageReactions';
+import { ImageLightbox } from './ImageLightbox';
 
 interface MessageBubbleProps {
   message: Message;
@@ -66,6 +67,7 @@ export const MessageBubble = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteForEveryoneDialog, setShowDeleteForEveryoneDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const handleEdit = async () => {
     if (!editContent.trim() || !onEdit) return;
@@ -123,18 +125,23 @@ export const MessageBubble = ({
 
     if (message.type === 'image') {
       return (
-        <a 
-          href={message.mediaUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="block"
-        >
-          <img
-            src={message.mediaUrl}
-            alt="Изображение"
-            className="rounded-md max-w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+        <>
+          <ImageLightbox 
+            src={message.mediaUrl} 
+            isOpen={lightboxOpen} 
+            onClose={() => setLightboxOpen(false)} 
           />
-        </a>
+          <div 
+            onClick={() => setLightboxOpen(true)}
+            className="cursor-pointer"
+          >
+            <img
+              src={message.mediaUrl}
+              alt="Изображение"
+              className="rounded-md max-w-full max-h-64 object-cover hover:opacity-90 transition-opacity"
+            />
+          </div>
+        </>
       );
     }
 
