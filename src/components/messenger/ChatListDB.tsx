@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import maskLogo from '@/assets/mask-logo.png';
@@ -12,6 +12,7 @@ import { ru } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useProfile } from '@/hooks/useProfile';
+import { useChatsTypingStatus } from '@/hooks/useChatsTypingStatus';
 
 interface ChatListProps {
   chats: ChatWithDetails[];
@@ -53,6 +54,10 @@ export const ChatList = ({
   const { user } = useAuth();
   const { profile: currentUserProfile } = useProfile(user?.id);
   const { users, searchUsers } = useUsers();
+  
+  // Get typing status for all chats
+  const chatIds = useMemo(() => chats.map(c => c.id), [chats]);
+  const { getTypingText, typingByChatId } = useChatsTypingStatus(chatIds);
 
   // Pull to refresh
   const handleRefresh = useCallback(async () => {
@@ -497,12 +502,39 @@ export const ChatList = ({
               )}
             </div>
             <div className="flex items-center justify-between mt-0.5 gap-2">
-              <p className="text-sm text-muted-foreground truncate flex-1">
-                {chat.lastMessage?.sender_id === user?.id && (
-                  <span className="text-primary mr-1">✓</span>
+              <AnimatePresence mode="wait">
+                {typingByChatId[chat.id]?.length > 0 ? (
+                  <motion.p
+                    key={`typing-${chat.id}`}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="text-sm text-primary truncate flex-1 flex items-center gap-1"
+                  >
+                    <span className="flex gap-0.5">
+                      <span className="w-1 h-1 bg-primary rounded-full animate-typing" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1 h-1 bg-primary rounded-full animate-typing" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1 h-1 bg-primary rounded-full animate-typing" style={{ animationDelay: '300ms' }} />
+                    </span>
+                    <span>{getTypingText(chat.id)}</span>
+                  </motion.p>
+                ) : (
+                  <motion.p
+                    key={`message-${chat.id}`}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="text-sm text-muted-foreground truncate flex-1"
+                  >
+                    {chat.lastMessage?.sender_id === user?.id && (
+                      <span className="text-primary mr-1">✓</span>
+                    )}
+                    {chat.lastMessage?.content || 'Нет сообщений'}
+                  </motion.p>
                 )}
-                {chat.lastMessage?.content || 'Нет сообщений'}
-              </p>
+              </AnimatePresence>
               <AnimatePresence mode="wait">
                 {chat.unreadCount > 0 && (
                   <motion.span
