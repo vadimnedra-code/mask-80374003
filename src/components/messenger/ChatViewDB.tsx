@@ -21,15 +21,18 @@ import {
   MessageSquareX,
   ChevronLeft,
   Users,
-  Timer
+  Timer,
+  UserPen
 } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { Message } from '@/hooks/useMessages';
 import { useEncryptedMessages } from '@/hooks/useEncryptedMessages';
 import { useSavedMessages } from '@/hooks/useSavedMessages';
 import { useDeleteForEveryone } from '@/hooks/useDeleteForEveryone';
 import { useDisappearingMessages } from '@/hooks/useDisappearingMessages';
+import { useContactNicknames } from '@/hooks/useContactNicknames';
 import { Avatar } from './Avatar';
 import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
@@ -39,6 +42,7 @@ import { DateSeparator, shouldShowDateSeparator } from './DateSeparator';
 import { E2EEIndicator } from './E2EEIndicator';
 import { StartGroupCallDialog } from './StartGroupCallDialog';
 import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './DisappearingMessagesSelector';
+import { EditNicknameDialog } from './EditNicknameDialog';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -97,7 +101,10 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [showGroupCallDialog, setShowGroupCallDialog] = useState(false);
   const [showDisappearingSelector, setShowDisappearingSelector] = useState(false);
+  const [showNicknameDialog, setShowNicknameDialog] = useState(false);
   const prevMessagesLengthRef = useRef(0);
+  
+  const isMobile = useIsMobile();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -139,6 +146,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const { saveMessage, unsaveMessage, isMessageSaved } = useSavedMessages();
   const { canDeleteForEveryone, deleteForEveryone, getRemainingTime } = useDeleteForEveryone();
   const { policy: disappearPolicy, isEnabled: isDisappearEnabled, getTimerLabel, setDisappearTimer } = useDisappearingMessages(chat.id);
+  const { getNickname, setNickname, getDisplayName } = useContactNicknames();
 
   // Swipe right to go back (mobile only)
   const { offsetX, isSwiping, handlers: swipeHandlers } = useSwipeGesture({
@@ -449,10 +457,25 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     return 'не в сети';
   };
 
-  const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
+  // Get display name with custom nickname support
+  const originalDisplayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
+  const displayName = chat.is_group 
+    ? chat.group_name 
+    : (otherParticipant ? getDisplayName(otherParticipant.user_id, otherParticipant.display_name) : originalDisplayName);
+  const currentNickname = otherParticipant ? getNickname(otherParticipant.user_id) : null;
+  
   const avatarUrl = chat.is_group 
     ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
     : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;
+
+  const handleSaveNickname = async (nickname: string) => {
+    if (!otherParticipant) return { error: new Error('No participant') };
+    const result = await setNickname(otherParticipant.user_id, nickname);
+    if (!result.error) {
+      toast.success(nickname ? 'Имя контакта изменено' : 'Имя контакта сброшено');
+    }
+    return result;
+  };
 
   return (
     <div 
@@ -535,8 +558,8 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         />
       )}
       
-      {/* Header - WhatsApp Style */}
-      <div className="whatsapp-header flex items-center gap-1 px-1 py-1.5 safe-area-top">
+      {/* Header - Responsive WhatsApp Style */}
+      <div className="whatsapp-header flex items-center gap-1 sm:gap-2 px-1 sm:px-3 py-1.5 sm:py-2 safe-area-top">
         <button
           onClick={onBack}
           className="p-2 rounded-full hover:bg-white/10 transition-colors lg:hidden active:bg-white/20"
@@ -546,12 +569,20 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         <Avatar
           src={avatarUrl || ''}
           alt={displayName || 'Chat'}
-          size="md"
+          size={isMobile ? "md" : "lg"}
           status={otherParticipant?.status as 'online' | 'offline' | 'away'}
         />
-        <div className="min-w-0 flex-1 ml-1">
+        <button 
+          className="min-w-0 flex-1 ml-1 sm:ml-2 text-left hover:bg-white/5 rounded-lg py-1 px-1.5 -ml-0.5 transition-colors"
+          onClick={() => !chat.is_group && setShowNicknameDialog(true)}
+        >
           <div className="flex items-center gap-1.5">
-            <h2 className="font-medium text-[16px] text-white truncate leading-tight">{displayName}</h2>
+            <h2 className="font-medium text-[15px] sm:text-[17px] text-white truncate leading-tight">{displayName}</h2>
+            {currentNickname && !chat.is_group && (
+              <span className="text-[11px] text-white/50 truncate hidden sm:inline">
+                ({otherParticipant?.display_name})
+              </span>
+            )}
             {!chat.is_group && (
               <E2EEIndicator 
                 isEnabled={isE2EEEnabled} 
@@ -562,7 +593,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             <DisappearingMessagesIndicator chatId={chat.id} />
           </div>
           <p className={cn(
-            'text-[12px] truncate leading-tight',
+            'text-[11px] sm:text-[13px] truncate leading-tight',
             typingText 
               ? 'text-green-200 animate-pulse' 
               : !chat.is_group && otherParticipant?.status === 'online' 
@@ -571,33 +602,35 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           )}>
             {getStatusText()}
           </p>
-        </div>
+        </button>
         <div className="flex items-center">
           {/* Call buttons - different for 1:1 and group chats */}
           {!chat.is_group ? (
             <>
               <button 
                 onClick={() => onStartCall('video')}
-                className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+                className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
                 disabled={isOtherUserBlocked}
+                title="Видеозвонок"
               >
-                <Video className="w-[22px] h-[22px] text-white" />
+                <Video className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
               </button>
               <button 
                 onClick={() => onStartCall('voice')}
-                className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+                className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
                 disabled={isOtherUserBlocked}
+                title="Голосовой звонок"
               >
-                <Phone className="w-[22px] h-[22px] text-white" />
+                <Phone className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
               </button>
             </>
           ) : (
             <button 
               onClick={() => setShowGroupCallDialog(true)}
-              className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+              className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
               title="Групповой звонок"
             >
-              <Users className="w-[22px] h-[22px] text-white" />
+              <Users className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
             </button>
           )}
           
@@ -605,11 +638,17 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           {!chat.is_group && otherParticipant && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20">
-                  <MoreVertical className="w-[22px] h-[22px] text-white" />
+                <button className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20">
+                  <MoreVertical className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                {/* Edit Nickname option */}
+                <DropdownMenuItem onClick={() => setShowNicknameDialog(true)}>
+                  <UserPen className="w-4 h-4 mr-2" />
+                  {currentNickname ? 'Изменить имя' : 'Задать имя'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {/* Disappearing Messages option */}
                 <DropdownMenuItem onClick={() => setShowDisappearingSelector(true)}>
                   <Timer className="w-4 h-4 mr-2" />
@@ -684,6 +723,17 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         isOpen={showDisappearingSelector}
         onClose={() => setShowDisappearingSelector(false)}
       />
+
+      {/* Edit Nickname Dialog */}
+      {!chat.is_group && otherParticipant && (
+        <EditNicknameDialog
+          isOpen={showNicknameDialog}
+          onClose={() => setShowNicknameDialog(false)}
+          currentNickname={currentNickname}
+          originalName={otherParticipant.display_name}
+          onSave={handleSaveNickname}
+        />
+      )}
 
       {/* Pull to Refresh Indicator */}
       {pullDistance > 0 && (
