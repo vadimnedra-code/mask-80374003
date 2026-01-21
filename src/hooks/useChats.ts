@@ -145,6 +145,15 @@ export const useChats = () => {
     // Subscribe to chat updates - only to chat_participants for new chats
     if (!user) return;
 
+    const debouncedFetch = () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        fetchChats();
+      }, 300);
+    };
+
     const channel = supabase
       .channel('chats-updates')
       .on(
@@ -156,7 +165,7 @@ export const useChats = () => {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          fetchChats();
+          debouncedFetch();
         }
       )
       .on(
@@ -167,16 +176,32 @@ export const useChats = () => {
           table: 'chats',
         },
         () => {
-          // Debounce refetch to avoid excessive calls
-          fetchChats();
+          debouncedFetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          // Only refetch if is_read changed (message was marked as read)
+          if (payload.old && payload.new && payload.old.is_read !== payload.new.is_read) {
+            debouncedFetch();
+          }
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, fetchChats]);
 
   const findExistingDirectChat = async (otherUserId: string): Promise<string | null> => {
     if (!user) return null;
