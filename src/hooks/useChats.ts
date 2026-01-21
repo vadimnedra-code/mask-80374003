@@ -19,6 +19,8 @@ export interface ChatWithDetails extends Chat {
     status: string;
     last_seen: string;
     role?: string;
+    archived_at?: string | null;
+    muted_until?: string | null;
   }[];
   lastMessage?: {
     content: string | null;
@@ -83,10 +85,10 @@ export const useChats = () => {
     // Get participants for each chat
     const chatsWithDetails: ChatWithDetails[] = await Promise.all(
       (chatsData || []).map(async (chat) => {
-        // Get participants first (including roles)
+        // Get participants first (including roles, archived_at, muted_until)
         const { data: participantsData } = await supabase
           .from('chat_participants')
-          .select('user_id, role')
+          .select('user_id, role, archived_at, muted_until')
           .eq('chat_id', chat.id);
 
         // Then get profiles for each participant
@@ -112,19 +114,22 @@ export const useChats = () => {
 
         // Map participants with their profiles and roles
         const profilesMap = new Map((profilesData || []).map(p => [p.user_id, p]));
-        const participantRolesMap = new Map((participantsData || []).map(p => [p.user_id, p.role]));
+        const participantDataMap = new Map((participantsData || []).map(p => [p.user_id, p]));
         
         return {
           ...chat,
           participants: participantUserIds.map((userId) => {
             const profile = profilesMap.get(userId);
+            const participantData = participantDataMap.get(userId);
             return {
               user_id: userId,
               display_name: profile?.display_name || 'Unknown',
               avatar_url: profile?.avatar_url,
               status: profile?.status || 'offline',
               last_seen: profile?.last_seen,
-              role: participantRolesMap.get(userId) || 'member',
+              role: participantData?.role || 'member',
+              archived_at: participantData?.archived_at,
+              muted_until: participantData?.muted_until,
             };
           }),
           lastMessage: lastMessages?.[0],

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
-import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw } from 'lucide-react';
+import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw, Archive, VolumeX, Volume2, ArchiveRestore } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import maskLogo from '@/assets/mask-logo.png';
 import { ChatWithDetails } from '@/hooks/useChats';
@@ -13,6 +13,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useProfile } from '@/hooks/useProfile';
 import { useChatsTypingStatus } from '@/hooks/useChatsTypingStatus';
+import { useArchiveMute } from '@/hooks/useArchiveMute';
+import { MuteDurationSelector, MutedBadge } from './MuteSelector';
+import { toast } from 'sonner';
 
 interface ChatListProps {
   chats: ChatWithDetails[];
@@ -44,16 +47,19 @@ export const ChatList = ({
   loading 
 }: ChatListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'favorites' | 'groups'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'favorites' | 'groups' | 'archived'>('all');
   const [creatingChatWithUserId, setCreatingChatWithUserId] = useState<string | null>(null);
   const [swipedChatId, setSwipedChatId] = useState<string | null>(null);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [pinningChatId, setPinningChatId] = useState<string | null>(null);
+  const [archivingChatId, setArchivingChatId] = useState<string | null>(null);
+  const [muteDialogChatId, setMuteDialogChatId] = useState<string | null>(null);
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const { user } = useAuth();
   const { profile: currentUserProfile } = useProfile(user?.id);
   const { users, searchUsers } = useUsers();
+  const { archiveChat, unarchiveChat, isChatMuted } = useArchiveMute();
   
   // Get typing status for all chats
   const chatIds = useMemo(() => chats.map(c => c.id), [chats]);
@@ -72,12 +78,26 @@ export const ChatList = ({
     maxPull: 100,
   });
 
+  // Find current user's participant record for each chat
+  const getChatParticipant = useCallback((chat: ChatWithDetails) => {
+    return chat.participants.find(p => p.user_id === user?.id);
+  }, [user?.id]);
+
   const filteredChats = chats.filter((chat) => {
     const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
+    const currentParticipant = getChatParticipant(chat);
     const name = chat.is_group ? chat.group_name : otherParticipant?.display_name;
     const matchesSearch = (name?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false);
+    const isArchived = !!currentParticipant?.archived_at;
     
     // Apply filter based on active tab
+    if (activeFilter === 'archived') {
+      return matchesSearch && isArchived;
+    }
+    
+    // For non-archive tabs, exclude archived chats
+    if (isArchived) return false;
+    
     if (activeFilter === 'unread') {
       return matchesSearch && chat.unreadCount > 0;
     }
@@ -160,6 +180,50 @@ export const ChatList = ({
     }
   };
 
+  const handleArchiveChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (archivingChatId) return;
+    
+    setArchivingChatId(chatId);
+    try {
+      const { error } = await archiveChat(chatId);
+      if (error) {
+        toast.error('Не удалось архивировать чат');
+      } else {
+        toast.success('Чат архивирован');
+        setSwipedChatId(null);
+        if (onRefresh) await onRefresh();
+      }
+    } finally {
+      setArchivingChatId(null);
+    }
+  };
+
+  const handleUnarchiveChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (archivingChatId) return;
+    
+    setArchivingChatId(chatId);
+    try {
+      const { error } = await unarchiveChat(chatId);
+      if (error) {
+        toast.error('Не удалось разархивировать чат');
+      } else {
+        toast.success('Чат разархивирован');
+        setSwipedChatId(null);
+        if (onRefresh) await onRefresh();
+      }
+    } finally {
+      setArchivingChatId(null);
+    }
+  };
+
+  const handleMuteChat = (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMuteDialogChatId(chatId);
+    setSwipedChatId(null);
+  };
+
   const handleChatClick = (chatId: string) => {
     if (swipedChatId === chatId) {
       setSwipedChatId(null);
@@ -171,6 +235,12 @@ export const ChatList = ({
   // Separate pinned and unpinned chats
   const pinnedChats = filteredChats.filter(c => c.pinned_at);
   const unpinnedChats = filteredChats.filter(c => !c.pinned_at);
+  
+  // Get archived count for badge
+  const archivedCount = chats.filter(chat => {
+    const currentParticipant = getChatParticipant(chat);
+    return !!currentParticipant?.archived_at;
+  }).length;
 
   const currentUserAvatarUrl = currentUserProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
   const currentUserDisplayName = currentUserProfile?.display_name || 'Вы';
@@ -259,6 +329,23 @@ export const ChatList = ({
           )}
         >
           Группы
+        </button>
+        <button 
+          onClick={() => setActiveFilter('archived')}
+          className={cn(
+            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors flex items-center gap-1.5",
+            activeFilter === 'archived' 
+              ? "bg-primary/15 text-primary" 
+              : "text-muted-foreground hover:bg-muted"
+          )}
+        >
+          <Archive className="w-3.5 h-3.5" />
+          Архив
+          {archivedCount > 0 && activeFilter !== 'archived' && (
+            <span className="min-w-4 h-4 px-1 flex items-center justify-center text-[10px] font-medium text-primary-foreground bg-primary rounded-full">
+              {archivedCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -412,16 +499,32 @@ export const ChatList = ({
         </div>
         <Settings className="w-5 h-5 text-muted-foreground" />
       </div>
+
+      {/* Mute Duration Selector */}
+      {muteDialogChatId && (
+        <MuteDurationSelector
+          chatId={muteDialogChatId}
+          isOpen={!!muteDialogChatId}
+          onClose={() => setMuteDialogChatId(null)}
+          currentMutedUntil={
+            chats.find(c => c.id === muteDialogChatId)?.participants.find(p => p.user_id === user?.id)?.muted_until || null
+          }
+        />
+      )}
     </div>
   );
   
   function renderChatItem(chat: ChatWithDetails) {
     const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
+    const currentParticipant = getChatParticipant(chat);
     const isSelected = chat.id === selectedChatId;
     const isSwiped = swipedChatId === chat.id;
     const isDeleting = deletingChatId === chat.id;
     const isPinning = pinningChatId === chat.id;
+    const isArchiving = archivingChatId === chat.id;
     const isPinned = !!chat.pinned_at;
+    const isArchived = !!currentParticipant?.archived_at;
+    const isMuted = isChatMuted(currentParticipant?.muted_until || null);
     const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
     const avatarUrl = chat.is_group 
       ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
@@ -429,39 +532,89 @@ export const ChatList = ({
 
     return (
       <div key={chat.id} className="relative overflow-hidden">
-        {/* Action buttons background */}
+        {/* Action buttons background - different for archived view */}
         <div 
           className={cn(
             "absolute right-0 top-0 bottom-0 flex items-center transition-all duration-200",
-            isSwiped ? "w-32 opacity-100" : "w-0 opacity-0"
+            isSwiped ? (isArchived ? "w-32 opacity-100" : "w-48 opacity-100") : "w-0 opacity-0"
           )}
         >
-          {/* Pin/Unpin button */}
-          <button
-            onClick={(e) => handleTogglePinChat(chat.id, e)}
-            disabled={isPinning}
-            className="w-16 h-full flex items-center justify-center bg-primary text-primary-foreground"
-          >
-            {isPinning ? (
-              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-            ) : isPinned ? (
-              <PinOff className="w-5 h-5" />
-            ) : (
-              <Pin className="w-5 h-5" />
-            )}
-          </button>
-          {/* Delete button */}
-          <button
-            onClick={(e) => handleDeleteChat(chat.id, e)}
-            disabled={isDeleting}
-            className="w-16 h-full flex items-center justify-center bg-destructive text-destructive-foreground"
-          >
-            {isDeleting ? (
-              <div className="w-5 h-5 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" />
-            ) : (
-              <Trash2 className="w-5 h-5" />
-            )}
-          </button>
+          {isArchived ? (
+            <>
+              {/* Unarchive button */}
+              <button
+                onClick={(e) => handleUnarchiveChat(chat.id, e)}
+                disabled={isArchiving}
+                className="w-16 h-full flex items-center justify-center bg-primary text-primary-foreground"
+              >
+                {isArchiving ? (
+                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                ) : (
+                  <ArchiveRestore className="w-5 h-5" />
+                )}
+              </button>
+              {/* Delete button */}
+              <button
+                onClick={(e) => handleDeleteChat(chat.id, e)}
+                disabled={isDeleting}
+                className="w-16 h-full flex items-center justify-center bg-destructive text-destructive-foreground"
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-5 h-5" />
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Mute button */}
+              <button
+                onClick={(e) => handleMuteChat(chat.id, e)}
+                className="w-12 h-full flex items-center justify-center bg-muted-foreground text-background"
+              >
+                {isMuted ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </button>
+              {/* Archive button */}
+              <button
+                onClick={(e) => handleArchiveChat(chat.id, e)}
+                disabled={isArchiving}
+                className="w-12 h-full flex items-center justify-center bg-amber-500 text-white"
+              >
+                {isArchiving ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Archive className="w-5 h-5" />
+                )}
+              </button>
+              {/* Pin/Unpin button */}
+              <button
+                onClick={(e) => handleTogglePinChat(chat.id, e)}
+                disabled={isPinning}
+                className="w-12 h-full flex items-center justify-center bg-primary text-primary-foreground"
+              >
+                {isPinning ? (
+                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                ) : isPinned ? (
+                  <PinOff className="w-5 h-5" />
+                ) : (
+                  <Pin className="w-5 h-5" />
+                )}
+              </button>
+              {/* Delete button */}
+              <button
+                onClick={(e) => handleDeleteChat(chat.id, e)}
+                disabled={isDeleting}
+                className="w-12 h-full flex items-center justify-center bg-destructive text-destructive-foreground"
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-5 h-5" />
+                )}
+              </button>
+            </>
+          )}
         </div>
         
         {/* Chat item */}
@@ -473,7 +626,7 @@ export const ChatList = ({
           className={cn(
             'w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-all duration-200 bg-background relative border-b border-border/30',
             isSelected && 'bg-muted/50',
-            isSwiped && '-translate-x-32'
+            isSwiped && (isArchived ? '-translate-x-32' : '-translate-x-48')
           )}
         >
           <div className="relative flex-shrink-0">
@@ -491,7 +644,10 @@ export const ChatList = ({
           </div>
           <div className="flex-1 min-w-0 text-left">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-medium truncate text-[15px]">{displayName}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-medium truncate text-[15px]">{displayName}</span>
+                {isMuted && <MutedBadge mutedUntil={currentParticipant?.muted_until || null} />}
+              </div>
               {chat.lastMessage && (
                 <span className="text-xs text-muted-foreground flex-shrink-0">
                   {new Date(chat.lastMessage.created_at).toLocaleTimeString('ru-RU', { 
