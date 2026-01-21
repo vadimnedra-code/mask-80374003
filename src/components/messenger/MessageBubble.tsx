@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2, Lock } from 'lucide-react';
+import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2, Lock, Star, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { VoicePlayer } from './VoicePlayer';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -32,16 +33,39 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   onEdit?: (messageId: string, newContent: string) => Promise<void>;
   onDelete?: (messageId: string) => Promise<void>;
+  onDeleteForEveryone?: (messageId: string) => Promise<void>;
   onForward?: (message: Message) => void;
+  onSave?: (messageId: string) => Promise<void>;
+  onUnsave?: (messageId: string) => Promise<void>;
+  isSaved?: boolean;
+  canDeleteForEveryone?: boolean;
+  deleteForEveryoneTimeLeft?: string | null;
   reactions?: ReactionGroup[];
   onReaction?: (emoji: string) => void;
 }
 
-export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, onForward, reactions = [], onReaction }: MessageBubbleProps) => {
+export const MessageBubble = ({ 
+  message, 
+  isOwn, 
+  showAvatar, 
+  onEdit, 
+  onDelete, 
+  onDeleteForEveryone,
+  onForward, 
+  onSave,
+  onUnsave,
+  isSaved = false,
+  canDeleteForEveryone = false,
+  deleteForEveryoneTimeLeft,
+  reactions = [], 
+  onReaction 
+}: MessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || '');
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteForEveryoneDialog, setShowDeleteForEveryoneDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleEdit = async () => {
     if (!editContent.trim() || !onEdit) return;
@@ -55,6 +79,25 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
     await onDelete(message.id);
     setIsDeleting(false);
     setShowDeleteDialog(false);
+  };
+
+  const handleDeleteForEveryone = async () => {
+    if (!onDeleteForEveryone) return;
+    setIsDeleting(true);
+    await onDeleteForEveryone(message.id);
+    setIsDeleting(false);
+    setShowDeleteForEveryoneDialog(false);
+  };
+
+  const handleToggleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    if (isSaved && onUnsave) {
+      await onUnsave(message.id);
+    } else if (!isSaved && onSave) {
+      await onSave(message.id);
+    }
+    setIsSaving(false);
   };
 
   const confirmDelete = () => {
@@ -168,7 +211,7 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить сообщение?</AlertDialogTitle>
             <AlertDialogDescription>
-              Это сообщение будет удалено безвозвратно. Это действие нельзя отменить.
+              Это сообщение будет удалено только у вас. Это действие нельзя отменить.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -184,7 +227,41 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
                   Удаление...
                 </>
               ) : (
-                'Удалить'
+                'Удалить у себя'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete For Everyone Confirmation Dialog */}
+      <AlertDialog open={showDeleteForEveryoneDialog} onOpenChange={setShowDeleteForEveryoneDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить для всех?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это сообщение будет удалено у всех участников чата. Это действие нельзя отменить.
+              {deleteForEveryoneTimeLeft && (
+                <span className="block mt-2 text-sm text-muted-foreground">
+                  Осталось времени: {deleteForEveryoneTimeLeft}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Отмена</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteForEveryone}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Удаление...
+                </>
+              ) : (
+                'Удалить для всех'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -209,13 +286,20 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
                 <MoreVertical className="w-4 h-4 text-[#667781]" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[140px]">
+            <DropdownMenuContent align="start" className="min-w-[160px]">
+              {(onSave || onUnsave) && (
+                <DropdownMenuItem onClick={handleToggleSave} disabled={isSaving}>
+                  <Star className={cn("w-4 h-4 mr-2", isSaved && "fill-yellow-500 text-yellow-500")} />
+                  {isSaved ? 'Убрать из избранного' : 'В избранное'}
+                </DropdownMenuItem>
+              )}
               {onForward && (
                 <DropdownMenuItem onClick={() => onForward(message)}>
                   <Forward className="w-4 h-4 mr-2" />
                   Переслать
                 </DropdownMenuItem>
               )}
+              {(onSave || onUnsave || onForward) && canDelete && <DropdownMenuSeparator />}
               {canDelete && (
                 <DropdownMenuItem 
                   onClick={confirmDelete}
@@ -318,7 +402,13 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
                 <MoreVertical className="w-4 h-4 text-[#667781]" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[140px]">
+            <DropdownMenuContent align="end" className="min-w-[180px]">
+              {(onSave || onUnsave) && (
+                <DropdownMenuItem onClick={handleToggleSave} disabled={isSaving}>
+                  <Star className={cn("w-4 h-4 mr-2", isSaved && "fill-yellow-500 text-yellow-500")} />
+                  {isSaved ? 'Убрать из избранного' : 'В избранное'}
+                </DropdownMenuItem>
+              )}
               {onForward && (
                 <DropdownMenuItem onClick={() => onForward(message)}>
                   <Forward className="w-4 h-4 mr-2" />
@@ -331,13 +421,26 @@ export const MessageBubble = ({ message, isOwn, showAvatar, onEdit, onDelete, on
                   Редактировать
                 </DropdownMenuItem>
               )}
+              {(onSave || onUnsave || onForward || canEdit) && (canDelete || canDeleteForEveryone) && <DropdownMenuSeparator />}
+              {canDeleteForEveryone && onDeleteForEveryone && (
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteForEveryoneDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Удалить для всех
+                  {deleteForEveryoneTimeLeft && (
+                    <span className="ml-auto text-xs opacity-70">{deleteForEveryoneTimeLeft}</span>
+                  )}
+                </DropdownMenuItem>
+              )}
               {canDelete && (
                 <DropdownMenuItem 
                   onClick={confirmDelete}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Удалить
+                  Удалить у себя
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

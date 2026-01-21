@@ -4,7 +4,6 @@ import {
   Video, 
   MoreVertical, 
   Paperclip, 
-  Smile, 
   Mic, 
   Send, 
   ArrowLeft,
@@ -21,23 +20,25 @@ import {
   CheckCircle,
   MessageSquareX,
   ChevronLeft,
-  ShieldCheck,
-  Users
+  Users,
+  Timer
 } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
-import { ChatWithDetails, useChats } from '@/hooks/useChats';
-import { Message, useMessages } from '@/hooks/useMessages';
-import { useEncryptedMessages, EncryptedMessage } from '@/hooks/useEncryptedMessages';
+import { ChatWithDetails } from '@/hooks/useChats';
+import { Message } from '@/hooks/useMessages';
+import { useEncryptedMessages } from '@/hooks/useEncryptedMessages';
+import { useSavedMessages } from '@/hooks/useSavedMessages';
+import { useDeleteForEveryone } from '@/hooks/useDeleteForEveryone';
+import { useDisappearingMessages } from '@/hooks/useDisappearingMessages';
 import { Avatar } from './Avatar';
 import { MessageBubble } from './MessageBubble';
 import { SwipeableMessage } from './SwipeableMessage';
 import { ForwardMessageDialog } from './ForwardMessageDialog';
 import { EmojiPicker } from './EmojiPicker';
 import { DateSeparator, shouldShowDateSeparator } from './DateSeparator';
-import { PrivacyChip, getDefaultPrivacySettings } from './PrivacyChip';
-import { MaskIndicator } from './MaskSwitch';
 import { E2EEIndicator } from './E2EEIndicator';
 import { StartGroupCallDialog } from './StartGroupCallDialog';
+import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './DisappearingMessagesSelector';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -95,6 +96,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [showGroupCallDialog, setShowGroupCallDialog] = useState(false);
+  const [showDisappearingSelector, setShowDisappearingSelector] = useState(false);
   const prevMessagesLengthRef = useRef(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -132,6 +134,11 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
   const { fetchReactions, toggleReaction, getReactionGroups } = useMessageReactions(chat.id);
+  
+  // Phase 1 hooks
+  const { saveMessage, unsaveMessage, isMessageSaved } = useSavedMessages();
+  const { canDeleteForEveryone, deleteForEveryone, getRemainingTime } = useDeleteForEveryone();
+  const { policy: disappearPolicy, isEnabled: isDisappearEnabled, getTimerLabel, setDisappearTimer } = useDisappearingMessages(chat.id);
 
   // Swipe right to go back (mobile only)
   const { offsetX, isSwiping, handlers: swipeHandlers } = useSwipeGesture({
@@ -551,6 +558,8 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                 recipientHasE2EE={recipientHasE2EE} 
               />
             )}
+            {/* Disappearing Messages Indicator */}
+            <DisappearingMessagesIndicator chatId={chat.id} />
           </div>
           <p className={cn(
             'text-[12px] truncate leading-tight',
@@ -600,7 +609,18 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                   <MoreVertical className="w-[22px] h-[22px] text-white" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
+                {/* Disappearing Messages option */}
+                <DropdownMenuItem onClick={() => setShowDisappearingSelector(true)}>
+                  <Timer className="w-4 h-4 mr-2" />
+                  Исчезающие сообщения
+                  {isDisappearEnabled && (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {getTimerLabel(disappearPolicy?.ttl_seconds ?? null)}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleBlockUser}>
                   {isOtherUserBlocked ? (
                     <>
@@ -633,7 +653,18 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                   <MoreVertical className="w-[22px] h-[22px] text-white" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
+                {/* Disappearing Messages option for groups */}
+                <DropdownMenuItem onClick={() => setShowDisappearingSelector(true)}>
+                  <Timer className="w-4 h-4 mr-2" />
+                  Исчезающие сообщения
+                  {isDisappearEnabled && (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {getTimerLabel(disappearPolicy?.ttl_seconds ?? null)}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => setShowClearHistoryDialog(true)}
                   className="text-destructive focus:text-destructive"
@@ -646,6 +677,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           )}
         </div>
       </div>
+
+      {/* Disappearing Messages Selector */}
+      <DisappearingMessagesSelector
+        chatId={chat.id}
+        isOpen={showDisappearingSelector}
+        onClose={() => setShowDisappearingSelector(false)}
+      />
 
       {/* Pull to Refresh Indicator */}
       {pullDistance > 0 && (
@@ -759,7 +797,35 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                       onDelete={async (messageId) => {
                         await deleteMessage(messageId);
                       }}
+                      onDeleteForEveryone={async (messageId) => {
+                        const { error } = await deleteForEveryone(messageId);
+                        if (error) {
+                          toast.error('Не удалось удалить для всех');
+                        } else {
+                          toast.success('Сообщение удалено для всех');
+                          refetch();
+                        }
+                      }}
                       onForward={() => handleForwardMessage(msg)}
+                      onSave={async (messageId) => {
+                        const { error } = await saveMessage(messageId, chat.id);
+                        if (error) {
+                          toast.error('Не удалось добавить в избранное');
+                        } else {
+                          toast.success('Добавлено в избранное');
+                        }
+                      }}
+                      onUnsave={async (messageId) => {
+                        const { error } = await unsaveMessage(messageId);
+                        if (error) {
+                          toast.error('Не удалось убрать из избранного');
+                        } else {
+                          toast.success('Убрано из избранного');
+                        }
+                      }}
+                      isSaved={isMessageSaved(msg.id)}
+                      canDeleteForEveryone={canDeleteForEveryone(msg.created_at, msg.sender_id)}
+                      deleteForEveryoneTimeLeft={getRemainingTime(msg.created_at)}
                       reactions={getReactionGroups(msg.id)}
                       onReaction={(emoji) => toggleReaction(msg.id, emoji)}
                     />
