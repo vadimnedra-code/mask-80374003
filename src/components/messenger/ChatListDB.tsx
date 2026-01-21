@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import maskLogo from '@/assets/mask-logo.png';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
@@ -502,11 +503,25 @@ export const ChatList = ({
                 )}
                 {chat.lastMessage?.content || 'Нет сообщений'}
               </p>
-              {chat.unreadCount > 0 && (
-                <span className="flex-shrink-0 min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full">
-                  {chat.unreadCount}
-                </span>
-              )}
+              <AnimatePresence mode="wait">
+                {chat.unreadCount > 0 && (
+                  <motion.span
+                    key={`unread-${chat.id}`}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 500, 
+                      damping: 30,
+                      duration: 0.2 
+                    }}
+                    className="flex-shrink-0 min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full"
+                  >
+                    {chat.unreadCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </button>
