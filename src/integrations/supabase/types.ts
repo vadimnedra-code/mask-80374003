@@ -278,6 +278,33 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_nicknames: {
+        Row: {
+          contact_user_id: string
+          created_at: string
+          id: string
+          nickname: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_user_id: string
+          created_at?: string
+          id?: string
+          nickname: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_user_id?: string
+          created_at?: string
+          id?: string
+          nickname?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       disappear_policies: {
         Row: {
           chat_id: string
