@@ -155,10 +155,11 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const { policy: disappearPolicy, isEnabled: isDisappearEnabled, getTimerLabel, setDisappearTimer } = useDisappearingMessages(chat.id);
   const { getNickname, setNickname, getDisplayName } = useContactNicknames();
 
-  // Swipe right to go back (mobile only)
+  // Swipe right to go back (mobile only) - only from left edge
   const { offsetX, isSwiping, handlers: swipeHandlers } = useSwipeGesture({
-    threshold: 80,
-    maxSwipe: 150,
+    threshold: 60,
+    maxSwipe: 120,
+    edgeWidth: 25, // Only trigger from leftmost 25px
     onSwipeRight: onBack,
   });
 
@@ -527,28 +528,32 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
       {...swipeHandlers}
     >
       {/* Swipe back indicator */}
-      <div 
-        className={cn(
-          "absolute left-0 top-0 bottom-0 z-50 flex items-center justify-center pointer-events-none transition-opacity lg:hidden",
-          offsetX > 30 ? "opacity-100" : "opacity-0"
+      <AnimatePresence>
+        {offsetX > 10 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute left-0 top-0 bottom-0 z-50 flex items-center pointer-events-none lg:hidden"
+            style={{ 
+              width: Math.max(0, offsetX),
+              background: `linear-gradient(to right, hsl(var(--primary) / ${Math.min(offsetX / 120, 0.25)}), transparent)`
+            }}
+          >
+            <div 
+              className={cn(
+                "ml-2 w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center transition-transform",
+                offsetX > 60 ? "scale-110" : "scale-100"
+              )}
+            >
+              <ChevronLeft className={cn(
+                "w-6 h-6 text-primary transition-all",
+                offsetX > 60 ? "scale-110" : "scale-100"
+              )} />
+            </div>
+          </motion.div>
         )}
-        style={{ 
-          width: Math.max(0, offsetX),
-          background: `linear-gradient(to right, hsl(var(--primary) / ${Math.min(offsetX / 150, 0.3)}), transparent)`
-        }}
-      >
-        <div 
-          className={cn(
-            "w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center transition-transform",
-            offsetX > 80 ? "scale-110" : "scale-100"
-          )}
-        >
-          <ChevronLeft className={cn(
-            "w-6 h-6 text-primary transition-all",
-            offsetX > 80 ? "scale-110" : "scale-100"
-          )} />
-        </div>
-      </div>
+      </AnimatePresence>
       {/* Forward Message Dialog */}
       {messageToForward && (
         <ForwardMessageDialog
@@ -779,39 +784,38 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         />
       )}
 
-      {/* Messages (wrapper keeps layout stable; pull indicator is overlay to avoid scroll "jerks") */}
-      <div className="relative flex-1">
-        {/* Pull to Refresh Indicator (overlay; does not change layout height) */}
-        <div
-          className={cn(
-            'pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-center justify-center transition-opacity',
-            pullDistance > 0 ? 'opacity-100' : 'opacity-0'
+      {/* Messages container */}
+      <div className="relative flex-1 min-h-0">
+        {/* Pull to Refresh Indicator (fixed position overlay) */}
+        <AnimatePresence>
+          {(pullDistance > 0 || isRefreshing) && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute left-1/2 top-2 z-20 -translate-x-1/2"
+            >
+              <div className={cn(
+                'flex items-center justify-center h-10 w-10 rounded-full bg-card shadow-lg border border-border transition-all duration-200',
+                pullDistance >= 60 ? 'scale-100 text-primary' : 'scale-90 text-muted-foreground'
+              )}>
+                <RefreshCw className={cn('w-5 h-5', isRefreshing && 'animate-spin')} />
+              </div>
+            </motion.div>
           )}
-          style={{
-            transform: `translateY(${Math.min(pullDistance - 50, 0)}px)`,
-          }}
-        >
-          <div className={cn(
-            'flex items-center justify-center h-10 w-10 rounded-full bg-muted/60 backdrop-blur-sm transition-all duration-200',
-            pullDistance >= 60 ? 'scale-100 text-primary' : 'scale-90 text-muted-foreground'
-          )}>
-            <RefreshCw className={cn('w-5 h-5', isRefreshing && 'animate-spin')} />
-          </div>
-        </div>
+        </AnimatePresence>
 
-        {/* Messages - Custom Wallpaper */}
+        {/* Messages - No transform to avoid scroll issues */}
         <div 
           ref={messagesContainerRef}
           className={cn(
-            "h-full overflow-y-auto py-2 space-y-[2px] scrollbar-thin relative",
+            "absolute inset-0 overflow-y-auto py-2 space-y-[2px] scrollbar-thin",
             currentWallpaper.id === 'default' && 'chat-wallpaper'
           )}
           style={{
             background: currentWallpaper.id !== 'default' ? currentWallpaper.value : undefined,
-            WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
-            overscrollBehavior: 'contain', // Prevent scroll chaining
-            transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
-            transition: pullDistance > 0 || isRefreshing ? 'transform 120ms ease-out' : undefined,
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
           }}
           onTouchStart={handlePullStart}
           onTouchMove={handlePullMove}
