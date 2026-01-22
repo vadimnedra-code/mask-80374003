@@ -11,8 +11,10 @@ import {
   ArrowLeft,
   RefreshCw,
   MessageCircle,
-  UsersRound
+  UsersRound,
+  Download
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAnalytics } from '@/hooks/useAdminAnalytics';
@@ -135,6 +137,69 @@ const Admin = () => {
     );
   }
 
+  const exportToCSV = () => {
+    if (!analytics) {
+      toast.error('Нет данных для экспорта');
+      return;
+    }
+
+    const now = new Date().toISOString().split('T')[0];
+    
+    // Summary data
+    const summaryRows = [
+      ['МАСК Messenger - Аналитика'],
+      [`Дата экспорта: ${new Date().toLocaleString('ru-RU')}`],
+      [''],
+      ['=== ОБЩАЯ СТАТИСТИКА ==='],
+      ['Показатель', 'Значение'],
+      ['Всего пользователей', analytics.total_users],
+      ['Сейчас онлайн', analytics.online_users],
+      ['Всего чатов', analytics.total_chats],
+      ['Групповые чаты', analytics.group_chats],
+      ['Всего сообщений', analytics.total_messages],
+      ['Сообщений сегодня', analytics.messages_today],
+      ['Сообщений за неделю', analytics.messages_week],
+      ['Новых пользователей сегодня', analytics.new_users_today],
+      ['Новых пользователей за неделю', analytics.new_users_week],
+      ['Активные звонки', analytics.active_calls],
+      [''],
+      ['=== СООБЩЕНИЯ ПО ДНЯМ ==='],
+      ['Дата', 'Количество сообщений'],
+    ];
+
+    // Messages by day
+    analytics.messages_by_day?.forEach(item => {
+      summaryRows.push([item.date, item.count]);
+    });
+
+    summaryRows.push(['']);
+    summaryRows.push(['=== РЕГИСТРАЦИИ ПО ДНЯМ ===']);
+    summaryRows.push(['Дата', 'Количество регистраций']);
+
+    // Users by day
+    analytics.users_by_day?.forEach(item => {
+      summaryRows.push([item.date, item.count]);
+    });
+
+    // Convert to CSV string
+    const csvContent = summaryRows
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mask-analytics-${now}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Аналитика экспортирована');
+  };
+
   // Prepare chart data
   const messagesChartData = analytics?.messages_by_day?.map(item => ({
     date: new Date(item.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
@@ -167,12 +232,22 @@ const Admin = () => {
               <p className="text-xs text-muted-foreground">МАСК Messenger</p>
             </div>
           </div>
-          <button
-            onClick={() => refetch()}
-            className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
-          >
-            <RefreshCw className="w-5 h-5 text-amber-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportToCSV}
+              className="p-2.5 rounded-xl bg-green-500/10 hover:bg-green-500/20 transition-colors"
+              title="Экспорт в CSV"
+            >
+              <Download className="w-5 h-5 text-green-400" />
+            </button>
+            <button
+              onClick={() => refetch()}
+              className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+              title="Обновить"
+            >
+              <RefreshCw className="w-5 h-5 text-amber-400" />
+            </button>
+          </div>
         </div>
       </header>
 
