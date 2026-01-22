@@ -44,7 +44,8 @@ const Auth = () => {
   // Redirect when user is authenticated
   useEffect(() => {
     if (user && authMode !== 'qr-setup-name') {
-      navigate('/');
+      // Use replace so /auth isn't left in history (prevents iOS/Android back-swipe returning to login)
+      navigate('/', { replace: true });
     }
   }, [user, authMode, navigate]);
 
@@ -113,7 +114,7 @@ const Auth = () => {
         toast.error(error.message);
       } else {
         toast.success('Пароль изменён');
-        navigate('/');
+        navigate('/', { replace: true });
       }
     } catch (err) {
       toast.error('Что-то пошло не так. Попробуйте позже.');
@@ -315,7 +316,7 @@ ${secretKey}
       }
       
       toast.success('Добро пожаловать, ' + displayName + '!');
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
       toast.error('Что-то пошло не так');
     } finally {
