@@ -10,7 +10,9 @@ import {
   Moon,
   Sun,
   Edit2,
-  Trash2
+  Trash2,
+  FileText,
+  ScrollText
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
@@ -70,6 +72,11 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
     { icon: Shield, label: 'Конфиденциальность', description: 'Блокировка, безопасность' },
     { icon: Palette, label: 'Оформление', description: 'Тема, фон чатов' },
     { icon: HelpCircle, label: 'Помощь', description: 'FAQ, связь с поддержкой' },
+  ];
+
+  const legalItems = [
+    { icon: FileText, label: 'Политика конфиденциальности', path: '/privacy' },
+    { icon: ScrollText, label: 'Условия использования', path: '/terms' },
   ];
 
   if (showProfileEdit) {
@@ -178,6 +185,23 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
                   <p className="font-medium">{item.label}</p>
                   <p className="text-xs text-muted-foreground">{item.description}</p>
                 </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </button>
+          ))}
+        </div>
+
+        {/* Legal Links */}
+        <div className="p-4 border-t border-border space-y-1">
+          {legalItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.path)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors group"
+            >
+              <div className="flex items-center gap-4">
+                <item.icon className="w-5 h-5 text-muted-foreground" />
+                <span className="font-medium">{item.label}</span>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </button>
