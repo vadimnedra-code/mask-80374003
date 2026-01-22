@@ -1,7 +1,7 @@
 import { useEffect, useCallback, forwardRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
 
 interface MediaLightboxProps {
   src: string;
@@ -58,7 +58,7 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
       }
     };
 
-    return (
+    const content = (
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -67,7 +67,7 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center"
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
             onClick={onClose}
           >
             {/* Backdrop */}
@@ -162,6 +162,9 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
         )}
       </AnimatePresence>
     );
+
+    // Use portal to render at document body level, avoiding z-index issues
+    return createPortal(content, document.body);
   }
 );
 
