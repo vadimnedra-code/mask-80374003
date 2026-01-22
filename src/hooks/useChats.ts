@@ -40,6 +40,13 @@ export const useChats = () => {
   const [loading, setLoading] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  const getChatSortTimestamp = useCallback((chat: ChatWithDetails) => {
+    // Prefer real activity (last message time). This fixes cases where chats.updated_at
+    // doesn't track message inserts and empty/new chats float to the top.
+    const ts = chat.lastMessage?.created_at || chat.updated_at || chat.created_at;
+    return new Date(ts).getTime();
+  }, []);
+
   const fetchChats = useCallback(async () => {
     if (!user) {
       console.log('[useChats] No user, skipping fetch');
@@ -149,19 +156,20 @@ export const useChats = () => {
       })
     );
 
-    // Sort chats: pinned first (by pinned_at desc), then by updated_at desc
+    // Sort chats: pinned first (by pinned_at desc), then by last activity (last message)
     chatsWithDetails.sort((a, b) => {
       if (a.pinned_at && !b.pinned_at) return -1;
       if (!a.pinned_at && b.pinned_at) return 1;
       if (a.pinned_at && b.pinned_at) {
         return new Date(b.pinned_at).getTime() - new Date(a.pinned_at).getTime();
       }
-      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+
+      return getChatSortTimestamp(b) - getChatSortTimestamp(a);
     });
 
     setChats(chatsWithDetails);
     setLoading(false);
-  }, [user]);
+  }, [user, getChatSortTimestamp]);
 
   useEffect(() => {
     fetchChats();
@@ -206,16 +214,11 @@ export const useChats = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'messages',
         },
-        (payload) => {
-          // Only refetch if is_read changed (message was marked as read)
-          if (payload.old && payload.new && payload.old.is_read !== payload.new.is_read) {
-            debouncedFetch();
-          }
-        }
+        () => debouncedFetch()
       )
       .subscribe();
 
