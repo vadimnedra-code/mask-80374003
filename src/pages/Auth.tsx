@@ -38,7 +38,7 @@ const Auth = () => {
     return localStorage.getItem('mask-remember-me') === 'true';
   });
 
-  const { updatePassword, signInAnonymously, updateDisplayName, user } = useAuth();
+  const { updatePassword, updateDisplayName, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect when user is authenticated
@@ -199,16 +199,37 @@ ${secretKey}
     
     setLoading(true);
     try {
-      const { error, user: newUser } = await signInAnonymously();
+      // Generate a unique email based on the secret key
+      const keyHash = secretKey.replace(/-/g, '').toLowerCase();
+      const uniqueEmail = `anon-${keyHash.slice(0, 16)}@mask.local`;
+      const uniquePassword = secretKey.replace(/-/g, '');
+      
+      // Sign up with email/password instead of anonymous
+      const { data, error } = await supabase.auth.signUp({
+        email: uniqueEmail,
+        password: uniquePassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            display_name: 'Mask User',
+          }
+        }
+      });
+      
       if (error) {
-        console.error('Anonymous signup error:', error);
-        toast.error('Ошибка регистрации. Попробуйте позже.');
+        console.error('Signup error:', error);
+        if (error.message.includes('already registered')) {
+          toast.error('Этот ключ уже используется. Попробуйте войти.');
+        } else {
+          toast.error('Ошибка регистрации. Попробуйте позже.');
+        }
         setLoading(false);
         return;
       }
       
+      const newUser = data?.user;
       if (newUser) {
-        // Store the secret key
+        // Store the secret key for future logins
         const { error: tokenError } = await supabase.functions.invoke('verify-login-token', {
           body: { action: 'generate', userId: newUser.id, secretKey: secretKey }
         });
