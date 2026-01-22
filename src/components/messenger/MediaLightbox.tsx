@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, ZoomIn, ZoomOut, RotateCw, Loader2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSignedMediaUrl } from '@/hooks/useSignedMediaUrl';
 
 interface MediaLightboxProps {
   src: string;
@@ -15,6 +16,9 @@ export function MediaLightbox({ src, type, alt = 'Медиа', isOpen, onClose }
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [imageStatus, setImageStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [loadToken, setLoadToken] = useState(0);
+
+  const { url: resolvedSrc, loading: resolvingUrl } = useSignedMediaUrl(src, { expiresIn: 60 * 60 });
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -28,13 +32,19 @@ export function MediaLightbox({ src, type, alt = 'Медиа', isOpen, onClose }
       document.body.style.overflow = 'hidden';
       setScale(1);
       setRotation(0);
-      setImageStatus(type === 'image' ? 'loading' : 'idle');
+      if (type === 'image') {
+        // Force a fresh <img> instance after we switch to loading state to avoid cached-image race.
+        setImageStatus('loading');
+        setLoadToken((v) => v + 1);
+      } else {
+        setImageStatus('idle');
+      }
     }
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, handleKeyDown, type]);
+  }, [isOpen, handleKeyDown, type, resolvedSrc]);
 
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 3));
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.5, 0.5));
@@ -42,7 +52,7 @@ export function MediaLightbox({ src, type, alt = 'Медиа', isOpen, onClose }
   
   const handleDownload = async () => {
     try {
-      const response = await fetch(src);
+      const response = await fetch(resolvedSrc ?? src);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -132,7 +142,7 @@ export function MediaLightbox({ src, type, alt = 'Медиа', isOpen, onClose }
         >
           {type === 'image' ? (
             <div className="relative flex items-center justify-center">
-              {imageStatus === 'loading' && (
+              {(imageStatus === 'loading' || resolvingUrl) && (
                 <div className="absolute inset-0 flex items-center justify-center min-w-[200px] min-h-[200px]">
                   <div className="flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm text-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -161,7 +171,8 @@ export function MediaLightbox({ src, type, alt = 'Медиа', isOpen, onClose }
               )}
 
               <img
-                src={src}
+                key={`${resolvedSrc ?? src}-${loadToken}`}
+                src={resolvedSrc ?? src}
                 alt={alt}
                 onLoad={() => setImageStatus('loaded')}
                 onError={() => setImageStatus('error')}
@@ -177,7 +188,7 @@ export function MediaLightbox({ src, type, alt = 'Медиа', isOpen, onClose }
             </div>
           ) : (
             <video
-              src={src}
+              src={resolvedSrc ?? src}
               controls
               autoPlay
               className="max-w-full max-h-[85vh] rounded-lg"
