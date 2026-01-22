@@ -7,6 +7,8 @@ import {
   Video, 
   VideoOff,
   Volume2,
+  Volume1,
+  Headphones,
   SwitchCamera,
   Monitor,
   MonitorOff,
@@ -19,6 +21,7 @@ import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
 import { GroupCallState, GroupCallParticipant } from '@/types/groupCall';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { useAudioRouting, AudioRoute } from '@/hooks/useAudioRouting';
 import { InviteToCallDialog } from './InviteToCallDialog';
 
 interface GroupCallScreenProps {
@@ -47,6 +50,13 @@ export const GroupCallScreen = ({
   onInviteParticipants,
 }: GroupCallScreenProps) => {
   const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
+  const { 
+    audioRoute, 
+    isSpeakerOn, 
+    isHeadphonesConnected, 
+    cycleAudioRoute, 
+    applyAudioRoute 
+  } = useAudioRouting('earpiece'); // Default to earpiece
   const [callDuration, setCallDuration] = useState(0);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid');
   const [spotlightUserId, setSpotlightUserId] = useState<string | null>(null);
@@ -54,6 +64,7 @@ export const GroupCallScreen = ({
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const previousStatus = useRef(callState.status);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-hide controls
@@ -462,9 +473,34 @@ export const GroupCallScreen = ({
             </button>
           )}
           
-          {/* Speaker */}
-          <button className="flex flex-col items-center gap-1.5 p-4 rounded-full bg-white/20 transition-all hover:bg-white/30">
-            <Volume2 className="w-6 h-6 text-white" />
+          {/* Audio Route Toggle (WhatsApp style) */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              cycleAudioRoute();
+              // Apply new route to all audio elements
+              setTimeout(() => {
+                remoteAudioRefs.current.forEach((audioEl) => {
+                  applyAudioRoute(audioEl);
+                });
+              }, 50);
+            }}
+            className={cn(
+              "flex flex-col items-center gap-1.5 p-4 rounded-full transition-all relative",
+              audioRoute === 'speaker' ? "bg-white" : "bg-white/20"
+            )}
+          >
+            {audioRoute === 'headphones' ? (
+              <Headphones className="w-6 h-6 text-white" />
+            ) : audioRoute === 'speaker' ? (
+              <Volume2 className="w-6 h-6 text-[#0b141a]" />
+            ) : (
+              <Volume1 className="w-6 h-6 text-white" />
+            )}
+            {/* Route label */}
+            <span className="absolute -bottom-5 text-[10px] text-white/70 whitespace-nowrap">
+              {audioRoute === 'headphones' ? 'Наушники' : audioRoute === 'speaker' ? 'Динамик' : 'Ухо'}
+            </span>
           </button>
         </div>
 

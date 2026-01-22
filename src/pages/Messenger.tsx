@@ -11,6 +11,7 @@ import { GroupCallScreen } from '@/components/messenger/GroupCallScreen';
 import { NewChatDialog } from '@/components/messenger/NewChatDialog';
 import { SearchPanel } from '@/components/messenger/SearchPanel';
 import { IncomingCallDialog } from '@/components/messenger/IncomingCallDialog';
+import { IdleWarningDialog } from '@/components/messenger/IdleWarningDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
@@ -21,6 +22,7 @@ import { useCallKit } from '@/hooks/useCallKit';
 import { useVoipToken } from '@/hooks/useVoipToken';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -44,6 +46,27 @@ const Messenger = () => {
   // Initialize push notifications and document title
   usePushNotifications();
   useDocumentTitle();
+  
+  // App lifecycle management - keeps app open for 10 min, tracks activity
+  const { 
+    showIdleWarning, 
+    dismissIdleWarning, 
+    keepActive,
+    wakeLockActive 
+  } = useAppLifecycle({
+    minActiveTime: 10 * 60 * 1000, // 10 minutes minimum
+    idleWarningTime: 9 * 60 * 1000, // Show warning after 9 min idle
+    idleCloseTime: 60 * 1000, // Close 1 min after warning
+    keepScreenOn: true,
+    onIdleWarning: () => {
+      console.log('[Messenger] User idle, showing warning');
+    },
+    onIdleClose: () => {
+      console.log('[Messenger] Closing due to inactivity');
+      // On mobile, we can't really "close" the app, but we can show a notification
+      toast.info('Сессия завершена из-за неактивности');
+    },
+  });
   
   // CallKit integration for iOS native call UI
   const { initialize: initializeCallKit, isAvailable: isCallKitAvailable } = useCallKit({
@@ -253,6 +276,14 @@ const Messenger = () => {
 
   return (
     <div className="h-full w-full overflow-hidden bg-background flex flex-col safe-area-top">
+      {/* Idle Warning Dialog */}
+      <IdleWarningDialog
+        isOpen={showIdleWarning && !isInCall && !isInGroupCall}
+        onStayActive={keepActive}
+        onClose={dismissIdleWarning}
+        timeRemaining={60}
+      />
+      
       {/* Incoming Call Dialog */}
       {incomingCall && !isInCall && (
         <IncomingCallDialog
