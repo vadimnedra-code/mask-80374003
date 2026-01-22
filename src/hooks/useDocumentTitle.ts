@@ -68,12 +68,12 @@ const updateFaviconBadge = (count: number) => {
     document.head.appendChild(link);
   };
   
-  img.src = '/favicon.ico';
+  img.src = '/favicon.png';
 };
 
 const resetFavicon = () => {
   const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
   if (link) {
-    link.href = '/favicon.ico';
+    link.href = '/favicon.png';
   }
 };

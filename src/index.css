@@ -83,6 +83,9 @@
     --sidebar-accent-foreground: 20 15% 12%;
     --sidebar-border: 40 15% 90%;
     --sidebar-ring: 43 74% 49%;
+
+    /* Solid logo background (prevents white corner artifacts) */
+    --logo-bg: 0 0% 0%;
   }
 
   .dark {
@@ -147,6 +150,9 @@
     --sidebar-accent-foreground: 45 50% 88%;
     --sidebar-border: 20 10% 14%;
     --sidebar-ring: 43 74% 55%;
+
+    /* Solid logo background (prevents white corner artifacts) */
+    --logo-bg: 0 0% 0%;
   }
 }
 

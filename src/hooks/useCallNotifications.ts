@@ -47,8 +47,8 @@ export const useCallNotifications = () => {
     try {
       const notificationOptions: NotificationOptions = {
         body: isVideo ? 'Входящий видеозвонок' : 'Входящий звонок',
-        icon: callerAvatar || '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: callerAvatar || '/app-icon.png',
+        badge: '/app-icon.png',
         tag: 'incoming-call',
         requireInteraction: true,
         silent: false,
