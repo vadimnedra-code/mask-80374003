@@ -21,12 +21,14 @@ export const useMessageReactions = (chatId: string | null) => {
   const { user } = useAuth();
 
   const fetchReactions = useCallback(async (messageIds: string[]) => {
-    if (!messageIds.length) return;
+    // Filter out temporary message IDs (they start with "temp-" and are not valid UUIDs)
+    const validMessageIds = messageIds.filter(id => !id.startsWith('temp-'));
+    if (!validMessageIds.length) return;
 
     const { data, error } = await supabase
       .from('message_reactions')
       .select('*')
-      .in('message_id', messageIds);
+      .in('message_id', validMessageIds);
 
     if (error) {
       console.error('Error fetching reactions:', error);
@@ -45,7 +47,8 @@ export const useMessageReactions = (chatId: string | null) => {
   }, []);
 
   const addReaction = useCallback(async (messageId: string, emoji: string) => {
-    if (!user) return;
+    // Don't add reactions to temp messages
+    if (!user || messageId.startsWith('temp-')) return;
 
     const { error } = await supabase
       .from('message_reactions')
@@ -66,7 +69,8 @@ export const useMessageReactions = (chatId: string | null) => {
   }, [user]);
 
   const removeReaction = useCallback(async (messageId: string, emoji: string) => {
-    if (!user) return;
+    // Don't try to remove reactions from temp messages
+    if (!user || messageId.startsWith('temp-')) return;
 
     const { error } = await supabase
       .from('message_reactions')
