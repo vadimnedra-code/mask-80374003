@@ -9,92 +9,92 @@ export interface Wallpaper {
 }
 
 export const WALLPAPERS: Wallpaper[] = [
-  // Solid colors
+  // Premium solids
   { 
     id: 'default', 
-    name: 'Классический', 
+    name: 'Шампань', 
     type: 'solid',
     value: 'hsl(var(--chat-wallpaper))',
-    preview: 'bg-[hsl(37,26%,89%)] dark:bg-[hsl(200,15%,9%)]'
+    preview: 'bg-[hsl(40,18%,94%)] dark:bg-[hsl(20,15%,7%)]'
   },
   { 
-    id: 'dark-teal', 
-    name: 'Тёмный бирюзовый', 
+    id: 'noir', 
+    name: 'Нуар', 
     type: 'solid',
-    value: 'hsl(200 20% 12%)',
-    preview: 'bg-[hsl(200,20%,12%)]'
+    value: 'hsl(20 15% 6%)',
+    preview: 'bg-[hsl(20,15%,6%)]'
   },
   { 
-    id: 'midnight', 
-    name: 'Полночь', 
+    id: 'obsidian', 
+    name: 'Обсидиан', 
     type: 'solid',
-    value: 'hsl(230 25% 10%)',
-    preview: 'bg-[hsl(230,25%,10%)]'
+    value: 'hsl(220 20% 8%)',
+    preview: 'bg-[hsl(220,20%,8%)]'
   },
   { 
-    id: 'warm-gray', 
-    name: 'Тёплый серый', 
+    id: 'mahogany', 
+    name: 'Красное дерево', 
     type: 'solid',
-    value: 'hsl(30 10% 20%)',
-    preview: 'bg-[hsl(30,10%,20%)]'
+    value: 'hsl(10 35% 12%)',
+    preview: 'bg-[hsl(10,35%,12%)]'
   },
   { 
-    id: 'forest', 
-    name: 'Лесной', 
+    id: 'onyx', 
+    name: 'Оникс', 
     type: 'solid',
-    value: 'hsl(150 30% 12%)',
-    preview: 'bg-[hsl(150,30%,12%)]'
+    value: 'hsl(0 0% 8%)',
+    preview: 'bg-[hsl(0,0%,8%)]'
   },
   { 
-    id: 'ocean', 
-    name: 'Океан', 
+    id: 'slate', 
+    name: 'Графит', 
     type: 'solid',
-    value: 'hsl(210 40% 15%)',
-    preview: 'bg-[hsl(210,40%,15%)]'
+    value: 'hsl(215 15% 14%)',
+    preview: 'bg-[hsl(215,15%,14%)]'
   },
   
-  // Gradients
+  // Premium gradients
   { 
-    id: 'sunset', 
-    name: 'Закат', 
+    id: 'black-gold', 
+    name: 'Чёрное золото', 
     type: 'gradient',
-    value: 'linear-gradient(135deg, hsl(340 60% 20%), hsl(280 50% 15%))',
-    preview: 'bg-gradient-to-br from-rose-900 to-purple-950'
+    value: 'linear-gradient(135deg, hsl(20 15% 7%), hsl(43 30% 12%), hsl(20 18% 6%))',
+    preview: 'bg-gradient-to-br from-neutral-950 via-amber-950/50 to-neutral-950'
   },
   { 
-    id: 'aurora', 
-    name: 'Сияние', 
+    id: 'royal', 
+    name: 'Королевский', 
     type: 'gradient',
-    value: 'linear-gradient(135deg, hsl(180 50% 15%), hsl(260 60% 20%))',
-    preview: 'bg-gradient-to-br from-teal-900 to-indigo-900'
+    value: 'linear-gradient(135deg, hsl(260 40% 12%), hsl(280 35% 10%))',
+    preview: 'bg-gradient-to-br from-purple-950 to-violet-950'
   },
   { 
-    id: 'moss', 
-    name: 'Мох', 
+    id: 'velvet', 
+    name: 'Бархат', 
     type: 'gradient',
-    value: 'linear-gradient(135deg, hsl(160 40% 12%), hsl(120 30% 18%))',
-    preview: 'bg-gradient-to-br from-emerald-950 to-green-900'
+    value: 'linear-gradient(135deg, hsl(340 45% 12%), hsl(355 35% 8%))',
+    preview: 'bg-gradient-to-br from-rose-950 to-red-950'
   },
   { 
-    id: 'cosmic', 
-    name: 'Космос', 
+    id: 'midnight-sapphire', 
+    name: 'Полночный сапфир', 
     type: 'gradient',
-    value: 'linear-gradient(135deg, hsl(250 60% 12%), hsl(290 50% 10%))',
-    preview: 'bg-gradient-to-br from-indigo-950 to-purple-950'
+    value: 'linear-gradient(135deg, hsl(220 50% 10%), hsl(240 45% 8%))',
+    preview: 'bg-gradient-to-br from-blue-950 to-indigo-950'
   },
   { 
-    id: 'warm-dusk', 
-    name: 'Сумерки', 
+    id: 'bronze', 
+    name: 'Бронза', 
     type: 'gradient',
-    value: 'linear-gradient(135deg, hsl(20 40% 15%), hsl(350 30% 12%))',
-    preview: 'bg-gradient-to-br from-amber-950 to-rose-950'
+    value: 'linear-gradient(135deg, hsl(25 40% 14%), hsl(35 35% 10%))',
+    preview: 'bg-gradient-to-br from-orange-950 to-amber-950'
   },
   { 
-    id: 'deep-sea', 
-    name: 'Глубина', 
+    id: 'deep-emerald', 
+    name: 'Глубокий изумруд', 
     type: 'gradient',
-    value: 'linear-gradient(180deg, hsl(200 50% 12%), hsl(220 60% 8%))',
-    preview: 'bg-gradient-to-b from-cyan-950 to-blue-950'
+    value: 'linear-gradient(180deg, hsl(155 45% 10%), hsl(165 40% 7%))',
+    preview: 'bg-gradient-to-b from-emerald-950 to-teal-950'
   },
 ];
 
@@ -106,12 +106,12 @@ export interface ThemeColor {
 }
 
 export const THEME_COLORS: ThemeColor[] = [
-  { id: 'default', name: 'WhatsApp', primary: '142 70% 45%', accent: '142 60% 94%' },
-  { id: 'blue', name: 'Telegram', primary: '210 100% 50%', accent: '210 80% 94%' },
-  { id: 'purple', name: 'Violet', primary: '270 70% 55%', accent: '270 60% 94%' },
-  { id: 'rose', name: 'Rose', primary: '350 80% 55%', accent: '350 70% 94%' },
-  { id: 'amber', name: 'Amber', primary: '38 92% 50%', accent: '38 80% 94%' },
-  { id: 'cyan', name: 'Cyan', primary: '185 80% 45%', accent: '185 70% 94%' },
+  { id: 'default', name: 'Золото', primary: '43 74% 49%', accent: '43 50% 92%' },
+  { id: 'platinum', name: 'Платина', primary: '220 10% 55%', accent: '220 15% 92%' },
+  { id: 'rose-gold', name: 'Розовое золото', primary: '10 60% 55%', accent: '10 50% 92%' },
+  { id: 'emerald', name: 'Изумруд', primary: '155 60% 40%', accent: '155 50% 92%' },
+  { id: 'sapphire', name: 'Сапфир', primary: '220 75% 50%', accent: '220 65% 92%' },
+  { id: 'amethyst', name: 'Аметист', primary: '280 55% 50%', accent: '280 45% 92%' },
 ];
 
 interface WallpaperContextValue {
