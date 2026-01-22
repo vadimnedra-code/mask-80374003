@@ -402,18 +402,24 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     }
   };
 
-  // Pull to refresh handlers
+  // Pull to refresh handlers - more strict to avoid interfering with normal scrolling
   const handlePullStart = useCallback((e: React.TouchEvent) => {
     if (isRefreshing) return;
     const container = messagesContainerRef.current;
-    if (container && container.scrollTop <= 0) {
+    // Only start pull if already at the very top (scrollTop === 0)
+    if (container && container.scrollTop === 0) {
       pullStartY.current = e.touches[0].clientY;
+    } else {
+      pullStartY.current = 0;
     }
   }, [isRefreshing]);
 
   const handlePullMove = useCallback((e: React.TouchEvent) => {
+    // Don't interfere if we're not in pull mode
     if (isRefreshing || pullStartY.current === 0) return;
+    
     const container = messagesContainerRef.current;
+    // If container has scrolled down at all, cancel pull mode
     if (!container || container.scrollTop > 0) {
       pullStartY.current = 0;
       setPullDistance(0);
@@ -423,13 +429,24 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     const currentY = e.touches[0].clientY;
     const diff = currentY - pullStartY.current;
     
-    if (diff > 0) {
-      const distance = Math.min(diff * 0.5, 100);
+    // Only activate pull if pulling down (positive diff) and beyond a minimum threshold
+    if (diff > 10) {
+      // Use a dampening factor to make pull feel natural
+      const distance = Math.min((diff - 10) * 0.4, 100);
       setPullDistance(distance);
+      
+      // Prevent default only when actually pulling to refresh
+      if (distance > 5) {
+        e.preventDefault();
+      }
+    } else {
+      // If pulling up or minimal movement, cancel pull mode
+      setPullDistance(0);
     }
   }, [isRefreshing]);
 
   const handlePullEnd = useCallback(async () => {
+    // Only trigger refresh if pulled far enough
     if (pullDistance >= 60 && !isRefreshing) {
       setIsRefreshing(true);
       setPullDistance(60);
@@ -767,11 +784,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
       <div 
         ref={messagesContainerRef}
         className={cn(
-          "flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin scroll-smooth relative",
+          "flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin relative",
           currentWallpaper.id === 'default' && 'chat-wallpaper'
         )}
         style={{
-          background: currentWallpaper.id !== 'default' ? currentWallpaper.value : undefined
+          background: currentWallpaper.id !== 'default' ? currentWallpaper.value : undefined,
+          WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
+          overscrollBehavior: 'contain', // Prevent scroll chaining
         }}
         onTouchStart={handlePullStart}
         onTouchMove={handlePullMove}
