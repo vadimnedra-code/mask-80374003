@@ -100,8 +100,8 @@ export const UserManagement = () => {
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <h2 className="text-lg font-semibold text-amber-100 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-amber-400" />
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
           Управление пользователями ({users.length})
         </h2>
         
@@ -113,7 +113,7 @@ export const UserManagement = () => {
               placeholder="Поиск..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:w-64 pl-9 pr-4 py-2 rounded-xl bg-black/40 border border-amber-500/20 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              className="w-full sm:w-64 pl-9 pr-4 py-2 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
             />
           </div>
         </div>
@@ -128,8 +128,8 @@ export const UserManagement = () => {
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               filter === f
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                : "bg-black/20 text-muted-foreground hover:bg-black/40 border border-transparent"
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"
             )}
           >
             {f === 'all' && 'Все'}

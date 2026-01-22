@@ -252,26 +252,26 @@ export const ChatList = ({
       {/* Header - Premium Gold Style */}
       <div className="relative flex items-center justify-between px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
         {/* Premium gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-950/20 via-amber-900/10 to-amber-950/20" />
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         
         <div className="flex items-center gap-3.5 relative z-10">
-          <div className="relative w-10 h-10 bg-black overflow-hidden shadow-lg shadow-amber-500/10">
+          <div className="relative w-10 h-10 bg-logo overflow-hidden shadow-lg shadow-primary/10">
             <img 
               src={maskLogo} 
               alt="Mask" 
               className="w-full h-full object-cover" 
             />
-            <div className="absolute inset-0 ring-1 ring-amber-500/20" />
+            <div className="absolute inset-0 ring-1 ring-primary/20" />
           </div>
           <div>
             <h1 className="text-[24px] font-bold tracking-tight leading-none">
-              <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
+              <span className="text-gold-gradient animate-shimmer bg-[length:200%_100%]">
                 Mask
               </span>
             </h1>
-            <p className="text-[11px] text-amber-500/60 font-medium tracking-wider uppercase mt-0.5">
+            <p className="text-[11px] text-primary/60 font-medium tracking-wider uppercase mt-0.5">
               Premium Messenger
             </p>
           </div>
@@ -279,15 +279,15 @@ export const ChatList = ({
         <div className="flex items-center gap-0.5 relative z-10">
           <button 
             onClick={onNewChat}
-            className="p-3 rounded-xl hover:bg-amber-500/10 transition-all duration-300 active:scale-95 group"
+            className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 active:scale-95 group"
           >
-            <Edit className="w-[22px] h-[22px] text-amber-300/80 group-hover:text-amber-200 transition-colors" />
+            <Edit className="w-[22px] h-[22px] text-primary/80 group-hover:text-primary transition-colors" />
           </button>
           <button 
             onClick={onOpenSettings}
-            className="p-3 rounded-xl hover:bg-amber-500/10 transition-all duration-300 active:scale-95 group"
+            className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 active:scale-95 group"
           >
-            <Menu className="w-[22px] h-[22px] text-amber-300/80 group-hover:text-amber-200 transition-colors" />
+            <Menu className="w-[22px] h-[22px] text-primary/80 group-hover:text-primary transition-colors" />
           </button>
         </div>
       </div>
@@ -298,9 +298,9 @@ export const ChatList = ({
           onClick={onOpenSearch}
           className="w-full relative group"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-amber-400/10 to-amber-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center gap-3 px-4 py-3.5 bg-muted/60 rounded-2xl border border-amber-500/10 group-hover:border-amber-500/20 transition-all duration-300">
-            <Search className="w-[18px] h-[18px] text-amber-400/50 group-hover:text-amber-400/70 transition-colors" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center gap-3 px-4 py-3.5 bg-muted/60 rounded-2xl border border-primary/10 group-hover:border-primary/20 transition-all duration-300">
+            <Search className="w-[18px] h-[18px] text-primary/50 group-hover:text-primary/70 transition-colors" />
             <span className="text-[15px] text-muted-foreground/70">Поиск или новый чат</span>
           </div>
         </button>
@@ -313,8 +313,8 @@ export const ChatList = ({
           className={cn(
             "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'all' 
-              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
-              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
+              : "text-foreground/70 hover:bg-primary/10 border border-primary/10"
           )}
         >
           Все
@@ -324,8 +324,8 @@ export const ChatList = ({
           className={cn(
             "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'unread' 
-              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
-              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
+              : "text-foreground/70 hover:bg-primary/10 border border-primary/10"
           )}
         >
           Непрочитанное
@@ -335,8 +335,8 @@ export const ChatList = ({
           className={cn(
             "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'favorites' 
-              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
-              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
+              : "text-foreground/70 hover:bg-primary/10 border border-primary/10"
           )}
         >
           Избранное
@@ -346,8 +346,8 @@ export const ChatList = ({
           className={cn(
             "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'groups' 
-              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
-              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
+              : "text-foreground/70 hover:bg-primary/10 border border-primary/10"
           )}
         >
           Группы
@@ -357,14 +357,14 @@ export const ChatList = ({
           className={cn(
             "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300 flex items-center gap-1.5",
             activeFilter === 'archived' 
-              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
-              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
+              : "text-foreground/70 hover:bg-primary/10 border border-primary/10"
           )}
         >
           <Archive className="w-3.5 h-3.5" />
           Архив
           {archivedCount > 0 && activeFilter !== 'archived' && (
-            <span className="min-w-4 h-4 px-1.5 flex items-center justify-center text-[10px] font-bold text-black bg-amber-400 rounded-full">
+            <span className="min-w-4 h-4 px-1.5 flex items-center justify-center text-[10px] font-bold text-primary-foreground bg-primary rounded-full">
               {archivedCount}
             </span>
           )}

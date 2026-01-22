@@ -109,13 +109,13 @@ export const CallDiagnostics = ({
 
   const getLogTypeColor = (type: DiagnosticLogEntry['type']) => {
     switch (type) {
-      case 'ice': return 'text-blue-400';
-      case 'sdp': return 'text-purple-400';
-      case 'connection': return 'text-cyan-400';
-      case 'media': return 'text-green-400';
-      case 'error': return 'text-red-400';
-      case 'info': return 'text-gray-400';
-      default: return 'text-white/60';
+      case 'ice': return 'text-primary';
+      case 'sdp': return 'text-accent-foreground';
+      case 'connection': return 'text-[hsl(var(--online))]';
+      case 'media': return 'text-[hsl(var(--online))]';
+      case 'error': return 'text-destructive';
+      case 'info': return 'text-muted-foreground';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -124,7 +124,7 @@ export const CallDiagnostics = ({
   };
 
   return (
-    <div className="absolute inset-x-4 top-16 z-50 bg-black/90 backdrop-blur-xl rounded-2xl p-4 text-white text-sm max-h-[70vh] overflow-y-auto">
+    <div className="absolute inset-x-4 top-16 z-50 bg-card/95 backdrop-blur-xl rounded-2xl p-4 text-foreground text-sm max-h-[70vh] overflow-y-auto border border-border shadow-xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-base">Диагностика звонка</h3>
