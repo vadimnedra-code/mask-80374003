@@ -12,7 +12,8 @@ import {
   Edit2,
   Trash2,
   FileText,
-  ScrollText
+  ScrollText,
+  ShieldCheck
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -44,9 +46,28 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
   const navigate = useNavigate();
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!user?.id) return;
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!data);
+    };
+    
+    checkAdminRole();
+  }, [user?.id]);
 
   // Sync theme on mount
   useEffect(() => {
@@ -207,6 +228,28 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
             </button>
           ))}
         </div>
+
+        {/* Admin Panel Link (only for admins) */}
+        {isAdmin && (
+          <div className="p-4 border-t border-border">
+            <button 
+              onClick={() => {
+                onClose();
+                navigate('/admin');
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/20 hover:border-amber-500/40 transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <div className="text-left">
+                  <p className="font-medium text-amber-100">Панель администратора</p>
+                  <p className="text-xs text-amber-400/60">Аналитика и управление</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        )}
 
         {/* Logout & Delete Account */}
         <div className="p-4 border-t border-border space-y-2">

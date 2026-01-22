@@ -901,6 +901,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       voip_tokens: {
         Row: {
           created_at: string
@@ -948,6 +969,14 @@ export type Database = {
       }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       cleanup_expired_messages: { Args: never; Returns: undefined }
+      get_admin_analytics: { Args: never; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_call_member: {
         Args: { p_call_id: string; p_user_id: string }
         Returns: boolean
@@ -966,6 +995,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       group_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
@@ -1094,6 +1124,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       group_role: ["owner", "admin", "member"],
     },
   },
