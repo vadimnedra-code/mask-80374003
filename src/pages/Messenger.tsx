@@ -120,7 +120,8 @@ const Messenger = () => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth');
+      // Use replace so the user can't accidentally back-swipe into /auth from within the app
+      navigate('/auth', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
