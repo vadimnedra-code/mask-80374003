@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
 import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2, Lock, Star, Users } from 'lucide-react';
@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { EmojiPicker } from './EmojiPicker';
 import { MessageReactions } from './MessageReactions';
 import { ReactionGroup } from '@/hooks/useMessageReactions';
-import { MediaLightbox } from './MediaLightbox';
+import { MediaGalleryLightbox, MediaItem } from './MediaGalleryLightbox';
 import { useSignedMediaUrl } from '@/hooks/useSignedMediaUrl';
 
 interface MessageBubbleProps {
@@ -44,6 +44,8 @@ interface MessageBubbleProps {
   deleteForEveryoneTimeLeft?: string | null;
   reactions?: ReactionGroup[];
   onReaction?: (emoji: string) => void;
+  /** All media items in the chat for gallery navigation */
+  allMedia?: MediaItem[];
 }
 
 export const MessageBubble = ({ 
@@ -60,7 +62,8 @@ export const MessageBubble = ({
   canDeleteForEveryone = false,
   deleteForEveryoneTimeLeft,
   reactions = [], 
-  onReaction 
+  onReaction,
+  allMedia = [],
 }: MessageBubbleProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || '');
@@ -71,6 +74,20 @@ export const MessageBubble = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const { url: resolvedMediaUrl } = useSignedMediaUrl(message.mediaUrl);
+
+  // Find the index of this message's media in the gallery
+  const currentMediaIndex = useMemo(() => {
+    if (!message.mediaUrl) return 0;
+    const idx = allMedia.findIndex(m => m.id === message.id);
+    return idx >= 0 ? idx : 0;
+  }, [allMedia, message.id, message.mediaUrl]);
+
+  // If no allMedia provided, create a single-item array
+  const mediaItems = useMemo(() => {
+    if (allMedia.length > 0) return allMedia;
+    if (!message.mediaUrl || (message.type !== 'image' && message.type !== 'video')) return [];
+    return [{ id: message.id, url: message.mediaUrl, type: message.type as 'image' | 'video' }];
+  }, [allMedia, message.id, message.mediaUrl, message.type]);
 
   const handleEdit = async () => {
     if (!editContent.trim() || !onEdit) return;
@@ -129,10 +146,10 @@ export const MessageBubble = ({
     if (message.type === 'image') {
       return (
         <>
-          {lightboxOpen && (
-            <MediaLightbox 
-              src={resolvedMediaUrl ?? message.mediaUrl}
-              type="image"
+          {lightboxOpen && mediaItems.length > 0 && (
+            <MediaGalleryLightbox 
+              mediaItems={mediaItems}
+              initialIndex={currentMediaIndex}
               isOpen={lightboxOpen} 
               onClose={() => setLightboxOpen(false)} 
             />
@@ -155,10 +172,10 @@ export const MessageBubble = ({
     if (message.type === 'video') {
       return (
         <>
-          {lightboxOpen && (
-            <MediaLightbox 
-              src={resolvedMediaUrl ?? message.mediaUrl}
-              type="video"
+          {lightboxOpen && mediaItems.length > 0 && (
+            <MediaGalleryLightbox 
+              mediaItems={mediaItems}
+              initialIndex={currentMediaIndex}
               isOpen={lightboxOpen} 
               onClose={() => setLightboxOpen(false)} 
             />

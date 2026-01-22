@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { 
   Phone, 
   Video, 
@@ -44,6 +44,7 @@ import { E2EEIndicator } from './E2EEIndicator';
 import { StartGroupCallDialog } from './StartGroupCallDialog';
 import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './DisappearingMessagesSelector';
 import { EditNicknameDialog } from './EditNicknameDialog';
+import { MediaItem } from './MediaGalleryLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -154,6 +155,20 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const { canDeleteForEveryone, deleteForEveryone, getRemainingTime } = useDeleteForEveryone();
   const { policy: disappearPolicy, isEnabled: isDisappearEnabled, getTimerLabel, setDisappearTimer } = useDisappearingMessages(chat.id);
   const { getNickname, setNickname, getDisplayName } = useContactNicknames();
+
+  // Build list of all media items in chat for gallery navigation
+  const allMediaItems: MediaItem[] = useMemo(() => {
+    return messages
+      .filter(msg => 
+        (msg.message_type === 'image' || msg.message_type === 'video') && 
+        msg.media_url
+      )
+      .map(msg => ({
+        id: msg.id,
+        url: msg.media_url!,
+        type: msg.message_type as 'image' | 'video',
+      }));
+  }, [messages]);
 
   // Swipe right to go back (mobile only) - only from left edge
   const { offsetX, isSwiping, handlers: swipeHandlers } = useSwipeGesture({
@@ -924,6 +939,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                         isEncrypted: msg.is_encrypted,
                       }}
                       isOwn={msg.sender_id === user?.id}
+                      allMedia={allMediaItems}
                       onEdit={async (messageId, newContent) => {
                         await editMessage(messageId, newContent);
                       }}
