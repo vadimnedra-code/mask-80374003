@@ -8,6 +8,7 @@ import { MaskProvider } from "@/hooks/useMask";
 import { WallpaperProvider } from "@/providers/WallpaperProvider";
 import Auth from "./pages/Auth";
 import Messenger from "./pages/Messenger";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -108,6 +109,14 @@ const AppRoutes = () => {
       />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Admin />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
