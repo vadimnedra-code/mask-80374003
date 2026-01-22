@@ -41,7 +41,12 @@ export const useChats = () => {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchChats = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('[useChats] No user, skipping fetch');
+      return;
+    }
+
+    console.log('[useChats] Fetching chats for user:', user.id);
 
     // Get chats where user is a participant (including pinned_at, archived_at, muted_until)
     const { data: participations, error: partError } = await supabase
@@ -50,10 +55,12 @@ export const useChats = () => {
       .eq('user_id', user.id);
 
     if (partError) {
-      console.error('Error fetching participations:', partError);
+      console.error('[useChats] Error fetching participations:', partError);
       setLoading(false);
       return;
     }
+
+    console.log('[useChats] Found', participations?.length || 0, 'chat participations');
 
     // Create maps for participant-specific data
     const pinnedMap = new Map(participations.map(p => [p.chat_id, p.pinned_at]));
@@ -64,6 +71,7 @@ export const useChats = () => {
     const chatIds = participations.map(p => p.chat_id);
 
     if (chatIds.length === 0) {
+      console.log('[useChats] No chats found');
       setChats([]);
       setLoading(false);
       return;
