@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import maskLogo from '@/assets/mask-logo.png';
 import { ChatWithDetails } from '@/hooks/useChats';
 import { useUsers, PublicProfile } from '@/hooks/useUsers';
+import { useContactNicknames } from '@/hooks/useContactNicknames';
 import { Avatar } from './Avatar';
 import { MaskSwitch } from './MaskSwitch';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ export const ChatList = ({
   const { profile: currentUserProfile } = useProfile(user?.id);
   const { users, searchUsers } = useUsers();
   const { archiveChat, unarchiveChat, isChatMuted } = useArchiveMute();
+  const { getDisplayName } = useContactNicknames();
   
   // Get typing status for all chats
   const chatIds = useMemo(() => chats.map(c => c.id), [chats]);
@@ -525,7 +527,10 @@ export const ChatList = ({
     const isPinned = !!chat.pinned_at;
     const isArchived = !!currentParticipant?.archived_at;
     const isMuted = isChatMuted(currentParticipant?.muted_until || null);
-    const displayName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
+    const originalName = chat.is_group ? chat.group_name : otherParticipant?.display_name;
+    const displayName = chat.is_group 
+      ? chat.group_name 
+      : (otherParticipant ? getDisplayName(otherParticipant.user_id, otherParticipant.display_name) : originalName);
     const avatarUrl = chat.is_group 
       ? (chat.group_avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${chat.group_name || 'Group'}`)
       : otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant?.user_id}`;

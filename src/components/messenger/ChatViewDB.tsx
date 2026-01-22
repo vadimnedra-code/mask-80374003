@@ -44,6 +44,7 @@ import { E2EEIndicator } from './E2EEIndicator';
 import { StartGroupCallDialog } from './StartGroupCallDialog';
 import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './DisappearingMessagesSelector';
 import { EditNicknameDialog } from './EditNicknameDialog';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -902,37 +903,55 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
       </div>
 
       {/* New Messages Indicator */}
-      {newMessagesCount > 0 && !isAtBottom && (
-        <button
-          onClick={scrollToBottom}
-          className="absolute bottom-24 right-4 z-10 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-full shadow-lg animate-fade-in hover:bg-primary/90 transition-colors"
-        >
-          <ArrowDown className="w-4 h-4" />
-          <span className="text-sm font-medium">
-            {newMessagesCount} {newMessagesCount === 1 ? 'новое' : newMessagesCount < 5 ? 'новых' : 'новых'}
-          </span>
-        </button>
-      )}
+      <AnimatePresence>
+        {newMessagesCount > 0 && !isAtBottom && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            onClick={scrollToBottom}
+            className="absolute bottom-24 right-4 z-10 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+          >
+            <ArrowDown className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {newMessagesCount} {newMessagesCount === 1 ? 'новое' : newMessagesCount < 5 ? 'новых' : 'новых'}
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Scroll to Bottom Button (when scrolled up without new messages) */}
-      {!isAtBottom && newMessagesCount === 0 && (
-        <button
-          onClick={scrollToBottom}
-          className="absolute bottom-24 right-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors"
-        >
-          <ArrowDown className="w-5 h-5" />
-        </button>
-      )}
+      <AnimatePresence>
+        {!isAtBottom && newMessagesCount === 0 && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            onClick={scrollToBottom}
+            className="absolute bottom-24 right-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors"
+          >
+            <ArrowDown className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Scroll to Top Button (when scrolled down) */}
-      {!isAtTop && messages.length > 10 && (
-        <button
-          onClick={scrollToTop}
-          className="absolute bottom-24 left-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors animate-fade-in"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+      <AnimatePresence>
+        {!isAtTop && messages.length > 10 && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            onClick={scrollToTop}
+            className="absolute bottom-24 left-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* File Preview */}
       {selectedFile && (
