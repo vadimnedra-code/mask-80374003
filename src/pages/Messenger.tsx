@@ -315,7 +315,7 @@ const Messenger = () => {
       )}
 
       {/* Main Layout */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 h-full overflow-hidden">
         {/* Sidebar - Chat List */}
         <div
           className={cn(
@@ -386,7 +386,7 @@ const Messenger = () => {
 
         {/* Main Content */}
         <div className={cn(
-          'flex-1 transition-all duration-300',
+          'flex-1 h-full min-h-0 overflow-hidden transition-all duration-300',
           !selectedChatId ? 'hidden lg:block' : 'block'
         )}>
           {selectedChat ? (
