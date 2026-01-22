@@ -184,6 +184,40 @@ export default {
           "0%": { opacity: "0.7", transform: "translateX(10px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
+        // Premium luxury animations
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(212, 175, 55, 0.15)" },
+          "50%": { boxShadow: "0 0 40px rgba(212, 175, 55, 0.25)" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-4px)" },
+        },
+        "subtle-bounce": {
+          "0%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.02)" },
+          "100%": { transform: "scale(1)" },
+        },
+        "reveal": {
+          "0%": { opacity: "0", transform: "translateY(20px) scale(0.98)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        "slide-up-fade": {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "elegant-in": {
+          "0%": { opacity: "0", transform: "scale(0.96) translateY(8px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        "ripple": {
+          "0%": { transform: "scale(0)", opacity: "0.5" },
+          "100%": { transform: "scale(4)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -200,6 +234,15 @@ export default {
         "mask-wash": "mask-wash 0.6s ease-out forwards",
         "spring": "spring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
         "send-message": "send-message 0.3s ease-out",
+        // Premium animations
+        "shimmer": "shimmer 2.5s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "float": "float 3s ease-in-out infinite",
+        "subtle-bounce": "subtle-bounce 0.4s ease-out",
+        "reveal": "reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-up-fade": "slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "elegant-in": "elegant-in 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+        "ripple": "ripple 0.6s ease-out forwards",
       },
       transitionTimingFunction: {
         "spring": "cubic-bezier(0.34, 1.56, 0.64, 1)",
