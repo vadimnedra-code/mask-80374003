@@ -954,6 +954,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_block_user: {
+        Args: { _block: boolean; _target_user_id: string }
+        Returns: boolean
+      }
+      admin_set_user_role: {
+        Args: {
+          _action: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _target_user_id: string
+        }
+        Returns: boolean
+      }
       append_call_ice_candidate: {
         Args: { _call_id: string; _candidate: Json }
         Returns: undefined
@@ -970,6 +982,7 @@ export type Database = {
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       cleanup_expired_messages: { Args: never; Returns: undefined }
       get_admin_analytics: { Args: never; Returns: Json }
+      get_admin_users: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
