@@ -248,61 +248,73 @@ export const ChatList = ({
   const currentUserDisplayName = currentUserProfile?.display_name || 'Вы';
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Header - Premium Style */}
-      <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3 group">
-          <div className="relative w-9 h-9 bg-black overflow-hidden">
+    <div className="flex flex-col h-full bg-gradient-to-b from-background via-background to-background/95">
+      {/* Header - Premium Gold Style */}
+      <div className="relative flex items-center justify-between px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        {/* Premium gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-950/20 via-amber-900/10 to-amber-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+        
+        <div className="flex items-center gap-3.5 relative z-10">
+          <div className="relative w-10 h-10 bg-black overflow-hidden shadow-lg shadow-amber-500/10">
             <img 
               src={maskLogo} 
               alt="МАСК" 
               className="w-full h-full object-cover" 
             />
+            <div className="absolute inset-0 ring-1 ring-amber-500/20" />
           </div>
-          <h1 className="text-[22px] font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
-              МАСК
-            </span>
-          </h1>
+          <div>
+            <h1 className="text-[24px] font-bold tracking-tight leading-none">
+              <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
+                МАСК
+              </span>
+            </h1>
+            <p className="text-[11px] text-amber-500/60 font-medium tracking-wider uppercase mt-0.5">
+              Premium Messenger
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 relative z-10">
           <button 
             onClick={onNewChat}
-            className="p-2.5 rounded-full hover:bg-white/10 transition-all duration-200 active:scale-95 active:bg-white/20"
+            className="p-3 rounded-xl hover:bg-amber-500/10 transition-all duration-300 active:scale-95 group"
           >
-            <Edit className="w-[22px] h-[22px] text-amber-100/90" />
+            <Edit className="w-[22px] h-[22px] text-amber-300/80 group-hover:text-amber-200 transition-colors" />
           </button>
           <button 
             onClick={onOpenSettings}
-            className="p-2.5 rounded-full hover:bg-white/10 transition-all duration-200 active:scale-95 active:bg-white/20"
+            className="p-3 rounded-xl hover:bg-amber-500/10 transition-all duration-300 active:scale-95 group"
           >
-            <Menu className="w-[22px] h-[22px] text-amber-100/90" />
+            <Menu className="w-[22px] h-[22px] text-amber-300/80 group-hover:text-amber-200 transition-colors" />
           </button>
         </div>
       </div>
 
-      {/* Search - WhatsApp Style */}
-      <div className="px-2.5 py-2 bg-background">
+      {/* Search - Premium Style */}
+      <div className="px-3 py-3">
         <button
           onClick={onOpenSearch}
-          className="w-full relative"
+          className="w-full relative group"
         >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground" />
-          <div className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-lg text-[15px] text-muted-foreground text-left cursor-pointer hover:bg-muted/80 transition-colors">
-            Поиск или новый чат
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-amber-400/10 to-amber-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center gap-3 px-4 py-3.5 bg-muted/60 rounded-2xl border border-amber-500/10 group-hover:border-amber-500/20 transition-all duration-300">
+            <Search className="w-[18px] h-[18px] text-amber-400/50 group-hover:text-amber-400/70 transition-colors" />
+            <span className="text-[15px] text-muted-foreground/70">Поиск или новый чат</span>
           </div>
         </button>
       </div>
 
-      {/* Filter Tabs - WhatsApp Style */}
-      <div className="flex items-center gap-2 px-2.5 py-1.5 bg-background overflow-x-auto scrollbar-none">
+      {/* Filter Tabs - Premium Style */}
+      <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-none">
         <button 
           onClick={() => setActiveFilter('all')}
           className={cn(
-            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+            "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'all' 
-              ? "bg-primary/15 text-primary" 
-              : "text-muted-foreground hover:bg-muted"
+              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
+              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
           )}
         >
           Все
@@ -310,10 +322,10 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('unread')}
           className={cn(
-            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+            "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'unread' 
-              ? "bg-primary/15 text-primary" 
-              : "text-muted-foreground hover:bg-muted"
+              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
+              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
           )}
         >
           Непрочитанное
@@ -321,10 +333,10 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('favorites')}
           className={cn(
-            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+            "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'favorites' 
-              ? "bg-primary/15 text-primary" 
-              : "text-muted-foreground hover:bg-muted"
+              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
+              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
           )}
         >
           Избранное
@@ -332,10 +344,10 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('groups')}
           className={cn(
-            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+            "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300",
             activeFilter === 'groups' 
-              ? "bg-primary/15 text-primary" 
-              : "text-muted-foreground hover:bg-muted"
+              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
+              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
           )}
         >
           Группы
@@ -343,16 +355,16 @@ export const ChatList = ({
         <button 
           onClick={() => setActiveFilter('archived')}
           className={cn(
-            "px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors flex items-center gap-1.5",
+            "px-4 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all duration-300 flex items-center gap-1.5",
             activeFilter === 'archived' 
-              ? "bg-primary/15 text-primary" 
-              : "text-muted-foreground hover:bg-muted"
+              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-lg shadow-amber-500/25" 
+              : "text-amber-200/70 hover:bg-amber-500/10 border border-amber-500/10"
           )}
         >
           <Archive className="w-3.5 h-3.5" />
           Архив
           {archivedCount > 0 && activeFilter !== 'archived' && (
-            <span className="min-w-4 h-4 px-1 flex items-center justify-center text-[10px] font-medium text-primary-foreground bg-primary rounded-full">
+            <span className="min-w-4 h-4 px-1.5 flex items-center justify-center text-[10px] font-bold text-black bg-amber-400 rounded-full">
               {archivedCount}
             </span>
           )}
@@ -468,9 +480,10 @@ export const ChatList = ({
                 {/* Pinned chats section */}
                 {pinnedChats.length > 0 && (
                   <>
-                    <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <div className="px-4 py-3 text-[11px] font-semibold text-amber-500/70 uppercase tracking-widest flex items-center gap-2">
                       <Pin className="w-3 h-3" />
                       Закреплённые
+                      <div className="flex-1 h-px bg-gradient-to-r from-amber-500/20 to-transparent" />
                     </div>
                     {pinnedChats.map((chat) => renderChatItem(chat))}
                   </>
@@ -478,8 +491,9 @@ export const ChatList = ({
                 
                 {/* Regular chats section */}
                 {unpinnedChats.length > 0 && pinnedChats.length > 0 && (
-                  <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="px-4 py-3 text-[11px] font-semibold text-amber-500/70 uppercase tracking-widest flex items-center gap-2">
                     Все чаты
+                    <div className="flex-1 h-px bg-gradient-to-r from-amber-500/20 to-transparent" />
                   </div>
                 )}
                 {unpinnedChats.map((chat) => renderChatItem(chat))}
@@ -490,24 +504,34 @@ export const ChatList = ({
         </div>
       </div>
 
-      {/* Current User Profile - Bottom Section (WhatsApp Style) */}
+      {/* Current User Profile - Premium Bottom Section */}
       <div 
         onClick={onOpenProfileEdit || onOpenSettings}
-        className="flex items-center gap-3 px-4 py-3 border-t border-border bg-card cursor-pointer hover:bg-muted/50 transition-colors pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="relative flex items-center gap-3.5 px-4 py-4 cursor-pointer group pb-[max(1rem,env(safe-area-inset-bottom))]"
       >
-        <Avatar
-          src={currentUserAvatarUrl}
-          alt={currentUserDisplayName}
-          size="md"
-          status="online"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-[15px] truncate">{currentUserDisplayName}</p>
+        {/* Premium background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-950/30 via-amber-900/20 to-amber-950/30 opacity-80 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        
+        <div className="relative z-10">
+          <Avatar
+            src={currentUserAvatarUrl}
+            alt={currentUserDisplayName}
+            size="md"
+            status="online"
+          />
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full ring-2 ring-background" />
+        </div>
+        <div className="flex-1 min-w-0 relative z-10">
+          <p className="font-semibold text-[15px] truncate text-amber-100">{currentUserDisplayName}</p>
           {currentUserProfile?.username && (
-            <p className="text-sm text-muted-foreground truncate">@{currentUserProfile.username}</p>
+            <p className="text-sm text-amber-400/60 truncate">@{currentUserProfile.username}</p>
           )}
         </div>
-        <Settings className="w-5 h-5 text-muted-foreground" />
+        <div className="relative z-10 p-2 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+          <Settings className="w-5 h-5 text-amber-400/70 group-hover:text-amber-300 transition-colors" />
+        </div>
       </div>
 
       {/* Mute Duration Selector */}
@@ -630,39 +654,59 @@ export const ChatList = ({
           )}
         </div>
         
-        {/* Chat item */}
+        {/* Chat item - Premium Style */}
         <button
           onClick={() => handleChatClick(chat.id)}
           onTouchStart={(e) => handleTouchStart(chat.id, e)}
           onTouchMove={(e) => handleTouchMove(chat.id, e)}
           onTouchEnd={handleTouchEnd}
           className={cn(
-            'w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-all duration-200 bg-background relative border-b border-border/30',
-            isSelected && 'bg-muted/50',
+            'w-full flex items-center gap-3.5 px-4 py-3 transition-all duration-300 bg-background relative group',
+            isSelected && 'bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent',
+            !isSelected && 'hover:bg-amber-500/5',
             isSwiped && (isArchived ? '-translate-x-32' : '-translate-x-48')
           )}
         >
+          {/* Bottom border with gradient */}
+          <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent" />
+          
+          {/* Selected indicator */}
+          {isSelected && (
+            <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-gradient-to-b from-amber-400 to-amber-600 rounded-r-full" />
+          )}
+          
           <div className="relative flex-shrink-0">
-            <Avatar
-              src={avatarUrl || ''}
-              alt={displayName || 'Chat'}
-              size="lg"
-              status={otherParticipant?.status as 'online' | 'offline' | 'away'}
-            />
+            <div className={cn(
+              "rounded-full transition-all duration-300",
+              isSelected && "ring-2 ring-amber-500/30 ring-offset-2 ring-offset-background"
+            )}>
+              <Avatar
+                src={avatarUrl || ''}
+                alt={displayName || 'Chat'}
+                size="lg"
+                status={otherParticipant?.status as 'online' | 'offline' | 'away'}
+              />
+            </div>
             {isPinned && (
-              <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                <Pin className="w-2 h-2 text-primary-foreground" />
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <Pin className="w-2.5 h-2.5 text-black" />
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0 text-left">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-medium truncate text-[15px]">{displayName}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={cn(
+                  "font-semibold truncate text-[15px] transition-colors",
+                  isSelected ? "text-amber-100" : "text-foreground group-hover:text-amber-100"
+                )}>{displayName}</span>
                 {isMuted && <MutedBadge mutedUntil={currentParticipant?.muted_until || null} />}
               </div>
               {chat.lastMessage && (
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span className={cn(
+                  "text-xs flex-shrink-0 transition-colors",
+                  isSelected ? "text-amber-400/70" : "text-muted-foreground"
+                )}>
                   {new Date(chat.lastMessage.created_at).toLocaleTimeString('ru-RU', { 
                     hour: '2-digit', 
                     minute: '2-digit' 
@@ -670,7 +714,7 @@ export const ChatList = ({
                 </span>
               )}
             </div>
-            <div className="flex items-center justify-between mt-0.5 gap-2">
+            <div className="flex items-center justify-between mt-1 gap-2">
               <AnimatePresence mode="wait">
                 {typingByChatId[chat.id]?.length > 0 ? (
                   <motion.p
@@ -679,14 +723,14 @@ export const ChatList = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="text-sm text-primary truncate flex-1 flex items-center gap-1"
+                    className="text-sm text-amber-400 truncate flex-1 flex items-center gap-1.5"
                   >
                     <span className="flex gap-0.5">
-                      <span className="w-1 h-1 bg-primary rounded-full animate-typing" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1 h-1 bg-primary rounded-full animate-typing" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1 h-1 bg-primary rounded-full animate-typing" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-typing" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-typing" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-typing" style={{ animationDelay: '300ms' }} />
                     </span>
-                    <span>{getTypingText(chat.id)}</span>
+                    <span className="font-medium">{getTypingText(chat.id)}</span>
                   </motion.p>
                 ) : (
                   <motion.p
@@ -695,10 +739,10 @@ export const ChatList = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="text-sm text-muted-foreground truncate flex-1"
+                    className="text-sm text-muted-foreground/80 truncate flex-1"
                   >
                     {chat.lastMessage?.sender_id === user?.id && (
-                      <span className="text-primary mr-1">✓</span>
+                      <span className="text-amber-500 mr-1">✓</span>
                     )}
                     {chat.lastMessage?.content || 'Нет сообщений'}
                   </motion.p>
@@ -717,7 +761,7 @@ export const ChatList = ({
                       damping: 30,
                       duration: 0.2 
                     }}
-                    className="flex-shrink-0 min-w-5 h-5 px-1.5 flex items-center justify-center text-xs font-medium text-primary-foreground bg-primary rounded-full"
+                    className="flex-shrink-0 min-w-6 h-6 px-2 flex items-center justify-center text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-amber-500 rounded-full shadow-lg shadow-amber-500/30"
                   >
                     {chat.unreadCount}
                   </motion.span>
