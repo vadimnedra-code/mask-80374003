@@ -9,15 +9,16 @@ export const EmptyState = () => {
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-amber-600/5 rounded-full blur-[100px]" />
       </div>
       
-      <div className="relative group">
+      <div className="relative">
         {/* Golden glow behind logo */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 via-yellow-500/10 to-amber-600/20 rounded-full blur-3xl scale-150 group-hover:scale-[1.7] transition-transform duration-700" />
-        <div className="absolute inset-0 bg-amber-400/10 rounded-full blur-2xl animate-glow-pulse" />
-        <img 
-          src={maskLogo} 
-          alt="МАСК Logo" 
-          className="relative w-44 h-44 object-contain drop-shadow-[0_0_40px_rgba(212,175,55,0.3)] group-hover:scale-105 transition-transform duration-500"
-        />
+        <div className="absolute inset-0 bg-amber-500/15 blur-3xl scale-150" />
+        <div className="relative w-44 h-44 bg-black overflow-hidden">
+          <img 
+            src={maskLogo} 
+            alt="МАСК Logo" 
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
       
       <h2 className="mt-8 text-3xl font-bold tracking-tight">
