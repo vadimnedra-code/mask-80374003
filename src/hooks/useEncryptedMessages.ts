@@ -118,25 +118,45 @@ export const useEncryptedMessages = (
       return;
     }
 
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*, encrypted_content, is_encrypted')
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
+    try {
+      console.log('[useEncryptedMessages] Fetching messages for chat:', chatId);
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*, encrypted_content, is_encrypted')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching messages:', error);
+      if (error) {
+        console.error('[useEncryptedMessages] Error fetching messages:', error);
+        setLoading(false);
+        return;
+      }
+
+      console.log('[useEncryptedMessages] Fetched', data?.length || 0, 'messages');
+
+      // Decrypt encrypted messages (with error handling for each)
+      const decryptedMessages = await Promise.all(
+        (data as EncryptedMessage[]).map(async (msg) => {
+          try {
+            return await decryptMessageContent(msg);
+          } catch (e) {
+            console.warn('[useEncryptedMessages] Failed to decrypt message:', msg.id, e);
+            return {
+              ...msg,
+              decryptionFailed: true,
+              decryptedContent: msg.content || '🔒 Не удалось расшифровать'
+            };
+          }
+        })
+      );
+
+      setMessages(decryptedMessages);
+    } catch (e) {
+      console.error('[useEncryptedMessages] Unexpected error:', e);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Decrypt encrypted messages
-    const decryptedMessages = await Promise.all(
-      (data as EncryptedMessage[]).map(msg => decryptMessageContent(msg))
-    );
-
-    setMessages(decryptedMessages);
-    setLoading(false);
   }, [chatId, user, decryptMessageContent]);
 
   // Set up realtime subscription
