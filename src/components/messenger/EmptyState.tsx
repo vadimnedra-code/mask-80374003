@@ -15,7 +15,7 @@ export const EmptyState = () => {
         <div className="relative w-44 h-44 bg-black overflow-hidden">
           <img 
             src={maskLogo} 
-            alt="МАСК Logo" 
+            alt="Mask Logo" 
             className="w-full h-full object-cover"
           />
         </div>
@@ -23,7 +23,7 @@ export const EmptyState = () => {
       
       <h2 className="mt-8 text-3xl font-bold tracking-tight">
         <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">
-          МАСК
+          Mask
         </span>
         <span className="text-amber-100/80 ml-2 font-normal">Messenger</span>
       </h2>

@@ -147,7 +147,7 @@ const Admin = () => {
     
     // Summary data
     const summaryRows = [
-      ['МАСК Messenger - Аналитика'],
+      ['Mask Messenger - Analytics'],
       [`Дата экспорта: ${new Date().toLocaleString('ru-RU')}`],
       [''],
       ['=== ОБЩАЯ СТАТИСТИКА ==='],
@@ -229,7 +229,7 @@ const Admin = () => {
                   Панель администратора
                 </span>
               </h1>
-              <p className="text-xs text-muted-foreground">МАСК Messenger</p>
+              <p className="text-xs text-muted-foreground">Mask Messenger</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

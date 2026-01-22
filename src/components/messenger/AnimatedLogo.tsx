@@ -20,7 +20,7 @@ export const AnimatedLogo = ({ size = 'md', className = '' }: AnimatedLogoProps)
       {/* Mask icon (no animation, covers edge pixels to avoid any border artifacts) */}
       <img
         src={maskLogo}
-        alt="МАСК"
+        alt="Mask"
         className="absolute inset-0 h-full w-full rounded-none bg-logo object-cover block scale-[1.03]"
         draggable={false}
       />
