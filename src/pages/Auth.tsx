@@ -324,20 +324,23 @@ ${secretKey}
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#111b21] flex flex-col">
-      {/* WhatsApp-style header pattern */}
-      <div className="h-32 bg-[#00a884]" />
+    <div className="min-h-[100dvh] bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0d0d0d] flex flex-col relative overflow-hidden">
+      {/* Premium gradient header with golden accents */}
+      <div className="h-40 bg-gradient-to-r from-amber-900/40 via-yellow-600/30 to-amber-900/40 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+      </div>
       
-      <div className="flex-1 flex items-start justify-center px-4 -mt-16">
-        <div className="w-full max-w-md bg-[#202c33] rounded-lg shadow-xl overflow-hidden">
+      <div className="flex-1 flex items-start justify-center px-4 -mt-20 relative z-10">
+        <div className="w-full max-w-md bg-gradient-to-b from-[#1a1a1a] to-[#141414] rounded-2xl shadow-2xl shadow-amber-900/20 overflow-hidden border border-amber-500/10">
           
           {/* Logo Header */}
           <div className="p-8 pb-6 text-center">
             <div className="flex justify-center mb-4">
               <AnimatedLogo size="md" />
             </div>
-            <h1 className="text-2xl font-semibold text-[#e9edef]">МАСК</h1>
-            <p className="text-sm text-[#8696a0] mt-1">Безопасный мессенджер</p>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">МАСК</h1>
+            <p className="text-sm text-amber-100/60 mt-1">Премиальный защищённый мессенджер</p>
           </div>
 
           {/* Key Login */}
@@ -345,15 +348,15 @@ ${secretKey}
             <div className="px-8 pb-8 space-y-6">
               <form onSubmit={handleKeyLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[#8696a0] text-sm">Секретный ключ</Label>
+                  <Label className="text-amber-100/70 text-sm">Секретный ключ</Label>
                   <div className="relative">
-                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8696a0]" />
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/60" />
                     <Input
                       type="text"
                       placeholder="XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX"
                       value={inputSecretKey}
                       onChange={(e) => setInputSecretKey(e.target.value.toUpperCase())}
-                      className="pl-10 h-12 bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0]/50 focus-visible:ring-1 focus-visible:ring-[#00a884] font-mono text-sm"
+                      className="pl-10 h-12 bg-black/40 border border-amber-500/20 text-amber-50 placeholder:text-amber-100/30 focus-visible:ring-1 focus-visible:ring-amber-500/50 font-mono text-sm"
                       autoComplete="off"
                       autoFocus
                     />
@@ -369,11 +372,11 @@ ${secretKey}
                       setRememberMe(checked === true);
                       localStorage.setItem('mask-remember-me', String(checked === true));
                     }}
-                    className="border-[#8696a0] data-[state=checked]:bg-[#00a884] data-[state=checked]:border-[#00a884]"
+                    className="border-amber-500/40 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                   />
                   <Label 
                     htmlFor="remember-me" 
-                    className="text-sm text-[#8696a0] cursor-pointer select-none"
+                    className="text-sm text-amber-100/60 cursor-pointer select-none"
                   >
                     Запомнить меня
                   </Label>
@@ -382,10 +385,10 @@ ${secretKey}
                 <Button
                   type="submit"
                   disabled={loading || !inputSecretKey.trim()}
-                  className="w-full h-12 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-medium rounded-lg"
+                  className="w-full h-12 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-semibold rounded-xl shadow-lg shadow-amber-500/20"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                   ) : (
                     'Войти'
                   )}
@@ -394,10 +397,10 @@ ${secretKey}
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#8696a0]/20"></div>
+                  <div className="w-full border-t border-amber-500/20"></div>
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-[#202c33] px-4 text-[#8696a0]">или</span>
+                  <span className="bg-[#1a1a1a] px-4 text-amber-100/50">или</span>
                 </div>
               </div>
 
@@ -405,7 +408,7 @@ ${secretKey}
                 type="button"
                 onClick={() => { setAuthMode('qr-register'); resetForm(); }}
                 variant="outline"
-                className="w-full h-12 border-[#00a884] text-[#00a884] hover:bg-[#00a884]/10 font-medium rounded-lg"
+                className="w-full h-12 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-medium rounded-xl"
               >
                 <Zap className="w-5 h-5 mr-2" />
                 Создать аккаунт
@@ -416,25 +419,25 @@ ${secretKey}
           {/* Reset Password */}
           {authMode === 'reset-password' && (
             <form onSubmit={handleResetPasswordSubmit} className="px-8 pb-8 space-y-4">
-              <p className="text-center text-sm text-[#8696a0] mb-4">
+              <p className="text-center text-sm text-amber-100/60 mb-4">
                 Введите новый пароль
               </p>
 
               <div className="space-y-2">
-                <Label className="text-[#8696a0] text-sm">Новый пароль</Label>
+                <Label className="text-amber-100/70 text-sm">Новый пароль</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8696a0]" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/60" />
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0]/50 focus-visible:ring-1 focus-visible:ring-[#00a884]"
+                    className="pl-10 pr-10 h-12 bg-black/40 border border-amber-500/20 text-amber-50 placeholder:text-amber-100/30 focus-visible:ring-1 focus-visible:ring-amber-500/50"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8696a0] hover:text-[#e9edef]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500/60 hover:text-amber-300"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -443,15 +446,15 @@ ${secretKey}
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[#8696a0] text-sm">Подтвердите пароль</Label>
+                <Label className="text-amber-100/70 text-sm">Подтвердите пароль</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8696a0]" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/60" />
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 h-12 bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0]/50 focus-visible:ring-1 focus-visible:ring-[#00a884]"
+                    className="pl-10 h-12 bg-black/40 border border-amber-500/20 text-amber-50 placeholder:text-amber-100/30 focus-visible:ring-1 focus-visible:ring-amber-500/50"
                   />
                 </div>
                 {errors.confirmPassword && <p className="text-sm text-red-400">{errors.confirmPassword}</p>}
@@ -460,10 +463,10 @@ ${secretKey}
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-medium rounded-lg"
+                className="w-full h-12 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-semibold rounded-xl shadow-lg shadow-amber-500/20"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                 ) : (
                   'Сохранить пароль'
                 )}
@@ -475,16 +478,16 @@ ${secretKey}
           {authMode === 'qr-register' && (
             <div className="px-8 pb-8 space-y-6">
               <div className="text-center">
-                <p className="text-[#8696a0] text-sm">
+                <p className="text-amber-100/60 text-sm">
                   Вам будет выдан уникальный секретный ключ для входа
                 </p>
               </div>
 
-              <div className="bg-[#111b21] rounded-lg p-4">
+              <div className="bg-black/40 rounded-xl p-4 border border-amber-500/20">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-[#f7c94e] flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-[#8696a0] space-y-1">
-                    <p className="font-medium text-[#e9edef]">Важно:</p>
+                  <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-100/60 space-y-1">
+                    <p className="font-medium text-amber-200">Важно:</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       <li>Ключ нельзя восстановить</li>
                       <li>Сохраните его в надёжном месте</li>
@@ -497,10 +500,10 @@ ${secretKey}
               <Button
                 onClick={handleQrRegister}
                 disabled={loading}
-                className="w-full h-12 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-medium rounded-lg"
+                className="w-full h-12 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-semibold rounded-xl shadow-lg shadow-amber-500/20"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                 ) : (
                   <>
                     <Zap className="w-5 h-5 mr-2" />
@@ -512,7 +515,7 @@ ${secretKey}
               <button
                 type="button"
                 onClick={() => { setAuthMode('key-login'); resetForm(); }}
-                className="w-full text-center text-sm text-[#00a884] hover:underline"
+                className="w-full text-center text-sm text-amber-400 hover:underline"
               >
                 <ArrowLeft className="w-4 h-4 inline mr-1" />
                 Назад к входу
@@ -524,23 +527,23 @@ ${secretKey}
           {authMode === 'qr-show-key' && secretKey && (
             <div className="px-8 pb-8 space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#00a884]/20 mb-3">
-                  <Shield className="w-6 h-6 text-[#00a884]" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 mb-3">
+                  <Shield className="w-6 h-6 text-amber-400" />
                 </div>
-                <h2 className="text-lg font-medium text-[#e9edef]">Ваш секретный ключ</h2>
-                <p className="text-sm text-[#8696a0] mt-1">
+                <h2 className="text-lg font-medium text-amber-50">Ваш секретный ключ</h2>
+                <p className="text-sm text-amber-100/60 mt-1">
                   Сохраните его в надёжном месте
                 </p>
               </div>
 
               {/* Key display */}
-              <div className="bg-[#111b21] rounded-lg p-6 border border-[#00a884]/30">
-                <p className="font-mono text-center text-[#00a884] text-lg font-bold tracking-wider break-all leading-relaxed">
+              <div className="bg-black/40 rounded-xl p-6 border border-amber-500/30">
+                <p className="font-mono text-center text-amber-400 text-lg font-bold tracking-wider break-all leading-relaxed">
                   {secretKey}
                 </p>
               </div>
 
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3">
+              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-3">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-red-400">
@@ -553,10 +556,10 @@ ${secretKey}
                 <Button
                   onClick={handleCopyKey}
                   variant="outline"
-                  className={`flex-1 h-12 rounded-lg transition-all ${
+                  className={`flex-1 h-12 rounded-xl transition-all ${
                     keyCopied 
-                      ? 'border-[#00a884] text-[#00a884] bg-[#00a884]/10' 
-                      : 'border-[#8696a0]/30 text-[#e9edef] hover:bg-[#2a3942]'
+                      ? 'border-amber-500 text-amber-400 bg-amber-500/10' 
+                      : 'border-amber-500/30 text-amber-100 hover:bg-amber-500/10'
                   }`}
                 >
                   {keyCopied ? (
@@ -575,7 +578,7 @@ ${secretKey}
                 <Button
                   onClick={handleExportKeyToFile}
                   variant="outline"
-                  className="flex-1 h-12 rounded-lg border-[#8696a0]/30 text-[#e9edef] hover:bg-[#2a3942]"
+                  className="flex-1 h-12 rounded-xl border-amber-500/30 text-amber-100 hover:bg-amber-500/10"
                 >
                   <Download className="w-5 h-5 mr-2" />
                   Сохранить
@@ -584,7 +587,7 @@ ${secretKey}
 
               <Button
                 onClick={handleConfirmKeySaved}
-                className="w-full h-12 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-medium rounded-lg"
+                className="w-full h-12 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-semibold rounded-xl shadow-lg shadow-amber-500/20"
               >
                 Я сохранил ключ →
               </Button>
@@ -595,17 +598,17 @@ ${secretKey}
           {authMode === 'qr-confirm-saved' && (
             <div className="px-8 pb-8 space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#00a884] mb-3">
-                  <Check className="w-6 h-6 text-white" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 mb-3">
+                  <Check className="w-6 h-6 text-black" />
                 </div>
-                <h2 className="text-lg font-medium text-[#e9edef]">Готовы начать?</h2>
-                <p className="text-sm text-[#8696a0] mt-1">
+                <h2 className="text-lg font-medium text-amber-50">Готовы начать?</h2>
+                <p className="text-sm text-amber-100/60 mt-1">
                   Убедитесь, что ключ сохранён
                 </p>
               </div>
 
-              <div className="bg-[#111b21] rounded-lg p-4">
-                <p className="font-mono text-sm text-[#8696a0] text-center break-all">
+              <div className="bg-black/40 rounded-xl p-4 border border-amber-500/20">
+                <p className="font-mono text-sm text-amber-300/80 text-center break-all">
                   {secretKey}
                 </p>
               </div>
@@ -613,10 +616,10 @@ ${secretKey}
               <Button
                 onClick={handleProceedWithRegistration}
                 disabled={loading}
-                className="w-full h-12 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-medium rounded-lg"
+                className="w-full h-12 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-semibold rounded-xl shadow-lg shadow-amber-500/20"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                 ) : (
                   'Создать аккаунт'
                 )}
@@ -625,7 +628,7 @@ ${secretKey}
               <button
                 type="button"
                 onClick={() => setAuthMode('qr-show-key')}
-                className="w-full text-center text-sm text-[#00a884] hover:underline"
+                className="w-full text-center text-sm text-amber-400 hover:underline"
               >
                 ← Вернуться к ключу
               </button>
@@ -636,23 +639,23 @@ ${secretKey}
           {authMode === 'qr-setup-name' && (
             <form onSubmit={handleSetupName} className="px-8 pb-8 space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#00a884]/20 mb-3">
-                  <User className="w-6 h-6 text-[#00a884]" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 mb-3">
+                  <User className="w-6 h-6 text-amber-400" />
                 </div>
-                <h2 className="text-lg font-medium text-[#e9edef]">Как вас зовут?</h2>
+                <h2 className="text-lg font-medium text-amber-50">Как вас зовут?</h2>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[#8696a0] text-sm">Ваше имя</Label>
+                  <Label className="text-amber-100/70 text-sm">Ваше имя</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8696a0]" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/60" />
                     <Input
                       type="text"
                       placeholder="Введите имя"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="pl-10 h-12 bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0]/50 focus-visible:ring-1 focus-visible:ring-[#00a884]"
+                      className="pl-10 h-12 bg-black/40 border border-amber-500/20 text-amber-50 placeholder:text-amber-100/30 focus-visible:ring-1 focus-visible:ring-amber-500/50"
                       autoFocus
                     />
                   </div>
@@ -660,18 +663,18 @@ ${secretKey}
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[#8696a0] text-sm">Username (необязательно)</Label>
+                  <Label className="text-amber-100/70 text-sm">Username (необязательно)</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8696a0] font-medium">@</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500/60 font-medium">@</span>
                     <Input
                       type="text"
                       placeholder="username"
                       value={username}
                       onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
-                      className="pl-8 h-12 bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0]/50 focus-visible:ring-1 focus-visible:ring-[#00a884]"
+                      className="pl-8 h-12 bg-black/40 border border-amber-500/20 text-amber-50 placeholder:text-amber-100/30 focus-visible:ring-1 focus-visible:ring-amber-500/50"
                     />
                   </div>
-                  <p className="text-xs text-[#8696a0]">3-20 символов: латиница, цифры, _</p>
+                  <p className="text-xs text-amber-100/50">3-20 символов: латиница, цифры, _</p>
                   {errors.username && <p className="text-sm text-red-400">{errors.username}</p>}
                 </div>
               </div>
@@ -679,10 +682,10 @@ ${secretKey}
               <Button
                 type="submit"
                 disabled={loading || !displayName.trim()}
-                className="w-full h-12 bg-[#00a884] hover:bg-[#00a884]/90 text-white font-medium rounded-lg"
+                className="w-full h-12 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-semibold rounded-xl shadow-lg shadow-amber-500/20"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                 ) : (
                   'Начать общение →'
                 )}
@@ -693,8 +696,8 @@ ${secretKey}
       </div>
       
       {/* Footer */}
-      <div className="py-4 text-center">
-        <p className="text-xs text-[#8696a0]">
+      <div className="py-4 text-center relative z-10">
+        <p className="text-xs text-amber-100/40">
           Защита от просмотра сообщений третьими лицами
         </p>
       </div>
