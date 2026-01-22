@@ -571,13 +571,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         />
       )}
       
-      {/* Header - Responsive WhatsApp Style */}
+      {/* Header - Premium Style */}
       <div className="whatsapp-header flex items-center gap-1 sm:gap-2 px-1 sm:px-3 py-1.5 sm:py-2 safe-area-top">
         <button
           onClick={onBack}
-          className="p-2 rounded-full hover:bg-white/10 transition-colors lg:hidden active:bg-white/20"
+          className="p-2 rounded-full hover:bg-amber-500/10 transition-all duration-200 lg:hidden active:scale-95 active:bg-amber-500/20"
         >
-          <ArrowLeft className="w-6 h-6 text-white" />
+          <ArrowLeft className="w-6 h-6 text-amber-100" />
         </button>
         <Avatar
           src={avatarUrl || ''}
@@ -586,18 +586,18 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           status={otherParticipant?.status as 'online' | 'offline' | 'away'}
         />
         <button 
-          className="min-w-0 flex-1 ml-1 sm:ml-2 text-left hover:bg-white/5 rounded-lg py-1 px-1.5 -ml-0.5 transition-colors"
+          className="min-w-0 flex-1 ml-1 sm:ml-2 text-left hover:bg-amber-500/5 rounded-lg py-1 px-1.5 -ml-0.5 transition-all duration-200"
           onClick={() => !chat.is_group && setShowNicknameDialog(true)}
         >
           <div className="flex items-center gap-1.5">
-            <h2 className="font-medium text-[15px] sm:text-[17px] text-white truncate leading-tight">{displayName}</h2>
+            <h2 className="font-medium text-[15px] sm:text-[17px] text-amber-50 truncate leading-tight">{displayName}</h2>
             {currentNickname && !chat.is_group && (
-              <span className="text-[11px] text-white/50 truncate hidden sm:inline">
+              <span className="text-[11px] text-amber-200/40 truncate hidden sm:inline">
                 ({otherParticipant?.display_name})
               </span>
             )}
             {!chat.is_group && (
-              <E2EEIndicator 
+              <E2EEIndicator
                 isEnabled={isE2EEEnabled} 
                 recipientHasE2EE={recipientHasE2EE} 
               />
@@ -608,10 +608,10 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           <p className={cn(
             'text-[11px] sm:text-[13px] truncate leading-tight',
             typingText 
-              ? 'text-green-200 animate-pulse' 
+              ? 'text-amber-300 animate-pulse' 
               : !chat.is_group && otherParticipant?.status === 'online' 
-                ? 'text-green-200' 
-                : 'text-white/70'
+                ? 'text-emerald-300' 
+                : 'text-amber-100/50'
           )}>
             {getStatusText()}
           </p>
@@ -622,28 +622,28 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             <>
               <button 
                 onClick={() => onStartCall('video')}
-                className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+                className="p-2 sm:p-2.5 rounded-full hover:bg-amber-500/10 transition-all duration-200 active:scale-95 active:bg-amber-500/20"
                 disabled={isOtherUserBlocked}
                 title="Видеозвонок"
               >
-                <Video className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
+                <Video className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-amber-100" />
               </button>
               <button 
                 onClick={() => onStartCall('voice')}
-                className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+                className="p-2 sm:p-2.5 rounded-full hover:bg-amber-500/10 transition-all duration-200 active:scale-95 active:bg-amber-500/20"
                 disabled={isOtherUserBlocked}
                 title="Голосовой звонок"
               >
-                <Phone className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
+                <Phone className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-amber-100" />
               </button>
             </>
           ) : (
             <button 
               onClick={() => setShowGroupCallDialog(true)}
-              className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+              className="p-2 sm:p-2.5 rounded-full hover:bg-amber-500/10 transition-all duration-200 active:scale-95 active:bg-amber-500/20"
               title="Групповой звонок"
             >
-              <Users className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
+              <Users className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-amber-100" />
             </button>
           )}
           
@@ -651,8 +651,8 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           {!chat.is_group && otherParticipant && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20">
-                  <MoreVertical className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-white" />
+                <button className="p-2 sm:p-2.5 rounded-full hover:bg-amber-500/10 transition-all duration-200 active:scale-95 active:bg-amber-500/20">
+                  <MoreVertical className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-amber-100" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
