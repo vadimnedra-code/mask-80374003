@@ -9,7 +9,7 @@ import { Lock, User, Eye, EyeOff, ArrowLeft, Zap, Copy, Check, AlertTriangle, Ke
 import { Checkbox } from '@/components/ui/checkbox';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import maskLogo from '@/assets/mask-logo.png';
+import { AnimatedLogo } from '@/components/messenger/AnimatedLogo';
 
 const newPasswordSchema = z.object({
   password: z.string().min(6, 'Пароль должен содержать минимум 6 символов'),
@@ -333,7 +333,9 @@ ${secretKey}
           
           {/* Logo Header */}
           <div className="p-8 pb-6 text-center">
-            <img src={maskLogo} alt="МАСК" className="w-24 h-24 mx-auto object-contain mb-4" />
+            <div className="flex justify-center mb-4">
+              <AnimatedLogo size="md" />
+            </div>
             <h1 className="text-2xl font-semibold text-[#e9edef]">МАСК</h1>
             <p className="text-sm text-[#8696a0] mt-1">Безопасный мессенджер</p>
           </div>

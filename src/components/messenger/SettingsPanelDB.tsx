@@ -16,6 +16,7 @@ import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
 import { PrivacySettingsPanel } from './PrivacySettingsPanel';
 import { NotificationSettingsPanel } from './NotificationSettingsPanel';
+import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showAppearance, setShowAppearance] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
@@ -80,6 +82,10 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
 
   if (showNotifications) {
     return <NotificationSettingsPanel onClose={() => setShowNotifications(false)} />;
+  }
+
+  if (showAppearance) {
+    return <AppearanceSettingsPanel onClose={() => setShowAppearance(false)} />;
   }
 
   return (
@@ -160,6 +166,8 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
                   setShowPrivacy(true);
                 } else if (item.label === 'Уведомления') {
                   setShowNotifications(true);
+                } else if (item.label === 'Оформление') {
+                  setShowAppearance(true);
                 }
               }}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors group"
