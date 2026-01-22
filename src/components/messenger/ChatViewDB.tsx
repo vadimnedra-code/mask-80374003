@@ -809,7 +809,9 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         <div 
           ref={messagesContainerRef}
           className={cn(
-            "absolute inset-0 overflow-y-auto py-2 space-y-[2px] scrollbar-thin",
+            // NOTE: avoid `position: absolute` here — on some mobile WebViews it can
+            // break native scrolling inside flex containers.
+            "h-full min-h-0 overflow-y-auto py-2 space-y-[2px] scrollbar-thin touch-action-pan-y",
             currentWallpaper.id === 'default' && 'chat-wallpaper'
           )}
           style={{
