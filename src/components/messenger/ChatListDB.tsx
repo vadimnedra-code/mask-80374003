@@ -252,13 +252,12 @@ export const ChatList = ({
       {/* Header - Premium Style */}
       <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3 group">
-          <div className="relative">
+          <div className="relative w-9 h-9 bg-black overflow-hidden">
             <img 
               src={maskLogo} 
               alt="МАСК" 
-              className="w-9 h-9 object-contain transition-transform duration-300 group-hover:scale-105" 
+              className="w-full h-full object-cover" 
             />
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
           </div>
           <h1 className="text-[22px] font-bold tracking-tight">
             <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
