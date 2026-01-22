@@ -8,6 +8,7 @@ import {
   Send, 
   ArrowLeft,
   ArrowDown,
+  ArrowUp,
   Image,
   Camera,
   FileText,
@@ -98,6 +99,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isAtTop, setIsAtTop] = useState(true);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [showGroupCallDialog, setShowGroupCallDialog] = useState(false);
   const [showDisappearingSelector, setShowDisappearingSelector] = useState(false);
@@ -107,6 +109,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const isMobile = useIsMobile();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesStartRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -231,18 +234,25 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     setNewMessagesCount(0);
   }, []);
 
-  // Check if scrolled to bottom
+  // Check if scrolled to bottom or top
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     
     const threshold = 100;
     const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    const isTop = container.scrollTop < threshold;
+    
     setIsAtBottom(isBottom);
+    setIsAtTop(isTop);
     
     if (isBottom) {
       setNewMessagesCount(0);
     }
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    messagesStartRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
@@ -802,7 +812,9 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             Начните разговор
           </div>
         ) : (
-          messages.map((msg, index) => {
+          <>
+            <div ref={messagesStartRef} />
+            {messages.map((msg, index) => {
             const currentDate = new Date(msg.created_at);
             const previousDate = index > 0 ? new Date(messages[index - 1].created_at) : null;
             const showDateSeparator = shouldShowDateSeparator(currentDate, previousDate);
@@ -883,7 +895,8 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                 </div>
               </div>
             );
-          })
+          })}
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -908,6 +921,16 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           className="absolute bottom-24 right-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors"
         >
           <ArrowDown className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Scroll to Top Button (when scrolled down) */}
+      {!isAtTop && messages.length > 10 && (
+        <button
+          onClick={scrollToTop}
+          className="absolute bottom-24 left-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors animate-fade-in"
+        >
+          <ArrowUp className="w-5 h-5" />
         </button>
       )}
 
