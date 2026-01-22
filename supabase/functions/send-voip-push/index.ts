@@ -183,6 +183,31 @@ serve(async (req) => {
         }
       );
     }
+    
+    // Validate authorization header and verify caller identity
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - missing auth header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -193,6 +218,36 @@ serve(async (req) => {
     if (!callee_id || !caller_id || !call_id) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // CRITICAL: Verify caller_id matches authenticated user to prevent spoofing
+    if (user.id !== caller_id) {
+      console.log(`Caller ID mismatch: auth=${user.id}, claimed=${caller_id}`);
+      return new Response(
+        JSON.stringify({ error: "Caller ID mismatch - unauthorized" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Verify call exists and caller is authorized
+    const { data: callData, error: callError } = await supabaseClient
+      .from("calls")
+      .select("caller_id, callee_id")
+      .eq("id", call_id)
+      .single();
+    
+    if (callError || !callData) {
+      return new Response(
+        JSON.stringify({ error: "Call not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (callData.caller_id !== user.id || callData.callee_id !== callee_id) {
+      return new Response(
+        JSON.stringify({ error: "Invalid call parameters" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
