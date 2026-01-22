@@ -252,7 +252,7 @@ const Messenger = () => {
   const isInGroupCall = groupCallState.status !== 'idle';
 
   return (
-    <div className="h-full w-full overflow-hidden bg-background flex flex-col">
+    <div className="h-full w-full overflow-hidden bg-background flex flex-col safe-area-top">
       {/* Incoming Call Dialog */}
       {incomingCall && !isInCall && (
         <IncomingCallDialog
@@ -316,12 +316,12 @@ const Messenger = () => {
       )}
 
       {/* Main Layout */}
-      <div className="flex flex-1 min-h-0 h-full overflow-hidden">
+      <div className="flex flex-1 min-h-0 h-full overflow-hidden touch-action-pan-y">
         {/* Sidebar - Chat List */}
         <div
           className={cn(
-            'w-full lg:w-[380px] lg:min-w-[380px] border-r border-border transition-all duration-300',
-            selectedChatId ? 'hidden lg:block' : 'block'
+            'w-full lg:w-[380px] lg:min-w-[380px] border-r border-border transition-all duration-300 h-full overflow-hidden',
+            selectedChatId ? 'hidden lg:flex lg:flex-col' : 'flex flex-col'
           )}
         >
           <ChatList
@@ -387,8 +387,8 @@ const Messenger = () => {
 
         {/* Main Content */}
         <div className={cn(
-          'flex-1 h-full min-h-0 overflow-hidden transition-all duration-300',
-          !selectedChatId ? 'hidden lg:block' : 'block'
+          'flex-1 h-full min-h-0 overflow-hidden transition-all duration-300 flex flex-col',
+          !selectedChatId ? 'hidden lg:flex' : 'flex'
         )}>
           {selectedChat ? (
             <ChatViewDB

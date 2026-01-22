@@ -119,7 +119,7 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
   return (
     <div 
       ref={containerRef}
-      className="flex flex-col h-full bg-background transition-transform duration-150 ease-out md:transition-none"
+      className="flex flex-col h-full bg-background transition-transform duration-150 ease-out md:transition-none touch-action-pan-y"
       style={{ 
         transform: `translateX(${swipeOffset}px)`,
         opacity: 1 - (swipeOffset / 200)
@@ -131,7 +131,7 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
       {/* Swipe indicator */}
       {swipeOffset > 0 && (
         <div 
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 transition-all"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 backdrop-blur-sm transition-all"
           style={{ 
             opacity: Math.min(swipeOffset / 60, 1),
             transform: `translateX(${Math.min(swipeOffset / 2, 24)}px) translateY(-50%) scale(${0.5 + Math.min(swipeOffset / 120, 0.5)})`
@@ -142,11 +142,11 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
       )}
       
       {/* Header - WhatsApp Style */}
-      <div className="whatsapp-header flex items-center justify-between px-2 py-2 safe-area-top">
+      <div className="whatsapp-header flex items-center justify-between px-2 py-2 safe-area-top flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={onBack}
-            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 md:hidden tap-target flex-shrink-0"
+            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 md:hidden tap-target touch-feedback flex-shrink-0"
           >
             <ArrowLeft className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
@@ -169,24 +169,24 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
         <div className="flex items-center gap-1 flex-shrink-0">
           <button 
             onClick={() => onStartCall('video')}
-            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target"
+            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target touch-feedback"
           >
             <Video className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
           <button 
             onClick={() => onStartCall('voice')}
-            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target"
+            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target touch-feedback"
           >
             <Phone className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
-          <button className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target">
+          <button className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target touch-feedback">
             <MoreVertical className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
         </div>
       </div>
 
       {/* Messages - WhatsApp Wallpaper */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 scrollbar-thin scroll-smooth chat-wallpaper">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 scrollbar-thin scroll-native chat-wallpaper overscroll-contain">
         {messages.map((msg, index) => (
           <MessageBubble
             key={msg.id}
@@ -199,10 +199,10 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
       </div>
 
       {/* Input Area - WhatsApp Style */}
-      <div className="px-2 py-2 bg-background safe-area-bottom">
+      <div className="px-2 py-2 bg-background safe-area-bottom flex-shrink-0">
         <div className="flex items-end gap-2">
-          <div className="flex-1 flex items-center gap-1 bg-card rounded-full px-3 py-1">
-            <button className="p-1.5 hover:scale-110 transition-transform active:scale-95">
+          <div className="flex-1 flex items-center gap-1 bg-card rounded-full px-3 py-1 min-h-[44px]">
+            <button className="p-1.5 hover:scale-110 transition-transform active:scale-95 touch-feedback">
               <Smile className="w-5 h-5 text-muted-foreground" />
             </button>
             <input
@@ -212,12 +212,12 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="flex-1 py-2 bg-transparent text-[15px] placeholder:text-muted-foreground focus:outline-none"
+              className="flex-1 py-2 bg-transparent text-[16px] placeholder:text-muted-foreground focus:outline-none"
             />
             <div className="relative">
               <button
                 onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className="p-1.5 hover:scale-110 transition-transform active:scale-95"
+                className="p-1.5 hover:scale-110 transition-transform active:scale-95 touch-feedback"
               >
                 <Paperclip className="w-5 h-5 text-muted-foreground rotate-45" />
               </button>
@@ -226,27 +226,27 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
               {showAttachMenu && (
                 <div className="absolute bottom-full right-0 mb-2 p-2 bg-card rounded-2xl shadow-lg border border-border animate-scale-in z-10">
                   <div className="flex gap-1">
-                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
+                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target touch-feedback">
                       <Image className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                     </button>
-                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
+                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target touch-feedback">
                       <Camera className="w-5 h-5 text-pink-500 group-hover:scale-110 transition-transform" />
                     </button>
-                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target">
+                    <button className="p-3 rounded-xl hover:bg-muted transition-colors active:scale-95 group tap-target touch-feedback">
                       <FileText className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
                     </button>
                   </div>
                 </div>
               )}
             </div>
-            <button className="p-1.5 hover:scale-110 transition-transform active:scale-95">
+            <button className="p-1.5 hover:scale-110 transition-transform active:scale-95 touch-feedback">
               <Camera className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
           <button
             onClick={message.trim() ? handleSendMessage : undefined}
-            className="p-3 rounded-full bg-primary transition-all duration-200 flex-shrink-0 tap-target active:scale-95"
+            className="p-3 rounded-full bg-primary transition-all duration-200 flex-shrink-0 tap-target active:scale-95 touch-feedback min-w-[48px] min-h-[48px] flex items-center justify-center"
           >
             {message.trim() ? (
               <Send className="w-5 h-5 text-primary-foreground" />

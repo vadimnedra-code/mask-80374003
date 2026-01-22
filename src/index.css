@@ -159,30 +159,47 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
 
-  html, body {
+  html {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+    /* Prevent text size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
-
+  
   body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: 'cv02' on, 'cv03' on, 'cv04' on;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     overscroll-behavior: none;
     letter-spacing: -0.01em;
+    /* Improve font rendering on mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Fix mobile viewport */
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
   }
 
   #root {
     min-height: 100dvh;
     min-height: -webkit-fill-available;
+    height: 100%;
     width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
@@ -190,6 +207,9 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    /* Ensure proper stacking context */
+    position: relative;
+    isolation: isolate;
   }
   
   /* Prevent iOS bounce scroll in main app */
@@ -197,6 +217,20 @@
     .no-bounce {
       overscroll-behavior: none;
       -webkit-overflow-scrolling: auto;
+    }
+  }
+  
+  /* Fix for iOS Safari 100vh issue */
+  @supports (height: 100dvh) {
+    html, body, #root {
+      height: 100dvh;
+    }
+  }
+  
+  /* Ensure inputs don't zoom on iOS */
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
     }
   }
 }
@@ -427,15 +461,34 @@
   .touch-action-pan-y { touch-action: pan-y; }
   .touch-action-pan-x { touch-action: pan-x; }
   .touch-action-none { touch-action: none; }
+  .touch-action-manipulation { touch-action: manipulation; }
   
   .tap-target {
     min-height: 44px;
     min-width: 44px;
   }
   
+  /* Larger tap targets on mobile */
+  @media screen and (max-width: 768px) {
+    .tap-target-mobile {
+      min-height: 48px;
+      min-width: 48px;
+    }
+  }
+  
   .touch-active:active {
-    transform: scale(0.98);
-    opacity: 0.9;
+    transform: scale(0.97);
+    opacity: 0.85;
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+  
+  /* Haptic-like feedback for buttons */
+  .touch-feedback {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .touch-feedback:active {
+    transform: scale(0.95);
   }
   
   /* Scroll behavior */
@@ -444,38 +497,85 @@
     scroll-behavior: smooth;
   }
   
-  /* Safe area utilities */
+  /* Native momentum scrolling */
+  .scroll-native {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Safe area utilities with fallbacks */
   .safe-area-top {
-    padding-top: env(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top, 0px);
   }
   
   .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   
   .safe-area-left {
-    padding-left: env(safe-area-inset-left);
+    padding-left: env(safe-area-inset-left, 0px);
   }
   
   .safe-area-right {
-    padding-right: env(safe-area-inset-right);
+    padding-right: env(safe-area-inset-right, 0px);
   }
   
   .safe-area-x {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
   
   .safe-area-y {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   
   .safe-area-all {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  
+  /* Safe area margin variants */
+  .safe-margin-top {
+    margin-top: env(safe-area-inset-top, 0px);
+  }
+  
+  .safe-margin-bottom {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Mobile-specific utilities */
+  @media screen and (max-width: 768px) {
+    .mobile-full-height {
+      height: 100dvh;
+      height: -webkit-fill-available;
+    }
+    
+    .mobile-hide-scrollbar {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .mobile-hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Prevent pull-to-refresh on mobile when not needed */
+    .prevent-pull-refresh {
+      overscroll-behavior-y: contain;
+    }
+  }
+  
+  /* Disable hover effects on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .hover-lift:hover,
+    .hover-glow:hover,
+    .hover-scale-subtle:hover {
+      transform: none;
+      box-shadow: inherit;
+    }
   }
 }
 
