@@ -1,6 +1,6 @@
 import { useEffect, useCallback, forwardRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { X, Download, ZoomIn, ZoomOut, RotateCw, Loader2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MediaLightboxProps {
@@ -15,6 +15,7 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
   ({ src, type, alt = 'Медиа', isOpen, onClose }, ref) => {
     const [scale, setScale] = useState(1);
     const [rotation, setRotation] = useState(0);
+    const [imageStatus, setImageStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
     // Close on Escape key
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -30,12 +31,13 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
         // Reset transformations when opening
         setScale(1);
         setRotation(0);
+        setImageStatus(type === 'image' ? 'loading' : 'idle');
       }
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
         document.body.style.overflow = '';
       };
-    }, [isOpen, handleKeyDown]);
+    }, [isOpen, handleKeyDown, type]);
 
     const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 3));
     const handleZoomOut = () => setScale(prev => Math.max(prev - 0.5, 0.5));
@@ -58,6 +60,8 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
       }
     };
 
+    if (!isOpen) return null;
+
     const content = (
       <AnimatePresence>
         {isOpen && (
@@ -71,33 +75,33 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
             onClick={onClose}
           >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/95" />
+            <div className="absolute inset-0 bg-background/95" />
             
             {/* Top toolbar */}
-            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
+            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-background/70 to-transparent">
               <div className="flex items-center gap-2">
                 {type === 'image' && (
                   <>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
-                      className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      className="p-2.5 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors"
                       title="Увеличить"
                     >
-                      <ZoomIn className="w-5 h-5 text-white" />
+                      <ZoomIn className="w-5 h-5 text-foreground" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
-                      className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      className="p-2.5 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors"
                       title="Уменьшить"
                     >
-                      <ZoomOut className="w-5 h-5 text-white" />
+                      <ZoomOut className="w-5 h-5 text-foreground" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRotate(); }}
-                      className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      className="p-2.5 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors"
                       title="Повернуть"
                     >
-                      <RotateCw className="w-5 h-5 text-white" />
+                      <RotateCw className="w-5 h-5 text-foreground" />
                     </button>
                   </>
                 )}
@@ -106,17 +110,17 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
               <div className="flex items-center gap-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-                  className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  className="p-2.5 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors"
                   title="Скачать"
                 >
-                  <Download className="w-5 h-5 text-white" />
+                  <Download className="w-5 h-5 text-foreground" />
                 </button>
                 <button
                   onClick={onClose}
-                  className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  className="p-2.5 rounded-full bg-muted/40 hover:bg-muted/60 transition-colors"
                   title="Закрыть"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <X className="w-5 h-5 text-foreground" />
                 </button>
               </div>
             </div>
@@ -131,16 +135,49 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
               onClick={(e) => e.stopPropagation()}
             >
               {type === 'image' ? (
-                <img
-                  src={src}
-                  alt={alt}
-                  style={{
-                    transform: `scale(${scale}) rotate(${rotation}deg)`,
-                    transition: 'transform 0.2s ease-out',
-                  }}
-                  className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
-                  draggable={false}
-                />
+                <div className="relative flex items-center justify-center">
+                  {imageStatus === 'loading' && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm text-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Загрузка…
+                      </div>
+                    </div>
+                  )}
+
+                  {imageStatus === 'error' && (
+                    <div className="absolute inset-0 flex items-center justify-center p-6">
+                      <div className="max-w-sm rounded-xl border bg-card/80 backdrop-blur px-4 py-3 text-center">
+                        <div className="text-sm font-medium text-foreground">Не удалось загрузить изображение</div>
+                        <div className="mt-1 text-xs text-muted-foreground break-all">{src}</div>
+                        <a
+                          href={src}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Открыть в новой вкладке
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  <img
+                    src={src}
+                    alt={alt}
+                    onLoad={() => setImageStatus('loaded')}
+                    onError={() => setImageStatus('error')}
+                    style={{
+                      transform: `scale(${scale}) rotate(${rotation}deg)`,
+                      transition: 'transform 0.2s ease-out',
+                      opacity: imageStatus === 'loaded' ? 1 : 0,
+                    }}
+                    className="max-w-full max-h-[85vh] object-contain rounded-lg select-none"
+                    draggable={false}
+                  />
+                </div>
               ) : (
                 <video
                   src={src}
@@ -154,7 +191,7 @@ export const MediaLightbox = forwardRef<HTMLDivElement, MediaLightboxProps>(
 
             {/* Scale indicator for images */}
             {type === 'image' && scale !== 1 && (
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 bg-black/70 rounded-full text-white text-sm">
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 bg-muted/70 rounded-full text-foreground text-sm">
                 {Math.round(scale * 100)}%
               </div>
             )}
