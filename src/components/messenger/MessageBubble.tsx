@@ -126,12 +126,14 @@ export const MessageBubble = ({
     if (message.type === 'image') {
       return (
         <>
-          <MediaLightbox 
-            src={message.mediaUrl}
-            type="image"
-            isOpen={lightboxOpen} 
-            onClose={() => setLightboxOpen(false)} 
-          />
+          {lightboxOpen && (
+            <MediaLightbox 
+              src={message.mediaUrl}
+              type="image"
+              isOpen={lightboxOpen} 
+              onClose={() => setLightboxOpen(false)} 
+            />
+          )}
           <div 
             onClick={() => setLightboxOpen(true)}
             className="cursor-pointer group/media relative overflow-hidden rounded-md"
@@ -150,12 +152,14 @@ export const MessageBubble = ({
     if (message.type === 'video') {
       return (
         <>
-          <MediaLightbox 
-            src={message.mediaUrl}
-            type="video"
-            isOpen={lightboxOpen} 
-            onClose={() => setLightboxOpen(false)} 
-          />
+          {lightboxOpen && (
+            <MediaLightbox 
+              src={message.mediaUrl}
+              type="video"
+              isOpen={lightboxOpen} 
+              onClose={() => setLightboxOpen(false)} 
+            />
+          )}
           <div 
             onClick={() => setLightboxOpen(true)}
             className="cursor-pointer group/media relative overflow-hidden rounded-md"
