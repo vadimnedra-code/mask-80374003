@@ -39,6 +39,7 @@ export const useChats = () => {
   const [chats, setChats] = useState<ChatWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const chatIdsRef = useRef<string[]>([]);
 
   const getChatSortTimestamp = useCallback((chat: ChatWithDetails) => {
     // Prefer real activity (last message time). This fixes cases where chats.updated_at
@@ -168,6 +169,7 @@ export const useChats = () => {
     });
 
     setChats(chatsWithDetails);
+    chatIdsRef.current = chatsWithDetails.map(c => c.id);
     setLoading(false);
   }, [user, getChatSortTimestamp]);
 
@@ -188,6 +190,29 @@ export const useChats = () => {
 
     const channel = supabase
       .channel('chats-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_participants',
+        },
+        (payload) => {
+          // Refetch if current user was added to a chat OR if someone was added to one of user's chats
+          const newParticipant = payload.new as { user_id: string; chat_id: string };
+          if (newParticipant.user_id === user.id) {
+            // Current user was added to a new chat
+            console.log('[useChats] Current user added to new chat, refetching...');
+            debouncedFetch();
+          } else {
+            // Check if this is for a chat the current user is in (use ref to avoid stale closure)
+            if (chatIdsRef.current.includes(newParticipant.chat_id)) {
+              console.log('[useChats] New participant added to user chat, refetching...');
+              debouncedFetch();
+            }
+          }
+        }
+      )
       .on(
         'postgres_changes',
         {
