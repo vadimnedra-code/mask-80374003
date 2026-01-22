@@ -14,7 +14,7 @@ export const AnimatedLogo = ({ size = 'md', className = '' }: AnimatedLogoProps)
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative bg-black ${sizeClasses[size]} ${className}`}>
       {/* Animated glow rings */}
       <motion.div
         className="absolute inset-0 rounded-full"
@@ -72,13 +72,13 @@ export const AnimatedLogo = ({ size = 'md', className = '' }: AnimatedLogoProps)
       />
       
       {/* Inner dark background */}
-      <div className="absolute inset-3 rounded-full bg-[#202c33]" />
+      <div className="absolute inset-0 bg-black" />
       
       {/* Logo with pulse animation */}
       <motion.img
         src={maskLogo}
         alt="МАСК"
-        className={`relative ${sizeClasses[size]} object-contain z-10`}
+        className={`relative ${sizeClasses[size]} object-cover z-10`}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ 
           opacity: 1, 
