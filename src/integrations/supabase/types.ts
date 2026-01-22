@@ -948,6 +948,10 @@ export type Database = {
       }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       cleanup_expired_messages: { Args: never; Returns: undefined }
+      is_call_member: {
+        Args: { p_call_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_chat_participant: {
         Args: { _chat_id: string; _user_id: string }
         Returns: boolean
