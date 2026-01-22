@@ -161,7 +161,7 @@ const Auth = () => {
   const handleExportKeyToFile = () => {
     if (!secretKey) return;
     
-    const content = `МАСК - Секретный ключ
+    const content = `Mask - Secret Key
 ========================================
 Ваш секретный ключ для входа:
 
@@ -339,7 +339,7 @@ ${secretKey}
             <div className="flex justify-center mb-4">
               <AnimatedLogo size="md" />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">МАСК</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">Mask</h1>
             <p className="text-sm text-amber-100/60 mt-1">Премиальный защищённый мессенджер</p>
           </div>
 

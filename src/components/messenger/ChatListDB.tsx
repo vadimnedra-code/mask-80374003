@@ -260,7 +260,7 @@ export const ChatList = ({
           <div className="relative w-10 h-10 bg-black overflow-hidden shadow-lg shadow-amber-500/10">
             <img 
               src={maskLogo} 
-              alt="МАСК" 
+              alt="Mask" 
               className="w-full h-full object-cover" 
             />
             <div className="absolute inset-0 ring-1 ring-amber-500/20" />
@@ -268,7 +268,7 @@ export const ChatList = ({
           <div>
             <h1 className="text-[24px] font-bold tracking-tight leading-none">
               <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
-                МАСК
+                Mask
               </span>
             </h1>
             <p className="text-[11px] text-amber-500/60 font-medium tracking-wider uppercase mt-0.5">
