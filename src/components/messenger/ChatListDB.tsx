@@ -249,26 +249,35 @@ export const ChatList = ({
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header - WhatsApp Style */}
+      {/* Header - Premium Style */}
       <div className="whatsapp-header flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-2">
-          <img src={maskLogo} alt="МАСК" className="w-8 h-8 object-contain" />
-          <h1 className="text-[22px] font-bold text-white tracking-tight">
-            МАСК
+        <div className="flex items-center gap-3 group">
+          <div className="relative">
+            <img 
+              src={maskLogo} 
+              alt="МАСК" 
+              className="w-9 h-9 object-contain transition-transform duration-300 group-hover:scale-105" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
+          </div>
+          <h1 className="text-[22px] font-bold tracking-tight">
+            <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
+              МАСК
+            </span>
           </h1>
         </div>
         <div className="flex items-center gap-1">
           <button 
             onClick={onNewChat}
-            className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+            className="p-2.5 rounded-full hover:bg-white/10 transition-all duration-200 active:scale-95 active:bg-white/20"
           >
-            <Edit className="w-[22px] h-[22px] text-white" />
+            <Edit className="w-[22px] h-[22px] text-amber-100/90" />
           </button>
           <button 
             onClick={onOpenSettings}
-            className="p-2.5 rounded-full hover:bg-white/10 transition-colors active:bg-white/20"
+            className="p-2.5 rounded-full hover:bg-white/10 transition-all duration-200 active:scale-95 active:bg-white/20"
           >
-            <Menu className="w-[22px] h-[22px] text-white" />
+            <Menu className="w-[22px] h-[22px] text-amber-100/90" />
           </button>
         </div>
       </div>
