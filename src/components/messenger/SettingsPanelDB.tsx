@@ -9,12 +9,14 @@ import {
   ChevronRight,
   Moon,
   Sun,
-  Edit2
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
 import { PrivacySettingsPanel } from './PrivacySettingsPanel';
 import { NotificationSettingsPanel } from './NotificationSettingsPanel';
+import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,6 +39,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
   const navigate = useNavigate();
@@ -173,14 +176,21 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
           ))}
         </div>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-border">
+        {/* Logout & Delete Account */}
+        <div className="p-4 border-t border-border space-y-2">
           <button 
             onClick={handleSignOut}
+            className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-muted transition-colors"
+          >
+            <LogOut className="w-5 h-5 text-muted-foreground" />
+            <span className="font-medium">Выйти</span>
+          </button>
+          <button 
+            onClick={() => setShowDeleteAccount(true)}
             className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-destructive/10 transition-colors text-destructive"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Выйти</span>
+            <Trash2 className="w-5 h-5" />
+            <span className="font-medium">Удалить аккаунт</span>
           </button>
         </div>
 
@@ -189,6 +199,13 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
           <p className="text-xs text-muted-foreground">МАСК Messenger v1.0.0</p>
         </div>
       </div>
+
+      {/* Delete Account Dialog */}
+      <DeleteAccountDialog
+        isOpen={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
+        userEmail={user?.email || ''}
+      />
     </div>
   );
 };
