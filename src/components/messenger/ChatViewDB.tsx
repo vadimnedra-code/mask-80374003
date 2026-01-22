@@ -107,6 +107,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showDisappearingSelector, setShowDisappearingSelector] = useState(false);
   const [showNicknameDialog, setShowNicknameDialog] = useState(false);
   const prevMessagesLengthRef = useRef(0);
+  const isAtBottomRef = useRef(true);
   
   const isMobile = useIsMobile();
   
@@ -232,8 +233,15 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     setMessageToForward(null);
   };
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottomSmooth = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setNewMessagesCount(0);
+  }, []);
+
+  const scrollToBottomInstant = useCallback(() => {
+    // Important: don't fight with user's manual scrolling
+    // (smooth scrolling here can cause visible "jerks" in long chats)
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     setNewMessagesCount(0);
   }, []);
 
@@ -245,6 +253,9 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     const threshold = 100;
     const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
     const isTop = container.scrollTop < threshold;
+
+    // Keep an up-to-date ref to avoid stale state in effects
+    isAtBottomRef.current = isBottom;
     
     setIsAtBottom(isBottom);
     setIsAtTop(isTop);
@@ -262,9 +273,11 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     // Auto-scroll only if at bottom or it's our own message
     const lastMessage = messages[messages.length - 1];
     const isOwnNewMessage = lastMessage?.sender_id === user?.id;
-    
-    if (isAtBottom || isOwnNewMessage) {
-      scrollToBottom();
+
+    const atBottomNow = isAtBottomRef.current;
+
+    if (atBottomNow || isOwnNewMessage) {
+      scrollToBottomInstant();
     } else if (messages.length > prevMessagesLengthRef.current) {
       // New message arrived while scrolled up
       const newCount = messages.length - prevMessagesLengthRef.current;
@@ -279,7 +292,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
       fetchReactions(messages.map(m => m.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, isAtBottom, user?.id, scrollToBottom]);
+  }, [messages, user?.id, scrollToBottomInstant]);
 
   // Scroll to highlighted message
   useEffect(() => {
@@ -430,13 +443,14 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     const diff = currentY - pullStartY.current;
     
     // Only activate pull if pulling down (positive diff) and beyond a minimum threshold
-    if (diff > 10) {
+    if (diff > 20) {
       // Use a dampening factor to make pull feel natural
-      const distance = Math.min((diff - 10) * 0.4, 100);
+      const distance = Math.min((diff - 20) * 0.4, 100);
       setPullDistance(distance);
       
       // Prevent default only when actually pulling to refresh
-      if (distance > 5) {
+      // Use a higher threshold to avoid breaking normal scrolling/overscroll.
+      if (distance > 15 && e.cancelable) {
         e.preventDefault();
       }
     } else {
@@ -765,38 +779,45 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         />
       )}
 
-      {/* Pull to Refresh Indicator */}
-      {pullDistance > 0 && (
-        <div 
-          className="flex items-center justify-center bg-muted/50 overflow-hidden transition-all"
-          style={{ height: pullDistance }}
+      {/* Messages (wrapper keeps layout stable; pull indicator is overlay to avoid scroll "jerks") */}
+      <div className="relative flex-1">
+        {/* Pull to Refresh Indicator (overlay; does not change layout height) */}
+        <div
+          className={cn(
+            'pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-center justify-center transition-opacity',
+            pullDistance > 0 ? 'opacity-100' : 'opacity-0'
+          )}
+          style={{
+            transform: `translateY(${Math.min(pullDistance - 50, 0)}px)`,
+          }}
         >
           <div className={cn(
-            'transition-all duration-200',
-            pullDistance >= 60 ? 'scale-100 text-primary' : 'scale-75 text-muted-foreground'
+            'flex items-center justify-center h-10 w-10 rounded-full bg-muted/60 backdrop-blur-sm transition-all duration-200',
+            pullDistance >= 60 ? 'scale-100 text-primary' : 'scale-90 text-muted-foreground'
           )}>
             <RefreshCw className={cn('w-5 h-5', isRefreshing && 'animate-spin')} />
           </div>
         </div>
-      )}
 
-      {/* Messages - Custom Wallpaper */}
-      <div 
-        ref={messagesContainerRef}
-        className={cn(
-          "flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin relative",
-          currentWallpaper.id === 'default' && 'chat-wallpaper'
-        )}
-        style={{
-          background: currentWallpaper.id !== 'default' ? currentWallpaper.value : undefined,
-          WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
-          overscrollBehavior: 'contain', // Prevent scroll chaining
-        }}
-        onTouchStart={handlePullStart}
-        onTouchMove={handlePullMove}
-        onTouchEnd={handlePullEnd}
-        onScroll={handleScroll}
-      >
+        {/* Messages - Custom Wallpaper */}
+        <div 
+          ref={messagesContainerRef}
+          className={cn(
+            "h-full overflow-y-auto py-2 space-y-[2px] scrollbar-thin relative",
+            currentWallpaper.id === 'default' && 'chat-wallpaper'
+          )}
+          style={{
+            background: currentWallpaper.id !== 'default' ? currentWallpaper.value : undefined,
+            WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
+            overscrollBehavior: 'contain', // Prevent scroll chaining
+            transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
+            transition: pullDistance > 0 || isRefreshing ? 'transform 120ms ease-out' : undefined,
+          }}
+          onTouchStart={handlePullStart}
+          onTouchMove={handlePullMove}
+          onTouchEnd={handlePullEnd}
+          onScroll={handleScroll}
+        >
         {loading ? (
           <div className="flex flex-col gap-3 p-4 animate-fade-in">
             {/* Loading skeleton messages */}
@@ -926,7 +947,8 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           })}
           </>
         )}
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* New Messages Indicator */}
@@ -937,7 +959,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            onClick={scrollToBottom}
+            onClick={scrollToBottomSmooth}
             className="absolute bottom-24 right-4 z-10 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-colors"
           >
             <ArrowDown className="w-4 h-4" />
@@ -956,7 +978,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            onClick={scrollToBottom}
+            onClick={scrollToBottomSmooth}
             className="absolute bottom-24 right-4 z-10 p-3 bg-card text-foreground rounded-full shadow-lg border border-border hover:bg-muted transition-colors"
           >
             <ArrowDown className="w-5 h-5" />
