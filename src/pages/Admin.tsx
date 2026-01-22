@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -12,12 +12,15 @@ import {
   RefreshCw,
   MessageCircle,
   UsersRound,
-  Download
+  Download,
+  BarChart3,
+  UserCog
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAnalytics } from '@/hooks/useAdminAnalytics';
+import { UserManagement } from '@/components/admin/UserManagement';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -79,6 +82,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { analytics, loading, error, isAdmin, refetch } = useAdminAnalytics();
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users'>('analytics');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -252,14 +256,48 @@ const Admin = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 pb-20">
-        {/* Live indicator */}
+        {/* Tab Navigation */}
         <div className="flex items-center gap-2 mb-6">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          <span className="text-xs text-muted-foreground">Данные обновляются в реальном времени</span>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+              activeTab === 'analytics'
+                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                : "bg-black/20 text-muted-foreground hover:bg-black/40 border border-transparent"
+            )}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Аналитика
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+              activeTab === 'users'
+                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                : "bg-black/20 text-muted-foreground hover:bg-black/40 border border-transparent"
+            )}
+          >
+            <UserCog className="w-4 h-4" />
+            Пользователи
+          </button>
+          
+          {activeTab === 'analytics' && (
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-xs text-muted-foreground">Данные обновляются в реальном времени</span>
+            </div>
+          )}
         </div>
+
+        {activeTab === 'users' ? (
+          <UserManagement />
+        ) : (
+          <>
 
         {/* Main Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -417,6 +455,8 @@ const Admin = () => {
             </div>
           </motion.div>
         </div>
+        </>
+        )}
       </main>
     </div>
   );
