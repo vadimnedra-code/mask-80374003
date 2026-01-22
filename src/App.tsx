@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { MaskProvider } from "@/hooks/useMask";
+import { WallpaperProvider } from "@/providers/WallpaperProvider";
 import Auth from "./pages/Auth";
 import Messenger from "./pages/Messenger";
 import NotFound from "./pages/NotFound";
@@ -118,10 +119,12 @@ function App() {
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <MaskProvider>
-            <TooltipProvider>
-              <Toaster />
-              <AppRoutes />
-            </TooltipProvider>
+            <WallpaperProvider>
+              <TooltipProvider>
+                <Toaster />
+                <AppRoutes />
+              </TooltipProvider>
+            </WallpaperProvider>
           </MaskProvider>
         </AuthProvider>
       </BrowserRouter>

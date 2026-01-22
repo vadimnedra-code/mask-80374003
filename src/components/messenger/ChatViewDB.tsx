@@ -55,6 +55,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useMessageReactions } from '@/hooks/useMessageReactions';
 import { toast } from 'sonner';
 import { useAudioRecorder, formatDuration } from '@/hooks/useAudioRecorder';
+import { useWallpaper } from '@/hooks/useWallpaper';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -142,6 +143,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   });
   
   const { isRecording, recordingDuration, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
+  const { currentWallpaper } = useWallpaper();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { typingText, handleTypingStart, handleTypingStop } = useTypingIndicator(chat.id);
   const { fetchReactions, toggleReaction, getReactionGroups } = useMessageReactions(chat.id);
@@ -761,10 +763,16 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         </div>
       )}
 
-      {/* Messages - WhatsApp Wallpaper */}
+      {/* Messages - Custom Wallpaper */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin scroll-smooth chat-wallpaper relative"
+        className={cn(
+          "flex-1 overflow-y-auto py-2 space-y-[2px] scrollbar-thin scroll-smooth relative",
+          currentWallpaper.id === 'default' && 'chat-wallpaper'
+        )}
+        style={{
+          background: currentWallpaper.id !== 'default' ? currentWallpaper.value : undefined
+        }}
         onTouchStart={handlePullStart}
         onTouchMove={handlePullMove}
         onTouchEnd={handlePullEnd}
