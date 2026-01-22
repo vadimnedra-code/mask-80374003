@@ -27,6 +27,7 @@ import { EmojiPicker } from './EmojiPicker';
 import { MessageReactions } from './MessageReactions';
 import { ReactionGroup } from '@/hooks/useMessageReactions';
 import { MediaLightbox } from './MediaLightbox';
+import { useSignedMediaUrl } from '@/hooks/useSignedMediaUrl';
 
 interface MessageBubbleProps {
   message: Message;
@@ -68,6 +69,8 @@ export const MessageBubble = ({
   const [showDeleteForEveryoneDialog, setShowDeleteForEveryoneDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const { url: resolvedMediaUrl } = useSignedMediaUrl(message.mediaUrl);
 
   const handleEdit = async () => {
     if (!editContent.trim() || !onEdit) return;
@@ -128,7 +131,7 @@ export const MessageBubble = ({
         <>
           {lightboxOpen && (
             <MediaLightbox 
-              src={message.mediaUrl}
+              src={resolvedMediaUrl ?? message.mediaUrl}
               type="image"
               isOpen={lightboxOpen} 
               onClose={() => setLightboxOpen(false)} 
@@ -139,7 +142,7 @@ export const MessageBubble = ({
             className="cursor-pointer group/media relative overflow-hidden rounded-md"
           >
             <img
-              src={message.mediaUrl}
+              src={resolvedMediaUrl ?? message.mediaUrl}
               alt="Изображение"
               className="max-w-full max-h-64 object-cover transition-transform duration-200 group-hover/media:scale-[1.02]"
             />
@@ -154,7 +157,7 @@ export const MessageBubble = ({
         <>
           {lightboxOpen && (
             <MediaLightbox 
-              src={message.mediaUrl}
+              src={resolvedMediaUrl ?? message.mediaUrl}
               type="video"
               isOpen={lightboxOpen} 
               onClose={() => setLightboxOpen(false)} 
@@ -165,7 +168,7 @@ export const MessageBubble = ({
             className="cursor-pointer group/media relative overflow-hidden rounded-md"
           >
             <video
-              src={message.mediaUrl}
+              src={resolvedMediaUrl ?? message.mediaUrl}
               className="max-w-full max-h-64 object-cover"
               muted
               playsInline
