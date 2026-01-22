@@ -271,20 +271,36 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   }, []);
 
   useEffect(() => {
-    // Auto-scroll only if at bottom or it's our own message
+    // Only auto-scroll when NEW messages are appended.
+    // Otherwise (e.g. reactions, read flags, re-fetch) we can accidentally
+    // fight the user's manual scroll and "snap" them back down.
+    const prevLen = prevMessagesLengthRef.current;
+    const didAppend = messages.length > prevLen;
+
     const lastMessage = messages[messages.length - 1];
-    const isOwnNewMessage = lastMessage?.sender_id === user?.id;
+    const isOwnNewMessage = didAppend && lastMessage?.sender_id === user?.id;
 
-    const atBottomNow = isAtBottomRef.current;
+    // Compute bottom state from the DOM to avoid stale refs when scroll events
+    // don't fire reliably on some mobile WebViews.
+    const container = messagesContainerRef.current;
+    const threshold = 100;
+    const atBottomNow = container
+      ? container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+      : isAtBottomRef.current;
 
-    if (atBottomNow || isOwnNewMessage) {
-      scrollToBottomInstant();
-    } else if (messages.length > prevMessagesLengthRef.current) {
-      // New message arrived while scrolled up
-      const newCount = messages.length - prevMessagesLengthRef.current;
-      setNewMessagesCount(prev => prev + newCount);
+    // Keep ref in sync for other effects/UI
+    isAtBottomRef.current = atBottomNow;
+
+    if (didAppend) {
+      if (atBottomNow || isOwnNewMessage) {
+        scrollToBottomInstant();
+      } else {
+        // New message arrived while scrolled up
+        const newCount = messages.length - prevLen;
+        setNewMessagesCount(prev => prev + newCount);
+      }
     }
-    
+
     prevMessagesLengthRef.current = messages.length;
     markAsRead();
     
