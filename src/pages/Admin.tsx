@@ -40,10 +40,10 @@ const StatCard = ({
   color?: 'amber' | 'green' | 'blue' | 'purple';
 }) => {
   const colorClasses = {
-    amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/20 text-amber-400',
-    green: 'from-green-500/20 to-green-600/10 border-green-500/20 text-green-400',
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/20 text-blue-400',
-    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/20 text-purple-400',
+    amber: 'from-primary/20 to-primary/10 border-primary/20 text-primary',
+    green: 'from-[hsl(var(--online))]/20 to-[hsl(var(--online))]/10 border-[hsl(var(--online))]/20 text-[hsl(var(--online))]',
+    blue: 'from-accent/30 to-accent/20 border-accent/30 text-accent-foreground',
+    purple: 'from-secondary/30 to-secondary/20 border-secondary/30 text-secondary-foreground',
   };
 
   return (
@@ -67,7 +67,7 @@ const StatCard = ({
         {trend !== undefined && (
           <div className={cn(
             "flex items-center gap-1 mt-2 text-xs font-medium",
-            trend >= 0 ? "text-green-400" : "text-red-400"
+            trend >= 0 ? "text-[hsl(var(--online))]" : "text-destructive"
           )}>
             <TrendingUp className={cn("w-3 h-3", trend < 0 && "rotate-180")} />
             <span>{trend >= 0 ? '+' : ''}{trend}% за неделю</span>
@@ -94,7 +94,7 @@ const Admin = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-3 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+          <div className="w-12 h-12 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
           <p className="text-muted-foreground">Загрузка панели администратора...</p>
         </div>
       </div>

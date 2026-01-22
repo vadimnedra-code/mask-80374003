@@ -289,14 +289,14 @@ export const MessageBubble = ({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1 rounded-full hover:bg-black/5 transition-colors">
-                <MoreVertical className="w-4 h-4 text-[#667781]" />
+              <button className="p-1 rounded-full hover:bg-muted transition-colors">
+                <MoreVertical className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[160px]">
               {(onSave || onUnsave) && (
                 <DropdownMenuItem onClick={handleToggleSave} disabled={isSaving}>
-                  <Star className={cn("w-4 h-4 mr-2", isSaved && "fill-yellow-500 text-yellow-500")} />
+                  <Star className={cn("w-4 h-4 mr-2", isSaved && "fill-primary text-primary")} />
                   {isSaved ? 'Убрать из избранного' : 'В избранное'}
                 </DropdownMenuItem>
               )}
@@ -371,16 +371,16 @@ export const MessageBubble = ({
             <span className={cn(
               'absolute bottom-0 right-0 flex items-center gap-[2px]',
             )}>
-              <span className="text-[11px] leading-none text-[#667781]">
+              <span className="text-[11px] leading-none text-muted-foreground">
                 {format(message.timestamp, 'HH:mm')}
               </span>
               {isOwn && (
                 message.isRead ? (
-                  <CheckCheck className="w-[16px] h-[16px] text-[#53bdeb]" />
+                  <CheckCheck className="w-[16px] h-[16px] text-primary" />
                 ) : message.isDelivered !== false ? (
-                  <CheckCheck className="w-[16px] h-[16px] text-[#667781]" />
+                  <CheckCheck className="w-[16px] h-[16px] text-muted-foreground" />
                 ) : (
-                  <Check className="w-[16px] h-[16px] text-[#667781]" />
+                  <Check className="w-[16px] h-[16px] text-muted-foreground" />
                 )
               )}
             </span>
@@ -405,8 +405,8 @@ export const MessageBubble = ({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1 rounded-full hover:bg-black/5 transition-colors">
-                <MoreVertical className="w-4 h-4 text-[#667781]" />
+              <button className="p-1 rounded-full hover:bg-muted transition-colors">
+                <MoreVertical className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[180px]">

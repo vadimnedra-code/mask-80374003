@@ -146,9 +146,9 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={onBack}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 md:hidden tap-target flex-shrink-0"
+            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 md:hidden tap-target flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
           <Avatar
             src={otherParticipant.avatar}
@@ -157,10 +157,10 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
             status={otherParticipant.status}
           />
           <div className="min-w-0 flex-1">
-            <h2 className="font-medium text-[15px] text-white truncate">{otherParticipant.name}</h2>
+            <h2 className="font-medium text-[15px] text-[hsl(var(--header-foreground))] truncate">{otherParticipant.name}</h2>
             <p className={cn(
               'text-xs truncate',
-              otherParticipant.status === 'online' ? 'text-green-200' : 'text-white/70'
+              otherParticipant.status === 'online' ? 'text-[hsl(var(--online))]' : 'text-[hsl(var(--header-foreground))]/70'
             )}>
               {getStatusText()}
             </p>
@@ -169,18 +169,18 @@ export const ChatView = ({ chat, onBack, onStartCall }: ChatViewProps) => {
         <div className="flex items-center gap-1 flex-shrink-0">
           <button 
             onClick={() => onStartCall('video')}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 tap-target"
+            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target"
           >
-            <Video className="w-5 h-5 text-white" />
+            <Video className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
           <button 
             onClick={() => onStartCall('voice')}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 tap-target"
+            className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target"
           >
-            <Phone className="w-5 h-5 text-white" />
+            <Phone className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
-          <button className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 tap-target">
-            <MoreVertical className="w-5 h-5 text-white" />
+          <button className="p-2 rounded-full hover:bg-primary/10 transition-colors active:scale-95 tap-target">
+            <MoreVertical className="w-5 h-5 text-[hsl(var(--header-foreground))]" />
           </button>
         </div>
       </div>

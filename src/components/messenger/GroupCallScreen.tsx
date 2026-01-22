@@ -580,17 +580,17 @@ const ParticipantTile = ({
       {/* Overlay info */}
       {!isThumbnail && (
         <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <div className="flex items-center gap-1 bg-black/50 rounded-full px-2 py-1">
+          <div className="flex items-center gap-1 bg-background/60 backdrop-blur-sm rounded-full px-2 py-1">
             {isScreenSharing && (
-              <Monitor className="w-3 h-3 text-[#00a884]" />
+              <Monitor className="w-3 h-3 text-[hsl(var(--online))]" />
             )}
-            <span className="text-white text-xs truncate max-w-[100px]">
+            <span className="text-foreground text-xs truncate max-w-[100px]">
               {isLocal ? 'Вы' : name}
             </span>
           </div>
           {isMuted && (
-            <div className="bg-black/50 rounded-full p-1">
-              <MicOff className="w-3 h-3 text-red-400" />
+            <div className="bg-background/60 backdrop-blur-sm rounded-full p-1">
+              <MicOff className="w-3 h-3 text-destructive" />
             </div>
           )}
         </div>
@@ -598,8 +598,8 @@ const ParticipantTile = ({
       
       {/* Thumbnail mute indicator */}
       {isThumbnail && isMuted && (
-        <div className="absolute bottom-1 right-1 bg-black/50 rounded-full p-0.5">
-          <MicOff className="w-2.5 h-2.5 text-red-400" />
+        <div className="absolute bottom-1 right-1 bg-background/60 backdrop-blur-sm rounded-full p-0.5">
+          <MicOff className="w-2.5 h-2.5 text-destructive" />
         </div>
       )}
     </div>
