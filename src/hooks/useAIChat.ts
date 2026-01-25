@@ -9,7 +9,7 @@ export interface AIMessage {
   createdAt: Date;
 }
 
-export type AIAction = 'chat' | 'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | 'privacy_check';
+export type AIAction = 'chat' | 'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | 'privacy_check' | 'custom_query';
 
 interface StreamChatOptions {
   messages: AIMessage[];
@@ -195,13 +195,18 @@ export const useAIChat = () => {
   const performAction = useCallback(async (
     action: AIAction,
     chatContent: string,
-    options?: { targetLanguage?: string; toneStyle?: string }
+    options?: { targetLanguage?: string; toneStyle?: string; userQuery?: string }
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
       let result = '';
 
+      // For custom_query, the userQuery becomes the message content
+      const messageContent = action === 'custom_query' && options?.userQuery
+        ? options.userQuery
+        : 'Execute action';
+
       streamChat({
-        messages: [{ id: '1', role: 'user', content: 'Execute action', createdAt: new Date() }],
+        messages: [{ id: '1', role: 'user', content: messageContent, createdAt: new Date() }],
         action,
         chatContent,
         targetLanguage: options?.targetLanguage,

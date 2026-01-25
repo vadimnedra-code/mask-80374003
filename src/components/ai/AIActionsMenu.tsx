@@ -177,9 +177,10 @@ export const AIActionsMenu = ({
     setResult(null);
     
     try {
-      // Send custom query with chat context
-      const prompt = `Контекст переписки:\n${chatContent}\n\nВопрос пользователя: ${customQuery}`;
-      const res = await performAction('summarise', prompt);
+      // Use custom_query action that properly handles user requests with chat context
+      const res = await performAction('custom_query' as AIAction, chatContent, {
+        userQuery: customQuery
+      });
       setResult(res);
       setSelectedAction('summarise'); // Just to show result view
     } catch (error) {

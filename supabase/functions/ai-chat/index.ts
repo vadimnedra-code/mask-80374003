@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface ChatRequest {
   messages: Array<{ role: string; content: string }>;
-  action?: 'chat' | 'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | 'privacy_check';
+  action?: 'chat' | 'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | 'privacy_check' | 'custom_query';
   chatContent?: string; // For actions on chat content
   targetLanguage?: string;
   toneStyle?: string;
@@ -77,7 +77,21 @@ const SYSTEM_PROMPTS = {
   1. ...
   2. ...
 
-Будь конкретным и полезным.`
+Будь конкретным и полезным.`,
+
+  custom_query: `Ты — MASK AI, умный помощник в мессенджере MASK.
+Тебе дан контекст переписки и запрос пользователя.
+Твоя задача — выполнить то, что просит пользователь, используя контекст переписки.
+
+Примеры задач:
+- Написать сообщение/ответ на основе контекста
+- Составить поздравление или пожелание для собеседника
+- Переформулировать что-то из переписки
+- Ответить на вопрос о переписке
+
+Формат: просто выполни задачу. Не объясняй, что ты делаешь. Дай готовый текст.
+Стиль: дружелюбный, естественный. Пиши так, как написал бы сам пользователь.
+Язык: используй язык запроса.`
 };
 
 serve(async (req) => {
@@ -144,9 +158,12 @@ serve(async (req) => {
 
     // For utility actions, add chat content as context
     if (chatContent && action !== 'chat') {
+      const contextLabel = action === 'custom_query' 
+        ? 'Контекст переписки:'
+        : 'Вот содержимое для анализа:';
       aiMessages.push({
         role: "user",
-        content: `Вот содержимое для анализа:\n\n${chatContent}`
+        content: `${contextLabel}\n\n${chatContent}`
       });
     }
 
