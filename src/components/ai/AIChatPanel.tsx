@@ -251,7 +251,7 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
                 <div className="flex items-center gap-1 px-1">
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(message.content);
+                      navigator.clipboard.writeText(message.autoSendContent || message.content);
                       setCopiedMessageId(message.id);
                       setTimeout(() => setCopiedMessageId(null), 2000);
                       toast.success('Скопировано');
@@ -269,15 +269,21 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
                   {onSendToChat && (
                     <button
                       onClick={() => {
-                        onSendToChat(message.content);
+                        const contentToSend = message.autoSendContent || message.content;
+                        onSendToChat(contentToSend);
                         toast.success(`Отправлено в ${activeChatName || 'чат'}`);
                         onClose();
                       }}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-primary hover:bg-primary/10 transition-colors"
+                      className={cn(
+                        "flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors",
+                        message.autoSendContent 
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                          : "text-primary hover:bg-primary/10"
+                      )}
                       title="Отправить в чат"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>В чат</span>
+                      <span>{message.autoSendContent ? 'Отправить' : 'В чат'}</span>
                     </button>
                   )}
                 </div>
