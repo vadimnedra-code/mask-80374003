@@ -7,6 +7,7 @@ export interface AIMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   createdAt: Date;
+  autoSendContent?: string; // Content to auto-send to chat
 }
 
 export type AIAction = 'chat' | 'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | 'privacy_check' | 'custom_query';
@@ -174,12 +175,31 @@ export const useAIChat = () => {
       });
     };
 
+    const processAutoSend = () => {
+      // Check if response contains [SEND_TO_CHAT] tags
+      const sendMatch = assistantContent.match(/\[SEND_TO_CHAT\]\n?([\s\S]*?)\n?\[\/SEND_TO_CHAT\]/);
+      if (sendMatch) {
+        const autoSendContent = sendMatch[1].trim();
+        const displayContent = assistantContent.replace(/\[SEND_TO_CHAT\]\n?[\s\S]*?\n?\[\/SEND_TO_CHAT\]/, '').trim() || 
+          `Сообщение готово к отправке:\n\n"${autoSendContent}"`;
+        
+        setMessages(prev => prev.map((m, i) => 
+          i === prev.length - 1 && m.role === 'assistant'
+            ? { ...m, content: displayContent, autoSendContent }
+            : m
+        ));
+      }
+    };
+
     await streamChat({
       messages: [...messages, userMessage],
       action: 'chat',
       incognito: isIncognito,
       onDelta: updateAssistant,
-      onDone: () => setIsLoading(false),
+      onDone: () => {
+        processAutoSend();
+        setIsLoading(false);
+      },
       onError: (error) => {
         setIsLoading(false);
         setMessages(prev => [...prev, {
