@@ -192,6 +192,33 @@ const Messenger = () => {
   if (!user) return null;
 
   const selectedChat = chats.find((chat) => chat.id === selectedChatId);
+  
+  // Get display name for the selected chat
+  const getSelectedChatName = () => {
+    if (!selectedChat) return undefined;
+    if (selectedChat.is_group) return selectedChat.group_name || 'Группа';
+    const otherParticipant = selectedChat.participants.find((p) => p.user_id !== user.id);
+    return otherParticipant?.display_name || 'Чат';
+  };
+  
+  // Send message to selected chat (for AI integration)
+  const sendMessageToChat = useCallback(async (content: string) => {
+    if (!selectedChatId || !user?.id) return;
+    
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        chat_id: selectedChatId,
+        sender_id: user.id,
+        content,
+        message_type: 'text',
+      });
+      
+    if (error) {
+      console.error('Error sending message from AI:', error);
+      toast.error('Не удалось отправить сообщение');
+    }
+  }, [selectedChatId, user?.id]);
 
   const handleStartCall = async (type: 'voice' | 'video') => {
     if (!selectedChat) return;
@@ -296,7 +323,11 @@ const Messenger = () => {
 
       {/* AI Chat Panel */}
       {showAIChat && (
-        <AIChatPanel onClose={() => setShowAIChat(false)} />
+        <AIChatPanel 
+          onClose={() => setShowAIChat(false)} 
+          activeChatName={getSelectedChatName()}
+          onSendToChat={selectedChatId ? sendMessageToChat : undefined}
+        />
       )}
 
       {/* Idle Warning Dialog */}

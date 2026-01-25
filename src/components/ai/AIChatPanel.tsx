@@ -10,7 +10,10 @@ import {
   MoreVertical,
   Trash2,
   Settings,
-  Shield
+  Shield,
+  MessageCircle,
+  Copy,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,13 +29,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+import { toast } from 'sonner';
+
 interface AIChatPanelProps {
   onClose: () => void;
   onOpenSettings?: () => void;
+  activeChatName?: string;
+  onSendToChat?: (message: string) => void;
 }
 
-export const AIChatPanel = ({ onClose, onOpenSettings }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToChat }: AIChatPanelProps) => {
   const [inputValue, setInputValue] = useState('');
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -199,8 +207,8 @@ export const AIChatPanel = ({ onClose, onOpenSettings }: AIChatPanelProps) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={cn(
-                "flex",
-                message.role === 'user' ? "justify-end" : "justify-start"
+                "flex flex-col gap-1",
+                message.role === 'user' ? "items-end" : "items-start"
               )}
             >
               <div
@@ -219,6 +227,43 @@ export const AIChatPanel = ({ onClose, onOpenSettings }: AIChatPanelProps) => {
                   <p className="whitespace-pre-wrap">{message.content}</p>
                 )}
               </div>
+              
+              {/* Action buttons for assistant messages */}
+              {message.role === 'assistant' && (
+                <div className="flex items-center gap-1 px-1">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(message.content);
+                      setCopiedMessageId(message.id);
+                      setTimeout(() => setCopiedMessageId(null), 2000);
+                      toast.success('Скопировано');
+                    }}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    title="Копировать"
+                  >
+                    {copiedMessageId === message.id ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                  
+                  {onSendToChat && (
+                    <button
+                      onClick={() => {
+                        onSendToChat(message.content);
+                        toast.success(`Отправлено в ${activeChatName || 'чат'}`);
+                        onClose();
+                      }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-primary hover:bg-primary/10 transition-colors"
+                      title="Отправить в чат"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>В чат</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>
