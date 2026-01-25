@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, 
@@ -35,6 +35,7 @@ interface AIActionsMenuProps {
   onClose: () => void;
   chatContent: string; // Messages to analyze
   onInsertDraft?: (text: string) => void;
+  initialAction?: AIAction | null; // Pre-select an action from command
 }
 
 const ACTIONS = [
@@ -89,15 +90,35 @@ export const AIActionsMenu = ({
   isOpen, 
   onClose, 
   chatContent,
-  onInsertDraft 
+  onInsertDraft,
+  initialAction = null
 }: AIActionsMenuProps) => {
   const [selectedAction, setSelectedAction] = useState<AIAction | null>(null);
   const [targetLanguage, setTargetLanguage] = useState('en');
   const [toneStyle, setToneStyle] = useState('neutral');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [hasAutoTriggered, setHasAutoTriggered] = useState(false);
   
   const { performAction } = useAIChat();
+
+  // Handle initial action from command
+  useEffect(() => {
+    if (isOpen && initialAction && !hasAutoTriggered) {
+      setHasAutoTriggered(true);
+      // If it needs options, just select it
+      if (initialAction === 'translate' || initialAction === 'draft_reply') {
+        setSelectedAction(initialAction);
+      } else {
+        // Execute immediately
+        executeAction(initialAction);
+      }
+    }
+    
+    if (!isOpen) {
+      setHasAutoTriggered(false);
+    }
+  }, [isOpen, initialAction, hasAutoTriggered]);
 
   const handleActionClick = async (action: AIAction) => {
     if (action === 'translate' || action === 'draft_reply') {

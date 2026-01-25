@@ -47,6 +47,7 @@ import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './D
 import { EditNicknameDialog } from './EditNicknameDialog';
 import { MediaItem } from './MediaGalleryLightbox';
 import { AIActionsMenu } from '@/components/ai/AIActionsMenu';
+import { CommandAutocomplete, useCommandAutocomplete, ChatCommand } from './CommandAutocomplete';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -111,6 +112,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showDisappearingSelector, setShowDisappearingSelector] = useState(false);
   const [showNicknameDialog, setShowNicknameDialog] = useState(false);
   const [showAIActions, setShowAIActions] = useState(false);
+  const [aiActionType, setAiActionType] = useState<'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | null>(null);
   const prevMessagesLengthRef = useRef(0);
   const isAtBottomRef = useRef(true);
   
@@ -124,6 +126,8 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const imageInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const pullStartY = useRef<number>(0);
+  
+  const { selectedIndex, setSelectedIndex, handleKeyDown: handleCommandKeyDown, getFilteredCommands } = useCommandAutocomplete();
   
   const { user } = useAuth();
   const otherParticipant = chat.participants.find((p) => p.user_id !== user?.id);
@@ -413,7 +417,38 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     inputRef.current?.focus();
   };
 
+  const handleCommandSelect = useCallback((command: ChatCommand) => {
+    setMessageText('');
+    setSelectedIndex(0);
+    
+    switch (command.action) {
+      case 'ai':
+        onOpenAIChat?.();
+        break;
+      case 'translate':
+        setAiActionType('translate');
+        setShowAIActions(true);
+        break;
+      case 'summarise':
+        setAiActionType('summarise');
+        setShowAIActions(true);
+        break;
+      case 'tasks':
+        setAiActionType('extract_tasks');
+        setShowAIActions(true);
+        break;
+      case 'draft':
+        setAiActionType('draft_reply');
+        setShowAIActions(true);
+        break;
+    }
+  }, [onOpenAIChat, setSelectedIndex]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    // Handle command autocomplete keys first
+    const handled = handleCommandKeyDown(e, messageText, handleCommandSelect);
+    if (handled) return;
+    
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -831,13 +866,17 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
       {/* AI Actions Menu */}
       <AIActionsMenu
         isOpen={showAIActions}
-        onClose={() => setShowAIActions(false)}
+        onClose={() => {
+          setShowAIActions(false);
+          setAiActionType(null);
+        }}
         chatContent={messages
           .slice(-50) // Last 50 messages for context
           .map(m => `${m.sender_id === user?.id ? 'Я' : displayName}: ${getDisplayContent(m)}`)
           .join('\n')
         }
         onInsertDraft={(text) => setMessageText(text)}
+        initialAction={aiActionType}
       />
 
       {/* Messages container */}
@@ -1230,8 +1269,16 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
               )}
             </div>
 
-            {/* Main input area */}
-            <div className="flex-1 flex items-center bg-card rounded-full px-1 min-h-[44px]">
+            {/* Main input area with command autocomplete */}
+            <div className="flex-1 flex items-center bg-card rounded-full px-1 min-h-[44px] relative">
+              {/* Command Autocomplete */}
+              <CommandAutocomplete
+                inputValue={messageText}
+                onSelectCommand={handleCommandSelect}
+                selectedIndex={selectedIndex}
+                onSelectedIndexChange={setSelectedIndex}
+              />
+              
               <div className="pl-2">
                 <EmojiPicker 
                   onSelect={(emoji) => {
@@ -1244,24 +1291,17 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={replyToMessage ? 'Ответить...' : 'Введите сообщение или /ai'}
+                placeholder={replyToMessage ? 'Ответить...' : 'Сообщение или / для команд'}
                 value={messageText}
                 onChange={(e) => {
                   const value = e.target.value;
                   setMessageText(value);
                   
-                  // Detect /ai command
-                  if (value.toLowerCase() === '/ai' && onOpenAIChat) {
-                    setMessageText('');
-                    onOpenAIChat();
-                    return;
-                  }
-                  
-                  if (value.trim()) {
+                  if (value.trim() && !value.startsWith('/')) {
                     handleTypingStart();
                   }
                 }}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 onBlur={handleTypingStop}
                 className="flex-1 py-2.5 px-2 bg-transparent text-[15px] placeholder:text-muted-foreground focus:outline-none"
               />
