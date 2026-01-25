@@ -13,7 +13,7 @@ import { SearchPanel } from '@/components/messenger/SearchPanel';
 import { IncomingCallDialog } from '@/components/messenger/IncomingCallDialog';
 import { IdleWarningDialog } from '@/components/messenger/IdleWarningDialog';
 import { AIOnboardingWizard } from '@/components/ai/AIOnboardingWizard';
-import { AIChatPanel } from '@/components/ai/AIChatPanel';
+import { AIStudioPanel } from '@/components/studio/AIStudioPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
@@ -321,13 +321,9 @@ const Messenger = () => {
         <AIOnboardingWizard onComplete={() => setShowAIOnboarding(false)} />
       )}
 
-      {/* AI Chat Panel */}
+      {/* AI Studio Panel */}
       {showAIChat && (
-        <AIChatPanel 
-          onClose={() => setShowAIChat(false)} 
-          activeChatName={getSelectedChatName()}
-          onSendToChat={selectedChatId ? sendMessageToChat : undefined}
-        />
+        <AIStudioPanel onClose={() => setShowAIChat(false)} />
       )}
 
       {/* Idle Warning Dialog */}
