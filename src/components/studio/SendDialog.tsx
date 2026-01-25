@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { StudioArtifact } from '@/types/studio';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SendDialogProps {
   isOpen: boolean;
@@ -53,17 +54,41 @@ export const SendDialog = ({
     setIsSending(true);
     
     try {
-      // TODO: Call edge function to send via relay
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Mock
+      if (channel === 'email') {
+        const { data, error } = await supabase.functions.invoke('send-email-relay', {
+          body: {
+            to: recipient,
+            subject: subject || 'Message via MASK',
+            body: message,
+            artifactId: artifact?.id,
+          },
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Failed to send email');
+        }
+
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+
+        toast.success('Email отправлен анонимно');
+      } else if (channel === 'sms') {
+        // TODO: Implement SMS via Twilio
+        toast.info('SMS relay будет доступен после настройки Twilio');
+      } else if (channel === 'voice') {
+        // TODO: Implement Voice via Twilio
+        toast.info('Voice relay будет доступен после настройки Twilio');
+      }
       
-      toast.success(`${channel === 'email' ? 'Email' : channel === 'sms' ? 'SMS' : 'Звонок'} отправлен анонимно`);
       onClose();
       setShowConfirm(false);
       setRecipient('');
       setSubject('');
       setMessage('');
-    } catch (error) {
-      toast.error('Ошибка отправки');
+    } catch (error: any) {
+      console.error('Send error:', error);
+      toast.error(error.message || 'Ошибка отправки');
     } finally {
       setIsSending(false);
     }
