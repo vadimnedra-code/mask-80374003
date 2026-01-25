@@ -13,12 +13,15 @@ import {
   Shield,
   MessageCircle,
   Copy,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAIChat, AIMessage } from '@/hooks/useAIChat';
 import { useAISettings } from '@/hooks/useAISettings';
+import { useLocalVault } from '@/hooks/useLocalVault';
+import { LocalVaultDialog } from '@/components/ai/LocalVaultDialog';
 import maskLogo from '@/assets/mask-logo.png';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -41,6 +44,7 @@ interface AIChatPanelProps {
 export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToChat }: AIChatPanelProps) => {
   const [inputValue, setInputValue] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [showVaultDialog, setShowVaultDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -55,6 +59,17 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
   } = useAIChat();
   
   const { settings } = useAISettings();
+  
+  const vault = useLocalVault();
+
+  // Save messages to vault when they change (if vault is unlocked and memory_mode is 'local')
+  useEffect(() => {
+    if (vault.isUnlocked && settings?.memory_mode === 'local' && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      // Only save if it's a new message (check by timestamp)
+      vault.saveToVault(lastMessage);
+    }
+  }, [messages, vault.isUnlocked, settings?.memory_mode]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -147,6 +162,13 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
                   Настройки AI
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem onClick={() => setShowVaultDialog(true)}>
+                <Lock className="w-4 h-4 mr-2" />
+                Local Vault
+                {vault.isUnlocked && (
+                  <span className="ml-auto text-xs text-emerald-400">●</span>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <Shield className="w-4 h-4 mr-2" />
                 AI Permissions
@@ -328,6 +350,19 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
           </p>
         )}
       </form>
+
+      {/* Local Vault Dialog */}
+      <LocalVaultDialog
+        isOpen={showVaultDialog}
+        onClose={() => setShowVaultDialog(false)}
+        status={vault.status}
+        messageCount={vault.messageCount}
+        onInitialize={vault.initializeVault}
+        onUnlock={vault.unlockVault}
+        onLock={vault.lockVault}
+        onClear={vault.clearVault}
+        onDestroy={vault.destroyVault}
+      />
     </div>
   );
 };
