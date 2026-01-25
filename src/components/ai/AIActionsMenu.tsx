@@ -8,7 +8,8 @@ import {
   Loader2,
   Check,
   X,
-  Sparkles
+  Sparkles,
+  Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -99,8 +100,9 @@ export const AIActionsMenu = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [hasAutoTriggered, setHasAutoTriggered] = useState(false);
+  const [customQuery, setCustomQuery] = useState('');
   
-  const { performAction } = useAIChat();
+  const { performAction, sendMessage, isLoading: isChatLoading, messages: chatMessages } = useAIChat();
 
   // Handle initial action from command
   useEffect(() => {
@@ -164,7 +166,35 @@ export const AIActionsMenu = ({
     setSelectedAction(null);
     setResult(null);
     setIsProcessing(false);
+    setCustomQuery('');
     onClose();
+  };
+
+  const handleCustomQuery = async () => {
+    if (!customQuery.trim() || isProcessing) return;
+    
+    setIsProcessing(true);
+    setResult(null);
+    
+    try {
+      // Send custom query with chat context
+      const prompt = `Контекст переписки:\n${chatContent}\n\nВопрос пользователя: ${customQuery}`;
+      const res = await performAction('summarise', prompt);
+      setResult(res);
+      setSelectedAction('summarise'); // Just to show result view
+    } catch (error) {
+      toast.error('Ошибка AI: ' + (error as Error).message);
+    } finally {
+      setIsProcessing(false);
+      setCustomQuery('');
+    }
+  };
+
+  const handleCustomQueryKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleCustomQuery();
+    }
   };
 
   const handleCopyResult = () => {
@@ -195,24 +225,63 @@ export const AIActionsMenu = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="grid grid-cols-2 gap-3"
+                className="space-y-4"
               >
-                {ACTIONS.map((action) => (
-                  <button
-                    key={action.id}
-                    onClick={() => handleActionClick(action.id)}
-                    className={cn(
-                      "p-4 rounded-xl text-left transition-all",
-                      "bg-muted/50 hover:bg-muted border border-transparent hover:border-primary/30"
-                    )}
+                {/* Custom query input */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={customQuery}
+                      onChange={(e) => setCustomQuery(e.target.value)}
+                      onKeyDown={handleCustomQueryKeyDown}
+                      placeholder="Спроси что угодно о чате..."
+                      className={cn(
+                        "w-full rounded-xl bg-muted px-4 py-3 pr-12",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                        "placeholder:text-muted-foreground text-sm"
+                      )}
+                    />
+                  </div>
+                  <Button
+                    size="icon"
+                    onClick={handleCustomQuery}
+                    disabled={!customQuery.trim()}
+                    className="h-11 w-11 rounded-xl shrink-0"
                   >
-                    <action.icon className={cn("w-6 h-6 mb-2", action.color)} />
-                    <h3 className="font-medium text-sm">{action.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {action.description}
-                    </p>
-                  </button>
-                ))}
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      или выбери действие
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {ACTIONS.map((action) => (
+                    <button
+                      key={action.id}
+                      onClick={() => handleActionClick(action.id)}
+                      className={cn(
+                        "p-4 rounded-xl text-left transition-all",
+                        "bg-muted/50 hover:bg-muted border border-transparent hover:border-primary/30"
+                      )}
+                    >
+                      <action.icon className={cn("w-6 h-6 mb-2", action.color)} />
+                      <h3 className="font-medium text-sm">{action.title}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {action.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             )}
 
