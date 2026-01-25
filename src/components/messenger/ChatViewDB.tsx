@@ -1319,6 +1319,39 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
               )}
             </button>
           </div>
+
+          {/* Quick AI command chips */}
+          {!messageText && !replyToMessage && (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto scrollbar-hide">
+              <span className="text-xs text-muted-foreground shrink-0">AI:</span>
+              {[
+                { label: 'Резюме', action: 'summarise' as const },
+                { label: 'Задачи', action: 'extract_tasks' as const },
+                { label: 'Черновик', action: 'draft_reply' as const },
+                { label: 'Перевод', action: 'translate' as const },
+              ].map((cmd) => (
+                <button
+                  key={cmd.action}
+                  onClick={() => {
+                    setAiActionType(cmd.action);
+                    setShowAIActions(true);
+                  }}
+                  className="shrink-0 px-2.5 py-1 text-xs rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {cmd.label}
+                </button>
+              ))}
+              {onOpenAIChat && (
+                <button
+                  onClick={onOpenAIChat}
+                  className="shrink-0 px-2.5 py-1 text-xs rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Чат
+                </button>
+              )}
+            </div>
+          )}
           </>
           )}
         </div>
