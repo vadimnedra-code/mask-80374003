@@ -386,6 +386,7 @@ const Messenger = () => {
             onOpenProfileEdit={() => setShowProfileEdit(true)}
             onNewChat={() => setShowNewChat(true)}
             onOpenSearch={() => setShowSearch(true)}
+            onOpenAIChat={() => setShowAIChat(true)}
             onStartChatWithUser={async (userId) => {
               try {
                 // Check if chat already exists

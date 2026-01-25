@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
-import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw, Archive, VolumeX, Volume2, ArchiveRestore } from 'lucide-react';
+import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw, Archive, VolumeX, Volume2, ArchiveRestore, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import maskLogo from '@/assets/mask-logo.png';
 import { ChatWithDetails } from '@/hooks/useChats';
@@ -26,6 +26,7 @@ interface ChatListProps {
   onOpenProfileEdit?: () => void;
   onNewChat: () => void;
   onOpenSearch?: () => void;
+  onOpenAIChat?: () => void;
   onStartChatWithUser?: (userId: string) => Promise<void>;
   onDeleteChat?: (chatId: string) => Promise<void>;
   onTogglePinChat?: (chatId: string) => Promise<void>;
@@ -41,6 +42,7 @@ export const ChatList = ({
   onOpenProfileEdit,
   onNewChat,
   onOpenSearch,
+  onOpenAIChat,
   onStartChatWithUser,
   onDeleteChat,
   onTogglePinChat,
@@ -282,6 +284,14 @@ export const ChatList = ({
             className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 active:scale-95 group"
           >
             <Edit className="w-[22px] h-[22px] text-primary/80 group-hover:text-primary transition-colors" />
+          </button>
+          <button 
+            onClick={onOpenAIChat}
+            className="p-3 rounded-xl hover:bg-primary/10 transition-all duration-300 active:scale-95 group relative"
+            aria-label="AI Assistant"
+          >
+            <Sparkles className="w-[22px] h-[22px] text-primary/80 group-hover:text-primary transition-colors" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
           </button>
           <button 
             onClick={onOpenSettings}
