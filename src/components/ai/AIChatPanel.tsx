@@ -1,0 +1,288 @@
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Send, 
+  Sparkles, 
+  X, 
+  ArrowLeft, 
+  EyeOff, 
+  Eye,
+  MoreVertical,
+  Trash2,
+  Settings,
+  Shield
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useAIChat, AIMessage } from '@/hooks/useAIChat';
+import { useAISettings } from '@/hooks/useAISettings';
+import maskLogo from '@/assets/mask-logo.png';
+import ReactMarkdown from 'react-markdown';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+interface AIChatPanelProps {
+  onClose: () => void;
+  onOpenSettings?: () => void;
+}
+
+export const AIChatPanel = ({ onClose, onOpenSettings }: AIChatPanelProps) => {
+  const [inputValue, setInputValue] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  
+  const { 
+    messages, 
+    isLoading, 
+    isIncognito, 
+    setIsIncognito, 
+    sendMessage, 
+    clearMessages,
+    cancelRequest
+  } = useAIChat();
+  
+  const { settings } = useAISettings();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
+    
+    sendMessage(inputValue.trim());
+    setInputValue('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const getMemoryBadge = () => {
+    if (isIncognito) return { text: 'Инкогнито', color: 'bg-purple-500/20 text-purple-400' };
+    switch (settings?.memory_mode) {
+      case 'none': return { text: 'Без памяти', color: 'bg-muted text-muted-foreground' };
+      case 'local': return { text: 'Локальная память', color: 'bg-amber-500/20 text-amber-400' };
+      case 'cloud_encrypted': return { text: 'Облачная память', color: 'bg-emerald-500/20 text-emerald-400' };
+      default: return { text: 'Без памяти', color: 'bg-muted text-muted-foreground' };
+    }
+  };
+
+  const memoryBadge = getMemoryBadge();
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col animate-slide-in-right lg:relative lg:animate-none">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border bg-card pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors lg:hidden"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="w-10 h-10 rounded-none overflow-hidden bg-black">
+            <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <h2 className="font-semibold flex items-center gap-2">
+              MASK AI
+              <Sparkles className="w-4 h-4 text-primary" />
+            </h2>
+            <span className={cn("text-xs px-2 py-0.5 rounded-full", memoryBadge.color)}>
+              {memoryBadge.text}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsIncognito(!isIncognito)}
+            className={cn(
+              "transition-colors",
+              isIncognito && "text-purple-400 bg-purple-500/10"
+            )}
+          >
+            {isIncognito ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={clearMessages}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Очистить чат
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {onOpenSettings && (
+                <DropdownMenuItem onClick={onOpenSettings}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Настройки AI
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem>
+                <Shield className="w-4 h-4 mr-2" />
+                AI Permissions
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="hidden lg:flex"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center h-full text-center py-12"
+          >
+            <div className="w-16 h-16 rounded-none overflow-hidden bg-black mb-4">
+              <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Привет! Я MASK AI</h3>
+            <p className="text-muted-foreground text-sm max-w-xs">
+              Спроси меня о настройках приватности, функциях MASK, или просто поговорим.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-2 mt-6 w-full max-w-sm">
+              {[
+                'Как включить исчезающие сообщения?',
+                'Проверь мои настройки приватности',
+                'Что такое маски в MASK?',
+                'Как создать секретный чат?',
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => sendMessage(prompt)}
+                  className="p-3 text-xs text-left rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        <AnimatePresence>
+          {messages.map((message) => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "flex",
+                message.role === 'user' ? "justify-end" : "justify-start"
+              )}
+            >
+              <div
+                className={cn(
+                  "max-w-[85%] rounded-2xl px-4 py-3",
+                  message.role === 'user'
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-muted rounded-bl-md"
+                )}
+              >
+                {message.role === 'assistant' ? (
+                  <div className="prose prose-sm prose-invert max-w-none">
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-start"
+          >
+            <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-card pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-end gap-2">
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Напиши сообщение..."
+              rows={1}
+              className={cn(
+                "w-full resize-none rounded-2xl bg-muted px-4 py-3 pr-12",
+                "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "placeholder:text-muted-foreground",
+                "max-h-32"
+              )}
+              style={{ minHeight: '48px' }}
+            />
+          </div>
+          
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!inputValue.trim() || isLoading}
+            className="h-12 w-12 rounded-full shrink-0"
+          >
+            {isLoading ? (
+              <X className="w-5 h-5" onClick={(e) => { e.stopPropagation(); cancelRequest(); }} />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
+
+        {isIncognito && (
+          <p className="text-xs text-purple-400 mt-2 text-center">
+            🔒 Режим инкогнито: сообщения не сохраняются
+          </p>
+        )}
+      </form>
+    </div>
+  );
+};

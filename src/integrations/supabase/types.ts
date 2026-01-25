@@ -14,6 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_actions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["ai_action_type"]
+          created_at: string
+          id: string
+          input_metadata: Json | null
+          result_summary: string | null
+          target_chat_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["ai_action_type"]
+          created_at?: string
+          id?: string
+          input_metadata?: Json | null
+          result_summary?: string | null
+          target_chat_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["ai_action_type"]
+          created_at?: string
+          id?: string
+          input_metadata?: Json | null
+          result_summary?: string | null
+          target_chat_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_actions_target_chat_id_fkey"
+            columns: ["target_chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_memory_items: {
+        Row: {
+          created_at: string
+          encrypted_blob: string
+          id: string
+          metadata: Json | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_blob: string
+          id?: string
+          metadata?: Json | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_blob?: string
+          id?: string
+          metadata?: Json | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_permissions: {
+        Row: {
+          can_draft_reply: boolean
+          can_extract_tasks: boolean
+          can_summarise: boolean
+          can_translate: boolean
+          chat_id: string | null
+          granted_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          can_draft_reply?: boolean
+          can_extract_tasks?: boolean
+          can_summarise?: boolean
+          can_translate?: boolean
+          chat_id?: string | null
+          granted_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          can_draft_reply?: boolean
+          can_extract_tasks?: boolean
+          can_summarise?: boolean
+          can_translate?: boolean
+          chat_id?: string | null
+          granted_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_permissions_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          mode: Database["public"]["Enums"]["ai_session_mode"]
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          mode?: Database["public"]["Enums"]["ai_session_mode"]
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          mode?: Database["public"]["Enums"]["ai_session_mode"]
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           blocked_id: string
@@ -901,6 +1075,48 @@ export type Database = {
           },
         ]
       }
+      user_ai_settings: {
+        Row: {
+          allow_chat_analysis: boolean
+          allow_selected_chats_only: boolean
+          created_at: string
+          id: string
+          memory_mode: Database["public"]["Enums"]["ai_memory_mode"]
+          onboarding_completed: boolean
+          preferred_language: string | null
+          privacy_preset: string | null
+          tone_style: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allow_chat_analysis?: boolean
+          allow_selected_chats_only?: boolean
+          created_at?: string
+          id?: string
+          memory_mode?: Database["public"]["Enums"]["ai_memory_mode"]
+          onboarding_completed?: boolean
+          preferred_language?: string | null
+          privacy_preset?: string | null
+          tone_style?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allow_chat_analysis?: boolean
+          allow_selected_chats_only?: boolean
+          created_at?: string
+          id?: string
+          memory_mode?: Database["public"]["Enums"]["ai_memory_mode"]
+          onboarding_completed?: boolean
+          preferred_language?: string | null
+          privacy_preset?: string | null
+          tone_style?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -983,6 +1199,10 @@ export type Database = {
       cleanup_expired_messages: { Args: never; Returns: undefined }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_users: { Args: never; Returns: Json }
+      has_completed_ai_onboarding: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1008,6 +1228,14 @@ export type Database = {
       }
     }
     Enums: {
+      ai_action_type:
+        | "summarise"
+        | "extract_tasks"
+        | "draft_reply"
+        | "translate"
+        | "privacy_check"
+      ai_memory_mode: "none" | "local" | "cloud_encrypted"
+      ai_session_mode: "chat" | "onboarding" | "incognito"
       app_role: "admin" | "moderator" | "user"
       group_role: "owner" | "admin" | "member"
     }
@@ -1137,6 +1365,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_action_type: [
+        "summarise",
+        "extract_tasks",
+        "draft_reply",
+        "translate",
+        "privacy_check",
+      ],
+      ai_memory_mode: ["none", "local", "cloud_encrypted"],
+      ai_session_mode: ["chat", "onboarding", "incognito"],
       app_role: ["admin", "moderator", "user"],
       group_role: ["owner", "admin", "member"],
     },
