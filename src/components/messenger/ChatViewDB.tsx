@@ -23,7 +23,8 @@ import {
   ChevronLeft,
   Users,
   Timer,
-  UserPen
+  UserPen,
+  Sparkles
 } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -45,6 +46,7 @@ import { StartGroupCallDialog } from './StartGroupCallDialog';
 import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './DisappearingMessagesSelector';
 import { EditNicknameDialog } from './EditNicknameDialog';
 import { MediaItem } from './MediaGalleryLightbox';
+import { AIActionsMenu } from '@/components/ai/AIActionsMenu';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -107,6 +109,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showGroupCallDialog, setShowGroupCallDialog] = useState(false);
   const [showDisappearingSelector, setShowDisappearingSelector] = useState(false);
   const [showNicknameDialog, setShowNicknameDialog] = useState(false);
+  const [showAIActions, setShowAIActions] = useState(false);
   const prevMessagesLengthRef = useRef(0);
   const isAtBottomRef = useRef(true);
   
@@ -684,6 +687,15 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           </p>
         </button>
         <div className="flex items-center">
+          {/* AI Actions Button */}
+          <button 
+            onClick={() => setShowAIActions(true)}
+            className="p-2 sm:p-2.5 rounded-full hover:bg-amber-500/10 transition-all duration-200 active:scale-95 active:bg-amber-500/20 relative"
+            title="AI Действия"
+          >
+            <Sparkles className="w-5 h-5 sm:w-[22px] sm:h-[22px] text-amber-100" />
+          </button>
+          
           {/* Call buttons - different for 1:1 and group chats */}
           {!chat.is_group ? (
             <>
@@ -814,6 +826,18 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           onSave={handleSaveNickname}
         />
       )}
+
+      {/* AI Actions Menu */}
+      <AIActionsMenu
+        isOpen={showAIActions}
+        onClose={() => setShowAIActions(false)}
+        chatContent={messages
+          .slice(-50) // Last 50 messages for context
+          .map(m => `${m.sender_id === user?.id ? 'Я' : displayName}: ${getDisplayContent(m)}`)
+          .join('\n')
+        }
+        onInsertDraft={(text) => setMessageText(text)}
+      />
 
       {/* Messages container */}
       <div className="relative flex-1 min-h-0">
