@@ -24,11 +24,16 @@ interface StreamChatOptions {
   onError: (error: string) => void;
 }
 
-export const useAIChat = () => {
-  const [messages, setMessages] = useState<AIMessage[]>([]);
+export const useAIChat = (initialMessages?: AIMessage[]) => {
+  const [messages, setMessages] = useState<AIMessage[]>(initialMessages || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isIncognito, setIsIncognito] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Allow setting messages externally (e.g., loading from vault)
+  const setInitialMessages = useCallback((msgs: AIMessage[]) => {
+    setMessages(msgs);
+  }, []);
 
   const streamChat = useCallback(async ({
     messages: inputMessages,
@@ -253,6 +258,7 @@ export const useAIChat = () => {
     isLoading,
     isIncognito,
     setIsIncognito,
+    setInitialMessages,
     sendMessage,
     performAction,
     clearMessages,

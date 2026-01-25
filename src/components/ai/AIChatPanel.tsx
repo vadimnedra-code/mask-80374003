@@ -64,6 +64,7 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
     isLoading, 
     isIncognito, 
     setIsIncognito, 
+    setInitialMessages,
     sendMessage, 
     clearMessages,
     cancelRequest
@@ -73,14 +74,38 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
   
   const vault = useLocalVault();
 
-  // Save messages to vault when they change (if vault is unlocked and memory_mode is 'local')
+  // Track saved message IDs to avoid duplicates
+  const savedMessageIdsRef = useRef<Set<string>>(new Set());
+  const vaultLoadedRef = useRef(false);
+
+  // Load messages from vault on mount (if vault is unlocked and memory_mode is 'local')
   useEffect(() => {
-    if (vault.isUnlocked && settings?.memory_mode === 'local' && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      // Only save if it's a new message (check by timestamp)
-      vault.saveToVault(lastMessage);
+    const loadVaultMessages = async () => {
+      if (vault.isUnlocked && settings?.memory_mode === 'local' && !vaultLoadedRef.current) {
+        vaultLoadedRef.current = true;
+        const vaultMessages = await vault.loadFromVault();
+        if (vaultMessages.length > 0) {
+          setInitialMessages(vaultMessages);
+          // Mark all loaded messages as already saved
+          vaultMessages.forEach(msg => savedMessageIdsRef.current.add(msg.id));
+        }
+      }
+    };
+    loadVaultMessages();
+  }, [vault.isUnlocked, settings?.memory_mode, setInitialMessages, vault.loadFromVault]);
+
+  // Save NEW messages to vault when they change (if vault is unlocked and memory_mode is 'local')
+  useEffect(() => {
+    if (vault.isUnlocked && settings?.memory_mode === 'local' && messages.length > 0 && !isIncognito) {
+      // Save only messages that haven't been saved yet
+      messages.forEach(msg => {
+        if (!savedMessageIdsRef.current.has(msg.id)) {
+          savedMessageIdsRef.current.add(msg.id);
+          vault.saveToVault(msg);
+        }
+      });
     }
-  }, [messages, vault.isUnlocked, settings?.memory_mode]);
+  }, [messages, vault.isUnlocked, settings?.memory_mode, isIncognito, vault.saveToVault]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -159,7 +184,10 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={clearMessages}>
+              <DropdownMenuItem onClick={() => {
+                clearMessages();
+                savedMessageIdsRef.current.clear();
+              }}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Очистить чат
               </DropdownMenuItem>
