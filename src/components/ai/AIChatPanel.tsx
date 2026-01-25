@@ -13,7 +13,8 @@ import {
   MessageCircle,
   Copy,
   Check,
-  Lock
+  Lock,
+  Edit3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 import { toast } from 'sonner';
 
@@ -44,6 +54,8 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
   const [inputValue, setInputValue] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showVaultDialog, setShowVaultDialog] = useState(false);
+  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
+  const [messageToSend, setMessageToSend] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -270,9 +282,8 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
                     <button
                       onClick={() => {
                         const contentToSend = message.autoSendContent || message.content;
-                        onSendToChat(contentToSend);
-                        toast.success(`Отправлено в ${activeChatName || 'чат'}`);
-                        onClose();
+                        setMessageToSend(contentToSend);
+                        setSendConfirmOpen(true);
                       }}
                       className={cn(
                         "flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors",
@@ -365,6 +376,51 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
         onClear={vault.clearVault}
         onDestroy={vault.destroyVault}
       />
+
+      {/* Send Confirmation Dialog */}
+      <Dialog open={sendConfirmOpen} onOpenChange={setSendConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5" />
+              Отправить в чат
+            </DialogTitle>
+            <DialogDescription>
+              Отредактируйте сообщение перед отправкой в {activeChatName || 'чат'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Textarea
+            value={messageToSend}
+            onChange={(e) => setMessageToSend(e.target.value)}
+            className="min-h-[120px] resize-none"
+            placeholder="Текст сообщения..."
+          />
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setSendConfirmOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={() => {
+                if (messageToSend.trim() && onSendToChat) {
+                  onSendToChat(messageToSend.trim());
+                  toast.success(`Отправлено в ${activeChatName || 'чат'}`);
+                  setSendConfirmOpen(false);
+                  onClose();
+                }
+              }}
+              disabled={!messageToSend.trim()}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Отправить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
