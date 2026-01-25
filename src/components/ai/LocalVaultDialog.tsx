@@ -7,8 +7,7 @@ import {
   Trash2, 
   Key,
   AlertTriangle,
-  Check,
-  X
+  Download
 } from 'lucide-react';
 import {
   Dialog,
@@ -23,6 +22,13 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { VaultStatus } from '@/hooks/useLocalVault';
 
+interface VaultMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: Date;
+}
+
 interface LocalVaultDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,6 +39,7 @@ interface LocalVaultDialogProps {
   onLock: () => void;
   onClear: () => Promise<boolean>;
   onDestroy: () => Promise<boolean>;
+  onLoadMessages?: () => Promise<VaultMessage[]>;
 }
 
 type DialogMode = 'status' | 'create' | 'unlock' | 'confirm-destroy';
@@ -47,6 +54,7 @@ export const LocalVaultDialog = ({
   onLock,
   onClear,
   onDestroy,
+  onLoadMessages,
 }: LocalVaultDialogProps) => {
   const [mode, setMode] = useState<DialogMode>('status');
   const [pin, setPin] = useState('');
@@ -132,6 +140,63 @@ export const LocalVaultDialog = ({
       toast.success('История очищена');
     } else {
       toast.error('Ошибка очистки');
+    }
+  };
+
+  const handleExport = async () => {
+    if (!onLoadMessages) return;
+    
+    setIsLoading(true);
+    try {
+      const messages = await onLoadMessages();
+      
+      if (messages.length === 0) {
+        toast.error('Нет сообщений для экспорта');
+        setIsLoading(false);
+        return;
+      }
+
+      // Format messages as text
+      const lines = [
+        '═══════════════════════════════════════',
+        '       MASK AI - История чата',
+        `       Экспорт: ${new Date().toLocaleString('ru-RU')}`,
+        '═══════════════════════════════════════',
+        '',
+      ];
+
+      messages.forEach((msg) => {
+        const time = msg.createdAt.toLocaleString('ru-RU');
+        const role = msg.role === 'user' ? '👤 Вы' : '🤖 AI';
+        lines.push(`[${time}] ${role}:`);
+        lines.push(msg.content);
+        lines.push('');
+        lines.push('---');
+        lines.push('');
+      });
+
+      lines.push('═══════════════════════════════════════');
+      lines.push(`Всего сообщений: ${messages.length}`);
+      lines.push('═══════════════════════════════════════');
+
+      const content = lines.join('\n');
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mask-ai-history-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Экспортировано ${messages.length} сообщений`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Ошибка экспорта');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -228,6 +293,15 @@ export const LocalVaultDialog = ({
                     >
                       <Lock className="w-4 h-4 mr-2" />
                       Заблокировать
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleExport}
+                      disabled={isLoading || messageCount === 0}
+                      className="w-full"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Экспорт истории
                     </Button>
                     <Button 
                       variant="outline" 

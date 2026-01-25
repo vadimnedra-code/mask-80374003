@@ -411,6 +411,7 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
         onLock={vault.lockVault}
         onClear={vault.clearVault}
         onDestroy={vault.destroyVault}
+        onLoadMessages={vault.loadFromVault}
       />
 
       {/* Send Confirmation Dialog */}
