@@ -12,6 +12,8 @@ import { NewChatDialog } from '@/components/messenger/NewChatDialog';
 import { SearchPanel } from '@/components/messenger/SearchPanel';
 import { IncomingCallDialog } from '@/components/messenger/IncomingCallDialog';
 import { IdleWarningDialog } from '@/components/messenger/IdleWarningDialog';
+import { AIOnboardingWizard } from '@/components/ai/AIOnboardingWizard';
+import { AIChatPanel } from '@/components/ai/AIChatPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
@@ -23,6 +25,7 @@ import { useVoipToken } from '@/hooks/useVoipToken';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
+import { useAISettings } from '@/hooks/useAISettings';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -32,12 +35,15 @@ const Messenger = () => {
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [callParticipant, setCallParticipant] = useState<{ name: string; avatar: string } | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const { chats, loading: chatsLoading, createChat, deleteChat, togglePinChat, refetch: refetchChats } = useChats();
   const { updateStatus } = useProfile(user?.id);
+  const { needsOnboarding, loading: aiSettingsLoading } = useAISettings();
   const navigate = useNavigate();
   
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
@@ -168,6 +174,13 @@ const Messenger = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // Show AI onboarding if needed
+  useEffect(() => {
+    if (!aiSettingsLoading && needsOnboarding && user) {
+      setShowAIOnboarding(true);
+    }
+  }, [aiSettingsLoading, needsOnboarding, user]);
+
   if (authLoading) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-background">
@@ -276,6 +289,16 @@ const Messenger = () => {
 
   return (
     <div className="h-full w-full overflow-hidden bg-background flex flex-col safe-area-top">
+      {/* AI Onboarding Wizard */}
+      {showAIOnboarding && (
+        <AIOnboardingWizard onComplete={() => setShowAIOnboarding(false)} />
+      )}
+
+      {/* AI Chat Panel */}
+      {showAIChat && (
+        <AIChatPanel onClose={() => setShowAIChat(false)} />
+      )}
+
       {/* Idle Warning Dialog */}
       <IdleWarningDialog
         isOpen={showIdleWarning && !isInCall && !isInGroupCall}
