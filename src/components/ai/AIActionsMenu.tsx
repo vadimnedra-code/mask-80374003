@@ -383,10 +383,10 @@ export const AIActionsMenu = ({
                   >
                     Копировать
                   </Button>
-                  {selectedAction === 'draft_reply' && onInsertDraft && (
+                  {onInsertDraft && (
                     <Button onClick={handleUseDraft} className="flex-1">
-                      <Check className="w-4 h-4 mr-2" />
-                      Использовать
+                      <Send className="w-4 h-4 mr-2" />
+                      В чат
                     </Button>
                   )}
                 </div>
