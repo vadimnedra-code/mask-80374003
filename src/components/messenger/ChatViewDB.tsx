@@ -729,9 +729,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             className="p-1.5 sm:p-2 rounded-full hover:bg-primary/10 transition-all duration-200 active:scale-95 active:bg-primary/20 relative"
             title="AI Действия"
           >
-            <div className="w-5 h-5 sm:w-[22px] sm:h-[22px] rounded-none overflow-hidden bg-black">
-              <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
-            </div>
+            <img src={maskLogo} alt="AI" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
           </button>
           
           {/* Call buttons - different for 1:1 and group chats */}
@@ -1348,9 +1346,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                   onClick={onOpenAIChat}
                   className="shrink-0 px-2 py-1 text-xs rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center gap-1.5"
                 >
-                  <div className="w-3.5 h-3.5 rounded-none overflow-hidden bg-black">
-                    <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
-                  </div>
+                  <img src={maskLogo} alt="AI" className="w-4 h-4 object-contain" />
                   Чат
                 </button>
               )}

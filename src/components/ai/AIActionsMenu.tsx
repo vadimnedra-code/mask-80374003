@@ -210,9 +210,7 @@ export const AIActionsMenu = ({
       <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-none overflow-hidden bg-black">
-              <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
-            </div>
+            <img src={maskLogo} alt="AI" className="w-6 h-6 object-contain" />
             AI Действия
           </DialogTitle>
           <DialogDescription>

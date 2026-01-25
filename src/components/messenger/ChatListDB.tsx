@@ -290,9 +290,7 @@ export const ChatList = ({
             className="p-2 rounded-xl hover:bg-primary/10 transition-all duration-300 active:scale-95 group relative"
             aria-label="AI Assistant"
           >
-            <div className="w-[26px] h-[26px] rounded-none overflow-hidden bg-black">
-              <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
-            </div>
+            <img src={maskLogo} alt="AI" className="w-7 h-7 object-contain" />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
           </button>
           <button 
