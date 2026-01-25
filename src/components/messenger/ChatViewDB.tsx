@@ -1291,7 +1291,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={replyToMessage ? 'Ответить...' : 'Сообщение или / для команд'}
+                placeholder={replyToMessage ? 'Ответить...' : 'Сообщение'}
                 value={messageText}
                 onChange={(e) => {
                   const value = e.target.value;
