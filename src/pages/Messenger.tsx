@@ -453,6 +453,7 @@ const Messenger = () => {
               onStartCall={handleStartCall}
               onStartGroupCall={handleStartGroupCall}
               highlightedMessageId={highlightedMessageId}
+              onOpenAIChat={() => setShowAIChat(true)}
             />
           ) : (
             <EmptyState />

@@ -84,6 +84,7 @@ interface ChatViewDBProps {
   onStartCall: (type: 'voice' | 'video') => void;
   onStartGroupCall?: (participantIds: string[], callType: 'voice' | 'video') => void;
   highlightedMessageId?: string | null;
+  onOpenAIChat?: () => void;
 }
 
 interface MessageToForward {
@@ -92,7 +93,7 @@ interface MessageToForward {
   mediaUrl: string | null;
 }
 
-export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall, highlightedMessageId }: ChatViewDBProps) => {
+export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall, highlightedMessageId, onOpenAIChat }: ChatViewDBProps) => {
   const [messageText, setMessageText] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -1243,11 +1244,20 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={replyToMessage ? 'Ответить...' : 'Введите сообщение'}
+                placeholder={replyToMessage ? 'Ответить...' : 'Введите сообщение или /ai'}
                 value={messageText}
                 onChange={(e) => {
-                  setMessageText(e.target.value);
-                  if (e.target.value.trim()) {
+                  const value = e.target.value;
+                  setMessageText(value);
+                  
+                  // Detect /ai command
+                  if (value.toLowerCase() === '/ai' && onOpenAIChat) {
+                    setMessageText('');
+                    onOpenAIChat();
+                    return;
+                  }
+                  
+                  if (value.trim()) {
                     handleTypingStart();
                   }
                 }}
