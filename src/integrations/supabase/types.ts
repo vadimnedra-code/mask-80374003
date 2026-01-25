@@ -306,6 +306,39 @@ export type Database = {
           },
         ]
       }
+      call_sessions: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          external_call_id: string | null
+          id: string
+          masked_number: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          external_call_id?: string | null
+          id?: string
+          masked_number: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          external_call_id?: string | null
+          id?: string
+          masked_number?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           answer: Json | null
@@ -833,6 +866,59 @@ export type Database = {
           },
         ]
       }
+      outbound_messages: {
+        Row: {
+          artifact_id: string | null
+          body_preview: string | null
+          channel: Database["public"]["Enums"]["comm_channel"]
+          created_at: string
+          error_message: string | null
+          external_id: string | null
+          id: string
+          masked_to: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["comm_status"]
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          artifact_id?: string | null
+          body_preview?: string | null
+          channel: Database["public"]["Enums"]["comm_channel"]
+          created_at?: string
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          masked_to: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["comm_status"]
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string | null
+          body_preview?: string | null
+          channel?: Database["public"]["Enums"]["comm_channel"]
+          created_at?: string
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          masked_to?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["comm_status"]
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_messages_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "studio_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1043,6 +1129,101 @@ export type Database = {
           },
         ]
       }
+      studio_artifacts: {
+        Row: {
+          artifact_type: Database["public"]["Enums"]["artifact_type"]
+          created_at: string
+          id: string
+          is_vault: boolean
+          metadata: Json | null
+          source_file_id: string | null
+          storage_path: string | null
+          text_content: string | null
+          title: string
+          ttl_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artifact_type: Database["public"]["Enums"]["artifact_type"]
+          created_at?: string
+          id?: string
+          is_vault?: boolean
+          metadata?: Json | null
+          source_file_id?: string | null
+          storage_path?: string | null
+          text_content?: string | null
+          title: string
+          ttl_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artifact_type?: Database["public"]["Enums"]["artifact_type"]
+          created_at?: string
+          id?: string
+          is_vault?: boolean
+          metadata?: Json | null
+          source_file_id?: string | null
+          storage_path?: string | null
+          text_content?: string | null
+          title?: string
+          ttl_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_artifacts_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "studio_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studio_files: {
+        Row: {
+          created_at: string
+          file_size: number
+          filename: string
+          id: string
+          is_vault: boolean
+          mime_type: string
+          original_name: string
+          storage_path: string
+          ttl_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_size: number
+          filename: string
+          id?: string
+          is_vault?: boolean
+          mime_type: string
+          original_name: string
+          storage_path: string
+          ttl_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          is_vault?: boolean
+          mime_type?: string
+          original_name?: string
+          storage_path?: string
+          ttl_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       typing_status: {
         Row: {
           chat_id: string
@@ -1078,7 +1259,12 @@ export type Database = {
       user_ai_settings: {
         Row: {
           allow_chat_analysis: boolean
+          allow_file_analysis: boolean
+          allow_outbound_calls: boolean
+          allow_outbound_email: boolean
+          allow_outbound_sms: boolean
           allow_selected_chats_only: boolean
+          always_confirm_before_send: boolean
           created_at: string
           id: string
           memory_mode: Database["public"]["Enums"]["ai_memory_mode"]
@@ -1091,7 +1277,12 @@ export type Database = {
         }
         Insert: {
           allow_chat_analysis?: boolean
+          allow_file_analysis?: boolean
+          allow_outbound_calls?: boolean
+          allow_outbound_email?: boolean
+          allow_outbound_sms?: boolean
           allow_selected_chats_only?: boolean
+          always_confirm_before_send?: boolean
           created_at?: string
           id?: string
           memory_mode?: Database["public"]["Enums"]["ai_memory_mode"]
@@ -1104,7 +1295,12 @@ export type Database = {
         }
         Update: {
           allow_chat_analysis?: boolean
+          allow_file_analysis?: boolean
+          allow_outbound_calls?: boolean
+          allow_outbound_email?: boolean
+          allow_outbound_sms?: boolean
           allow_selected_chats_only?: boolean
+          always_confirm_before_send?: boolean
           created_at?: string
           id?: string
           memory_mode?: Database["public"]["Enums"]["ai_memory_mode"]
@@ -1197,6 +1393,7 @@ export type Database = {
       }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       cleanup_expired_messages: { Args: never; Returns: undefined }
+      cleanup_expired_studio_items: { Args: never; Returns: undefined }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_users: { Args: never; Returns: Json }
       has_completed_ai_onboarding: {
@@ -1237,6 +1434,15 @@ export type Database = {
       ai_memory_mode: "none" | "local" | "cloud_encrypted"
       ai_session_mode: "chat" | "onboarding" | "incognito"
       app_role: "admin" | "moderator" | "user"
+      artifact_type:
+        | "document"
+        | "summary"
+        | "presentation"
+        | "image"
+        | "table"
+        | "text"
+      comm_channel: "email" | "sms" | "voice"
+      comm_status: "pending" | "sent" | "delivered" | "failed"
       group_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
@@ -1375,6 +1581,16 @@ export const Constants = {
       ai_memory_mode: ["none", "local", "cloud_encrypted"],
       ai_session_mode: ["chat", "onboarding", "incognito"],
       app_role: ["admin", "moderator", "user"],
+      artifact_type: [
+        "document",
+        "summary",
+        "presentation",
+        "image",
+        "table",
+        "text",
+      ],
+      comm_channel: ["email", "sms", "voice"],
+      comm_status: ["pending", "sent", "delivered", "failed"],
       group_role: ["owner", "admin", "member"],
     },
   },
