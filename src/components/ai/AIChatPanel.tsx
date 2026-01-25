@@ -158,9 +158,17 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
           </div>
           <div>
             <h2 className="font-semibold">MASK AI</h2>
-            <span className={cn("text-xs px-2 py-0.5 rounded-full", memoryBadge.color)}>
-              {memoryBadge.text}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-xs px-2 py-0.5 rounded-full", memoryBadge.color)}>
+                {memoryBadge.text}
+              </span>
+              {vault.isUnlocked && vault.messageCount > 0 && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  {vault.messageCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
