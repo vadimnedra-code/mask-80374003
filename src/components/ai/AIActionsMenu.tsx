@@ -8,9 +8,9 @@ import {
   Loader2,
   Check,
   X,
-  Sparkles,
   Send
 } from 'lucide-react';
+import maskLogo from '@/assets/mask-logo.png';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -210,7 +210,9 @@ export const AIActionsMenu = ({
       <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <div className="w-5 h-5 rounded-none overflow-hidden bg-black">
+              <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
+            </div>
             AI Действия
           </DialogTitle>
           <DialogDescription>
