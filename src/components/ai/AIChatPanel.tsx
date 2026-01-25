@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Send, 
-  Sparkles, 
   X, 
   ArrowLeft, 
   EyeOff, 
@@ -121,10 +120,7 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
             <img src={maskLogo} alt="AI" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h2 className="font-semibold flex items-center gap-2">
-              MASK AI
-              <Sparkles className="w-4 h-4 text-primary" />
-            </h2>
+            <h2 className="font-semibold">MASK AI</h2>
             <span className={cn("text-xs px-2 py-0.5 rounded-full", memoryBadge.color)}>
               {memoryBadge.text}
             </span>
