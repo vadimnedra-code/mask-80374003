@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, Send, Loader2, Shield, Paperclip, X, Plus, FileText, Image, Upload } from 'lucide-react';
+import { Mail, Send, Loader2, Shield, Paperclip, X, Plus, FileText, Image, Upload, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Popover,
@@ -60,6 +61,7 @@ export const SendDialog = ({
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<{ name: string; progress: number; status: 'pending' | 'uploading' | 'done' | 'error' }[]>([]);
 
   // Fetch available files and artifacts
   const fetchAssets = useCallback(async () => {
@@ -128,7 +130,62 @@ export const SendDialog = ({
     setShowFilePicker(false);
   };
 
-  // Handle local file upload
+  // Handle local file upload with progress tracking
+  const processFileUpload = async (file: File) => {
+    const queueId = `${file.name}-${Date.now()}`;
+    
+    // Add to queue
+    setUploadQueue(prev => [...prev, { name: file.name, progress: 0, status: 'pending' }]);
+    
+    // Simulate progress start
+    setUploadQueue(prev => prev.map(item => 
+      item.name === file.name && item.status === 'pending'
+        ? { ...item, progress: 10, status: 'uploading' }
+        : item
+    ));
+
+    try {
+      // Simulate progress during upload
+      const progressInterval = setInterval(() => {
+        setUploadQueue(prev => prev.map(item => 
+          item.name === file.name && item.status === 'uploading' && item.progress < 80
+            ? { ...item, progress: item.progress + 10 }
+            : item
+        ));
+      }, 200);
+
+      const uploadedFile = await uploadFile(file);
+      
+      clearInterval(progressInterval);
+
+      if (uploadedFile) {
+        setUploadQueue(prev => prev.map(item => 
+          item.name === file.name && item.status === 'uploading'
+            ? { ...item, progress: 100, status: 'done' }
+            : item
+        ));
+        setFilesToSend(prev => [...prev, uploadedFile]);
+        
+        // Remove from queue after animation
+        setTimeout(() => {
+          setUploadQueue(prev => prev.filter(item => !(item.name === file.name && item.status === 'done')));
+        }, 1500);
+      }
+    } catch (error: any) {
+      setUploadQueue(prev => prev.map(item => 
+        item.name === file.name && item.status === 'uploading'
+          ? { ...item, status: 'error' }
+          : item
+      ));
+      toast.error(`Ошибка загрузки ${file.name}: ${error.message}`);
+      
+      // Remove error items after delay
+      setTimeout(() => {
+        setUploadQueue(prev => prev.filter(item => !(item.name === file.name && item.status === 'error')));
+      }, 3000);
+    }
+  };
+
   const handleLocalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -138,16 +195,7 @@ export const SendDialog = ({
         toast.error(`${file.name}: файл слишком большой (максимум 10MB)`);
         continue;
       }
-
-      try {
-        const uploadedFile = await uploadFile(file);
-        if (uploadedFile) {
-          setFilesToSend(prev => [...prev, uploadedFile]);
-          toast.success(`${file.name} загружен`);
-        }
-      } catch (error: any) {
-        toast.error(`Ошибка загрузки ${file.name}: ${error.message}`);
-      }
+      processFileUpload(file);
     }
 
     // Reset input
@@ -186,16 +234,7 @@ export const SendDialog = ({
         toast.error(`${file.name}: файл слишком большой (максимум 10MB)`);
         continue;
       }
-
-      try {
-        const uploadedFile = await uploadFile(file);
-        if (uploadedFile) {
-          setFilesToSend(prev => [...prev, uploadedFile]);
-          toast.success(`${file.name} загружен`);
-        }
-      } catch (error: any) {
-        toast.error(`Ошибка загрузки ${file.name}: ${error.message}`);
-      }
+      processFileUpload(file);
     }
   };
 
@@ -432,7 +471,36 @@ export const SendDialog = ({
               )}
             </div>
 
-            {totalAttachments > 0 && (
+            {/* Upload progress queue */}
+            {uploadQueue.length > 0 && (
+              <div className="space-y-2 animate-fade-in">
+                {uploadQueue.map((item, index) => (
+                  <div key={`${item.name}-${index}`} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                    <div className="shrink-0">
+                      {item.status === 'done' ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : item.status === 'error' ? (
+                        <X className="w-4 h-4 text-destructive" />
+                      ) : (
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{item.name}</p>
+                      <Progress 
+                        value={item.progress} 
+                        className="h-1 mt-1"
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {item.status === 'done' ? 'Готово' : item.status === 'error' ? 'Ошибка' : `${item.progress}%`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(totalAttachments > 0 || uploadQueue.length > 0) && totalAttachments > 0 && (
               <div className="flex flex-wrap gap-2">
                 {filesToSend.map((file) => (
                   <Badge 
