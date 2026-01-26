@@ -300,7 +300,16 @@ const Messenger = () => {
 
   const handleRejectIncomingCall = async () => {
     if (!incomingCall) return;
-    await rejectCall(incomingCall.id);
+    console.log('[Messenger] Rejecting incoming call:', incomingCall.id);
+    
+    try {
+      await rejectCall(incomingCall.id);
+    } catch (error) {
+      console.error('[Messenger] Error rejecting call:', error);
+    }
+    
+    // Always clear incoming call state, even if rejectCall fails
+    console.log('[Messenger] Clearing incoming call state');
     clearIncomingCall();
   };
 
