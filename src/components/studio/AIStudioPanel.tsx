@@ -324,7 +324,6 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
           setPendingEmailImage(null);
         }}
         artifact={selectedArtifact}
-        attachedFiles={files}
         pendingImageUrl={pendingEmailImage}
       />
 
