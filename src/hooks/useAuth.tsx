@@ -26,9 +26,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const clearStaleSession = () => {
+      try {
+        const keys = Object.keys(localStorage).filter(
+          (k) => k.includes('sb-') && k.endsWith('-auth-token')
+        );
+        keys.forEach((k) => localStorage.removeItem(k));
+      } catch {
+        // ignore (e.g. storage blocked)
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Handle critical auth failures
+        if (event === 'SIGNED_OUT') {
+          clearStaleSession();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -48,9 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
-          console.warn('Session retrieval error:', error.message);
-          setLoading(false);
-          return;
+          console.warn('Session error, clearing:', error.message);
         }
         
         setSession(session);
@@ -58,7 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Session check failed:', err);
+        console.warn('Session check failed, clearing:', err);
+        // Don't clear - Supabase will emit SIGNED_OUT if session is truly invalid
+        setSession(null);
+        setUser(null);
         setLoading(false);
       });
 
