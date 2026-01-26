@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ImageIcon, Loader2, Download, Sparkles, X } from 'lucide-react';
+import { ImageIcon, Loader2, Download, Sparkles, X, Mail } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,12 +16,16 @@ interface ImageGenerationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   initialPrompt?: string;
+  onImageGenerated?: (imageUrl: string, prompt: string) => void;
+  onSendEmail?: (imageUrl: string) => void;
 }
 
 export const ImageGenerationDialog = ({
   isOpen,
   onClose,
   initialPrompt = '',
+  onImageGenerated,
+  onSendEmail,
 }: ImageGenerationDialogProps) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -59,6 +63,9 @@ export const ImageGenerationDialog = ({
           setMessage(data.message);
         }
         toast.success('Изображение сгенерировано!');
+        
+        // Notify parent about the generated image
+        onImageGenerated?.(data.image, prompt.trim());
       }
     } catch (error: any) {
       console.error('Generate error:', error);
@@ -79,13 +86,27 @@ export const ImageGenerationDialog = ({
     document.body.removeChild(link);
   };
 
+  const handleSendEmail = () => {
+    if (generatedImage && onSendEmail) {
+      onSendEmail(generatedImage);
+      handleClose();
+    }
+  };
+
   const handleReset = () => {
     setGeneratedImage(null);
     setMessage(null);
   };
 
+  const handleClose = () => {
+    setGeneratedImage(null);
+    setMessage(null);
+    setPrompt('');
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -113,7 +134,7 @@ export const ImageGenerationDialog = ({
               )}
 
               <div className="flex gap-2">
-                <Button variant="ghost" onClick={onClose} disabled={isGenerating}>
+                <Button variant="ghost" onClick={handleClose} disabled={isGenerating}>
                   Отмена
                 </Button>
                 <Button 
@@ -160,10 +181,16 @@ export const ImageGenerationDialog = ({
                 <Button variant="outline" onClick={handleReset} className="flex-1">
                   Новое изображение
                 </Button>
-                <Button onClick={handleDownload}>
+                <Button variant="outline" onClick={handleDownload}>
                   <Download className="w-4 h-4 mr-2" />
                   Скачать
                 </Button>
+                {onSendEmail && (
+                  <Button onClick={handleSendEmail}>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Email
+                  </Button>
+                )}
               </div>
             </>
           )}
