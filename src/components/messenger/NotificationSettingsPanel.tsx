@@ -3,6 +3,8 @@ import { X, Bell, Volume2, VolumeX, Vibrate, Music } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNotificationSound, NOTIFICATION_SOUNDS, NotificationSoundType } from '@/hooks/useNotificationSound';
+import { RingtoneSelector, RingtoneType } from './RingtoneSelector';
+import { useCallSounds } from '@/hooks/useCallSounds';
 import { cn } from '@/lib/utils';
 
 interface NotificationSettingsPanelProps {
@@ -11,6 +13,7 @@ interface NotificationSettingsPanelProps {
 
 export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanelProps) => {
   const { isEnabled, setEnabled, playMessageSound, getSoundType, setSoundType } = useNotificationSound();
+  const { previewRingtone } = useCallSounds();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>('default');
@@ -41,10 +44,13 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
   const handleSoundTypeChange = (type: NotificationSoundType) => {
     setSelectedSound(type);
     setSoundType(type);
-    // Play preview of the selected sound
     setTimeout(() => {
       playMessageSound();
     }, 50);
+  };
+
+  const handleRingtonePreview = (type: RingtoneType) => {
+    previewRingtone(type);
   };
 
   return (
@@ -68,7 +74,7 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
             <div>
               <p className="text-sm font-medium">Настройки уведомлений</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Управляйте звуками и вибрацией при получении сообщений
+                Управляйте звуками и вибрацией при получении сообщений и звонков
               </p>
             </div>
           </div>
@@ -140,6 +146,9 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
               </div>
             </div>
           )}
+
+          {/* Ringtone Selector */}
+          <RingtoneSelector onPreview={handleRingtonePreview} />
 
           {/* Vibration */}
           <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">

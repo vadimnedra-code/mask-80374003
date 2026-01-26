@@ -1,5 +1,13 @@
 import { useRef, useCallback, useEffect } from 'react';
 
+export type RingtoneType = 'classic' | 'chime' | 'gentle' | 'modern' | 'minimal';
+
+// Get saved ringtone preference
+const getRingtoneType = (): RingtoneType => {
+  if (typeof window === 'undefined') return 'chime';
+  return (localStorage.getItem('call_ringtone') as RingtoneType) || 'chime';
+};
+
 // Singleton AudioContext to avoid multiple instances
 let sharedAudioContext: AudioContext | null = null;
 let audioContextUnlocked = false;
@@ -53,6 +61,50 @@ if (typeof document !== 'undefined') {
   });
 }
 
+// Ringtone configurations for different styles
+const RINGTONE_CONFIGS = {
+  classic: {
+    // Traditional phone ring (two alternating frequencies)
+    frequencies: [440, 480],
+    pattern: 'alternating',
+    duration: 0.4,
+    gap: 0.1,
+    volume: 0.12,
+  },
+  chime: {
+    // Pleasant musical chime (C5 and E5)
+    frequencies: [523.25, 659.25],
+    pattern: 'chime',
+    duration: 0.5,
+    gap: 0.08,
+    volume: 0.1,
+  },
+  gentle: {
+    // Soft, calming tone (G4 and B4)
+    frequencies: [392, 493.88],
+    pattern: 'gentle',
+    duration: 0.6,
+    gap: 0.15,
+    volume: 0.08,
+  },
+  modern: {
+    // Electronic style (A4, C#5, E5)
+    frequencies: [440, 554.37, 659.25],
+    pattern: 'arpeggio',
+    duration: 0.15,
+    gap: 0.05,
+    volume: 0.1,
+  },
+  minimal: {
+    // Simple single beep (A5)
+    frequencies: [880],
+    pattern: 'single',
+    duration: 0.3,
+    gap: 0,
+    volume: 0.1,
+  },
+};
+
 export const useCallSounds = () => {
   const dialingIntervalRef = useRef<number | null>(null);
   const ringtoneIntervalRef = useRef<number | null>(null);
@@ -83,10 +135,111 @@ export const useCallSounds = () => {
     activeGainsRef.current = [];
   }, []);
 
-  // Generate clean, pleasant ringtone as HTML5 Audio fallback
-  const playRingtoneHTML5 = useCallback(() => {
+  // Play a single note with envelope
+  const playNote = useCallback((
+    ctx: AudioContext,
+    frequency: number,
+    startTime: number,
+    duration: number,
+    volume: number,
+    attack: number = 0.02,
+    decay: number = 3
+  ) => {
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+    oscillator.type = 'sine';
+    
+    // Smooth envelope
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(volume, startTime + attack);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    
+    activeOscillatorsRef.current.push(oscillator);
+    activeGainsRef.current.push(gainNode);
+    
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration + 0.1);
+    
+    oscillator.onended = () => {
+      const idx = activeOscillatorsRef.current.indexOf(oscillator);
+      if (idx > -1) activeOscillatorsRef.current.splice(idx, 1);
+      try {
+        oscillator.disconnect();
+        gainNode.disconnect();
+      } catch (e) {}
+    };
+  }, []);
+
+  // Generate ringtone based on type
+  const playRingtoneByType = useCallback((type: RingtoneType) => {
     try {
-      console.log('[CallSounds] Trying HTML5 Audio fallback');
+      const ctx = getSharedAudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      
+      if (ctx.state !== 'running') {
+        return false;
+      }
+
+      const config = RINGTONE_CONFIGS[type];
+      const now = ctx.currentTime;
+      
+      switch (config.pattern) {
+        case 'alternating':
+          // Classic phone ring: two frequencies alternating
+          config.frequencies.forEach((freq, i) => {
+            const start = now + i * (config.duration + config.gap);
+            playNote(ctx, freq, start, config.duration, config.volume, 0.01);
+          });
+          break;
+          
+        case 'chime':
+          // Musical chime: notes played in sequence
+          config.frequencies.forEach((freq, i) => {
+            const start = now + i * config.gap;
+            playNote(ctx, freq, start, config.duration, config.volume * (1 - i * 0.15), 0.03);
+          });
+          break;
+          
+        case 'gentle':
+          // Soft overlapping notes
+          config.frequencies.forEach((freq, i) => {
+            const start = now + i * config.gap;
+            playNote(ctx, freq, start, config.duration, config.volume, 0.05, 2);
+          });
+          break;
+          
+        case 'arpeggio':
+          // Quick ascending arpeggio
+          config.frequencies.forEach((freq, i) => {
+            const start = now + i * config.gap;
+            playNote(ctx, freq, start, config.duration, config.volume, 0.01, 4);
+          });
+          break;
+          
+        case 'single':
+          // Simple single beep
+          playNote(ctx, config.frequencies[0], now, config.duration, config.volume, 0.02, 5);
+          break;
+      }
+      
+      return true;
+    } catch (e) {
+      console.error('Error playing ringtone:', e);
+      return false;
+    }
+  }, [playNote]);
+
+  // Generate HTML5 Audio fallback for ringtone
+  const playRingtoneHTML5 = useCallback((type: RingtoneType) => {
+    try {
+      console.log('[CallSounds] Using HTML5 Audio fallback for:', type);
       
       if (!fallbackAudioRef.current) {
         fallbackAudioRef.current = new Audio();
@@ -94,8 +247,8 @@ export const useCallSounds = () => {
       }
       
       const audio = fallbackAudioRef.current;
+      const config = RINGTONE_CONFIGS[type];
       
-      // Generate a pleasant chime WAV (C5 and E5 notes)
       const sampleRate = 44100;
       const duration = 0.7;
       const samples = Math.floor(sampleRate * duration);
@@ -123,28 +276,24 @@ export const useCallSounds = () => {
       writeString(36, 'data');
       view.setUint32(40, samples * 2, true);
       
-      // Pleasant chime notes (C5 and E5)
-      const freq1 = 523.25;
-      const freq2 = 659.25;
+      const freq1 = config.frequencies[0];
+      const freq2 = config.frequencies[1] || freq1;
       
       for (let i = 0; i < samples; i++) {
         const t = i / sampleRate;
         
-        // Smooth attack and natural decay envelope
         let envelope = 0;
-        if (t < 0.05) {
-          envelope = t / 0.05; // Soft attack
+        if (t < 0.03) {
+          envelope = t / 0.03;
         } else {
-          // Exponential decay
-          envelope = Math.exp(-(t - 0.05) * 4);
+          envelope = Math.exp(-(t - 0.03) * 3);
         }
         
-        // First note starts immediately, second note starts slightly later
         const tone1 = Math.sin(2 * Math.PI * freq1 * t);
-        const tone2 = t > 0.08 ? Math.sin(2 * Math.PI * freq2 * (t - 0.08)) : 0;
-        const env2 = t > 0.08 ? Math.exp(-(t - 0.13) * 4) : 0;
+        const tone2 = t > config.gap ? Math.sin(2 * Math.PI * freq2 * (t - config.gap)) : 0;
+        const env2 = t > config.gap ? Math.exp(-(t - config.gap - 0.03) * 3) : 0;
         
-        const sample = (tone1 * envelope + tone2 * env2 * 0.8) * 0.15;
+        const sample = (tone1 * envelope + tone2 * env2 * 0.8) * config.volume;
         view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
       }
       
@@ -158,7 +307,6 @@ export const useCallSounds = () => {
       if (playPromise) {
         playPromise
           .then(() => {
-            console.log('[CallSounds] HTML5 Audio played successfully');
             setTimeout(() => URL.revokeObjectURL(url), 2000);
           })
           .catch(err => {
@@ -171,10 +319,31 @@ export const useCallSounds = () => {
     }
   }, []);
 
-  // Clean, soft dial tone - single pure tone with smooth envelope
+  // Play ringtone (main function)
+  const playRingtone = useCallback(() => {
+    const type = getRingtoneType();
+    console.log('[CallSounds] Playing ringtone type:', type);
+    
+    const success = playRingtoneByType(type);
+    if (!success) {
+      playRingtoneHTML5(type);
+    }
+  }, [playRingtoneByType, playRingtoneHTML5]);
+
+  // Preview a specific ringtone type
+  const previewRingtone = useCallback((type: RingtoneType) => {
+    console.log('[CallSounds] Previewing ringtone:', type);
+    cleanupOscillators();
+    
+    const success = playRingtoneByType(type);
+    if (!success) {
+      playRingtoneHTML5(type);
+    }
+  }, [playRingtoneByType, playRingtoneHTML5, cleanupOscillators]);
+
+  // Clean, soft dial tone
   const playDialTone = useCallback(() => {
     try {
-      console.log('[CallSounds] Playing dial tone');
       const ctx = getSharedAudioContext();
       if (ctx.state === 'suspended') {
         ctx.resume();
@@ -195,9 +364,9 @@ export const useCallSounds = () => {
       
       // Smooth envelope to avoid clicks
       gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(0.15, now + 0.03); // Soft fade in
-      gainNode.gain.setValueAtTime(0.15, now + duration - 0.1);
-      gainNode.gain.linearRampToValueAtTime(0, now + duration); // Soft fade out
+      gainNode.gain.linearRampToValueAtTime(0.12, now + 0.02);
+      gainNode.gain.setValueAtTime(0.12, now + duration - 0.05);
+      gainNode.gain.linearRampToValueAtTime(0, now + duration);
       
       activeOscillatorsRef.current.push(oscillator);
       activeGainsRef.current.push(gainNode);
@@ -216,73 +385,11 @@ export const useCallSounds = () => {
     }
   }, []);
 
-  // Clean, pleasant ringtone - soft musical tone
-  const playRingtone = useCallback(() => {
-    try {
-      console.log('[CallSounds] Playing ringtone with WebAudio');
-      const ctx = getSharedAudioContext();
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-      
-      // If context is still suspended, try HTML5 Audio
-      if (ctx.state !== 'running') {
-        console.log('[CallSounds] AudioContext not running, using HTML5 fallback');
-        playRingtoneHTML5();
-        return;
-      }
-
-      const now = ctx.currentTime;
-      const ringDuration = 0.6;
-      
-      // Play a pleasant two-note chime (C5 and E5)
-      const notes = [523.25, 659.25]; // C5 and E5 - pleasant interval
-      
-      notes.forEach((freq, index) => {
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        
-        oscillator.frequency.setValueAtTime(freq, now);
-        oscillator.type = 'sine';
-        
-        // Stagger the notes slightly for a chime effect
-        const noteStart = now + index * 0.08;
-        const noteEnd = noteStart + ringDuration;
-        
-        // Very smooth envelope for clean sound
-        gainNode.gain.setValueAtTime(0, noteStart);
-        gainNode.gain.linearRampToValueAtTime(0.12, noteStart + 0.05); // Soft attack
-        gainNode.gain.exponentialRampToValueAtTime(0.01, noteEnd); // Natural decay
-        
-        activeOscillatorsRef.current.push(oscillator);
-        activeGainsRef.current.push(gainNode);
-        
-        oscillator.start(noteStart);
-        oscillator.stop(noteEnd + 0.1);
-        
-        oscillator.onended = () => {
-          const idx = activeOscillatorsRef.current.indexOf(oscillator);
-          if (idx > -1) activeOscillatorsRef.current.splice(idx, 1);
-          oscillator.disconnect();
-          gainNode.disconnect();
-        };
-      });
-    } catch (e) {
-      console.error('Error playing ringtone:', e);
-      // Fallback to HTML5 Audio
-      playRingtoneHTML5();
-    }
-  }, [playRingtoneHTML5]);
-
   const startDialingSound = useCallback(() => {
     console.log('[CallSounds] Starting dialing sound');
     if (isPlayingRef.current) return;
     isPlayingRef.current = true;
     
-    // Ensure context is unlocked
     unlockAudioContext();
     
     playDialTone();
@@ -297,50 +404,39 @@ export const useCallSounds = () => {
     if (isPlayingRef.current) return;
     isPlayingRef.current = true;
     
-    // Ensure context is unlocked before playing
     unlockAudioContext().then(() => {
       console.log('[CallSounds] Starting ringtone');
       playRingtone();
       
       ringtoneIntervalRef.current = window.setInterval(() => {
-        console.log('[CallSounds] Ringtone interval tick');
         playRingtone();
       }, 2000);
     });
   }, [playRingtone]);
 
   const stopAllSounds = useCallback(() => {
-    console.log('[CallSounds] Stopping all sounds - IMMEDIATE');
+    console.log('[CallSounds] Stopping all sounds');
     
-    // Set flag first to prevent any new sounds
     isPlayingRef.current = false;
     
-    // Clear intervals immediately
     if (dialingIntervalRef.current) {
       window.clearInterval(dialingIntervalRef.current);
       dialingIntervalRef.current = null;
-      console.log('[CallSounds] Cleared dialing interval');
     }
     
     if (ringtoneIntervalRef.current) {
       window.clearInterval(ringtoneIntervalRef.current);
       ringtoneIntervalRef.current = null;
-      console.log('[CallSounds] Cleared ringtone interval');
     }
     
-    // Clean up any active oscillators to prevent audio artifacts
     cleanupOscillators();
     
-    // Stop HTML5 Audio if playing
     if (fallbackAudioRef.current) {
       try {
         fallbackAudioRef.current.pause();
         fallbackAudioRef.current.currentTime = 0;
         fallbackAudioRef.current.src = '';
-        console.log('[CallSounds] Stopped HTML5 Audio');
-      } catch (e) {
-        console.warn('[CallSounds] Error stopping HTML5 Audio:', e);
-      }
+      } catch (e) {}
     }
   }, [cleanupOscillators]);
 
@@ -360,11 +456,11 @@ export const useCallSounds = () => {
       oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
       oscillator.type = 'sine';
       
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
       
       oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.2);
+      oscillator.stop(ctx.currentTime + 0.15);
       
       oscillator.onended = () => {
         oscillator.disconnect();
@@ -391,11 +487,11 @@ export const useCallSounds = () => {
       oscillator.frequency.setValueAtTime(349.23, ctx.currentTime);
       oscillator.type = 'sine';
       
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       
       oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.3);
+      oscillator.stop(ctx.currentTime + 0.25);
       
       oscillator.onended = () => {
         oscillator.disconnect();
@@ -418,5 +514,6 @@ export const useCallSounds = () => {
     stopAllSounds,
     playConnectedSound,
     playEndedSound,
+    previewRingtone,
   };
 };
