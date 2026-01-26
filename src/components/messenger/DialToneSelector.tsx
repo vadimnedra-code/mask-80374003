@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { PhoneOutgoing, Play, Check } from 'lucide-react';
+import { PhoneOutgoing, Play, Check, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
 export type DialToneType = 'standard' | 'soft' | 'double' | 'melody' | 'minimal';
 
@@ -19,6 +20,7 @@ export const DIAL_TONE_OPTIONS: DialToneOption[] = [
 ];
 
 const STORAGE_KEY = 'call_dial_tone';
+const VOLUME_STORAGE_KEY = 'call_dial_tone_volume';
 
 export const getDialToneType = (): DialToneType => {
   if (typeof window === 'undefined') return 'standard';
@@ -29,21 +31,43 @@ export const setDialToneType = (type: DialToneType) => {
   localStorage.setItem(STORAGE_KEY, type);
 };
 
+export const getDialToneVolume = (): number => {
+  if (typeof window === 'undefined') return 0.5;
+  const stored = localStorage.getItem(VOLUME_STORAGE_KEY);
+  return stored ? parseFloat(stored) : 0.5;
+};
+
+export const setDialToneVolume = (volume: number) => {
+  localStorage.setItem(VOLUME_STORAGE_KEY, volume.toString());
+};
+
 interface DialToneSelectorProps {
   onPreview?: (type: DialToneType) => void;
 }
 
 export const DialToneSelector = ({ onPreview }: DialToneSelectorProps) => {
   const [selectedDialTone, setSelectedDialTone] = useState<DialToneType>('standard');
+  const [volume, setVolume] = useState(0.5);
 
   useEffect(() => {
     setSelectedDialTone(getDialToneType());
+    setVolume(getDialToneVolume());
   }, []);
 
   const handleSelect = (type: DialToneType) => {
     setSelectedDialTone(type);
     setDialToneType(type);
     onPreview?.(type);
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+    setDialToneVolume(newVolume);
+  };
+
+  const handleVolumeCommit = () => {
+    onPreview?.(selectedDialTone);
   };
 
   return (
@@ -58,6 +82,23 @@ export const DialToneSelector = ({ onPreview }: DialToneSelectorProps) => {
             Звук при ожидании ответа на звонок
           </p>
         </div>
+      </div>
+
+      {/* Volume Slider */}
+      <div className="flex items-center gap-3 py-2 px-1">
+        <Volume2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Slider
+          value={[volume]}
+          min={0}
+          max={1}
+          step={0.05}
+          onValueChange={handleVolumeChange}
+          onValueCommit={handleVolumeCommit}
+          className="flex-1"
+        />
+        <span className="text-xs text-muted-foreground w-8 text-right">
+          {Math.round(volume * 100)}%
+        </span>
       </div>
       
       <div className="grid grid-cols-1 gap-2 mt-3">

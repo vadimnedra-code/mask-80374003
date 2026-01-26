@@ -15,6 +15,20 @@ const getDialToneType = (): DialToneType => {
   return (localStorage.getItem('call_dial_tone') as DialToneType) || 'standard';
 };
 
+// Get saved ringtone volume (0-1)
+const getRingtoneVolume = (): number => {
+  if (typeof window === 'undefined') return 0.7;
+  const stored = localStorage.getItem('call_ringtone_volume');
+  return stored ? parseFloat(stored) : 0.7;
+};
+
+// Get saved dial tone volume (0-1)
+const getDialToneVolume = (): number => {
+  if (typeof window === 'undefined') return 0.5;
+  const stored = localStorage.getItem('call_dial_tone_volume');
+  return stored ? parseFloat(stored) : 0.5;
+};
+
 // Singleton AudioContext to avoid multiple instances
 let sharedAudioContext: AudioContext | null = null;
 let audioContextUnlocked = false;
@@ -218,7 +232,7 @@ export const useCallSounds = () => {
     };
   }, []);
 
-  // Generate ringtone based on type
+  // Generate ringtone based on type with custom volume
   const playRingtoneByType = useCallback((type: RingtoneType) => {
     try {
       const ctx = getSharedAudioContext();
@@ -231,6 +245,7 @@ export const useCallSounds = () => {
       }
 
       const config = RINGTONE_CONFIGS[type];
+      const userVolume = getRingtoneVolume();
       const now = ctx.currentTime;
       
       switch (config.pattern) {
@@ -238,7 +253,7 @@ export const useCallSounds = () => {
           // Classic phone ring: two frequencies alternating
           config.frequencies.forEach((freq, i) => {
             const start = now + i * (config.duration + config.gap);
-            playNote(ctx, freq, start, config.duration, config.volume, 0.01);
+            playNote(ctx, freq, start, config.duration, config.volume * userVolume, 0.01);
           });
           break;
           
@@ -246,7 +261,7 @@ export const useCallSounds = () => {
           // Musical chime: notes played in sequence
           config.frequencies.forEach((freq, i) => {
             const start = now + i * config.gap;
-            playNote(ctx, freq, start, config.duration, config.volume * (1 - i * 0.15), 0.03);
+            playNote(ctx, freq, start, config.duration, config.volume * userVolume * (1 - i * 0.15), 0.03);
           });
           break;
           
@@ -254,7 +269,7 @@ export const useCallSounds = () => {
           // Soft overlapping notes
           config.frequencies.forEach((freq, i) => {
             const start = now + i * config.gap;
-            playNote(ctx, freq, start, config.duration, config.volume, 0.05, 2);
+            playNote(ctx, freq, start, config.duration, config.volume * userVolume, 0.05, 2);
           });
           break;
           
@@ -262,13 +277,13 @@ export const useCallSounds = () => {
           // Quick ascending arpeggio
           config.frequencies.forEach((freq, i) => {
             const start = now + i * config.gap;
-            playNote(ctx, freq, start, config.duration, config.volume, 0.01, 4);
+            playNote(ctx, freq, start, config.duration, config.volume * userVolume, 0.01, 4);
           });
           break;
           
         case 'single':
           // Simple single beep
-          playNote(ctx, config.frequencies[0], now, config.duration, config.volume, 0.02, 5);
+          playNote(ctx, config.frequencies[0], now, config.duration, config.volume * userVolume, 0.02, 5);
           break;
       }
       
@@ -279,7 +294,7 @@ export const useCallSounds = () => {
     }
   }, [playNote]);
 
-  // Generate HTML5 Audio fallback for ringtone
+  // Generate HTML5 Audio fallback for ringtone with volume
   const playRingtoneHTML5 = useCallback((type: RingtoneType) => {
     try {
       console.log('[CallSounds] Using HTML5 Audio fallback for:', type);
@@ -291,6 +306,7 @@ export const useCallSounds = () => {
       
       const audio = fallbackAudioRef.current;
       const config = RINGTONE_CONFIGS[type];
+      const userVolume = getRingtoneVolume();
       
       const sampleRate = 44100;
       const duration = 0.7;
@@ -336,7 +352,7 @@ export const useCallSounds = () => {
         const tone2 = t > config.gap ? Math.sin(2 * Math.PI * freq2 * (t - config.gap)) : 0;
         const env2 = t > config.gap ? Math.exp(-(t - config.gap - 0.03) * 3) : 0;
         
-        const sample = (tone1 * envelope + tone2 * env2 * 0.8) * config.volume;
+        const sample = (tone1 * envelope + tone2 * env2 * 0.8) * config.volume * userVolume;
         view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
       }
       
@@ -344,7 +360,7 @@ export const useCallSounds = () => {
       const url = URL.createObjectURL(blob);
       
       audio.src = url;
-      audio.volume = 0.6;
+      audio.volume = Math.min(1, userVolume);
       
       const playPromise = audio.play();
       if (playPromise) {
@@ -384,7 +400,7 @@ export const useCallSounds = () => {
     }
   }, [playRingtoneByType, playRingtoneHTML5, cleanupOscillators]);
 
-  // Play dial tone based on type
+  // Play dial tone based on type with custom volume
   const playDialToneByType = useCallback((type: DialToneType) => {
     try {
       const ctx = getSharedAudioContext();
@@ -397,21 +413,22 @@ export const useCallSounds = () => {
       }
 
       const config = DIAL_TONE_CONFIGS[type];
+      const userVolume = getDialToneVolume();
       const now = ctx.currentTime;
 
       switch (config.pattern) {
         case 'single': {
           const freq = (config as any).frequency || 425;
           const dur = config.duration || 0.5;
-          playNote(ctx, freq, now, dur, config.volume, 0.02, 3);
+          playNote(ctx, freq, now, dur, config.volume * userVolume, 0.02, 3);
           break;
         }
         case 'double': {
           const freq = (config as any).frequency || 440;
           const dur = config.duration || 0.2;
           const gap = (config as any).gap || 0.1;
-          playNote(ctx, freq, now, dur, config.volume, 0.02, 4);
-          playNote(ctx, freq, now + dur + gap, dur, config.volume, 0.02, 4);
+          playNote(ctx, freq, now, dur, config.volume * userVolume, 0.02, 4);
+          playNote(ctx, freq, now + dur + gap, dur, config.volume * userVolume, 0.02, 4);
           break;
         }
         case 'arpeggio': {
@@ -420,7 +437,7 @@ export const useCallSounds = () => {
           const gap = (config as any).gap || 0.05;
           freqs.forEach((freq: number, i: number) => {
             const start = now + i * (dur + gap);
-            playNote(ctx, freq, start, dur, config.volume * (1 - i * 0.1), 0.02, 4);
+            playNote(ctx, freq, start, dur, config.volume * userVolume * (1 - i * 0.1), 0.02, 4);
           });
           break;
         }
