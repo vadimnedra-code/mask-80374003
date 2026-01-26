@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNotificationSound, NOTIFICATION_SOUNDS, NotificationSoundType } from '@/hooks/useNotificationSound';
 import { RingtoneSelector, RingtoneType } from './RingtoneSelector';
+import { DialToneSelector, DialToneType } from './DialToneSelector';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +14,7 @@ interface NotificationSettingsPanelProps {
 
 export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanelProps) => {
   const { isEnabled, setEnabled, playMessageSound, getSoundType, setSoundType } = useNotificationSound();
-  const { previewRingtone } = useCallSounds();
+  const { previewRingtone, previewDialTone } = useCallSounds();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>('default');
@@ -51,6 +52,10 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
 
   const handleRingtonePreview = (type: RingtoneType) => {
     previewRingtone(type);
+  };
+
+  const handleDialTonePreview = (type: DialToneType) => {
+    previewDialTone(type);
   };
 
   return (
@@ -149,6 +154,9 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
 
           {/* Ringtone Selector */}
           <RingtoneSelector onPreview={handleRingtonePreview} />
+
+          {/* Dial Tone Selector */}
+          <DialToneSelector onPreview={handleDialTonePreview} />
 
           {/* Vibration */}
           <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">

@@ -1,11 +1,18 @@
 import { useRef, useCallback, useEffect } from 'react';
 
 export type RingtoneType = 'classic' | 'chime' | 'gentle' | 'modern' | 'minimal';
+export type DialToneType = 'standard' | 'soft' | 'double' | 'melody' | 'minimal';
 
 // Get saved ringtone preference
 const getRingtoneType = (): RingtoneType => {
   if (typeof window === 'undefined') return 'chime';
   return (localStorage.getItem('call_ringtone') as RingtoneType) || 'chime';
+};
+
+// Get saved dial tone preference
+const getDialToneType = (): DialToneType => {
+  if (typeof window === 'undefined') return 'standard';
+  return (localStorage.getItem('call_dial_tone') as DialToneType) || 'standard';
 };
 
 // Singleton AudioContext to avoid multiple instances
@@ -61,6 +68,42 @@ if (typeof document !== 'undefined') {
   });
 }
 
+// Dial tone configurations
+const DIAL_TONE_CONFIGS = {
+  standard: {
+    frequency: 425,
+    duration: 0.5,
+    volume: 0.12,
+    pattern: 'single',
+  },
+  soft: {
+    frequency: 350,
+    duration: 0.6,
+    volume: 0.08,
+    pattern: 'single',
+  },
+  double: {
+    frequency: 440,
+    duration: 0.2,
+    gap: 0.1,
+    volume: 0.1,
+    pattern: 'double',
+  },
+  melody: {
+    frequencies: [392, 440, 494],
+    duration: 0.25,
+    gap: 0.05,
+    volume: 0.1,
+    pattern: 'arpeggio',
+  },
+  minimal: {
+    frequency: 480,
+    duration: 0.3,
+    volume: 0.06,
+    pattern: 'single',
+  },
+};
+
 // Ringtone configurations for different styles
 const RINGTONE_CONFIGS = {
   classic: {
@@ -80,7 +123,7 @@ const RINGTONE_CONFIGS = {
     volume: 0.1,
   },
   gentle: {
-    // Soft, calming tone (G4 and B4)
+    // Soft overlapping notes (G4 and B4)
     frequencies: [392, 493.88],
     pattern: 'gentle',
     duration: 0.6,
@@ -341,49 +384,67 @@ export const useCallSounds = () => {
     }
   }, [playRingtoneByType, playRingtoneHTML5, cleanupOscillators]);
 
-  // Clean, soft dial tone
-  const playDialTone = useCallback(() => {
+  // Play dial tone based on type
+  const playDialToneByType = useCallback((type: DialToneType) => {
     try {
       const ctx = getSharedAudioContext();
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
 
+      if (ctx.state !== 'running') {
+        return false;
+      }
+
+      const config = DIAL_TONE_CONFIGS[type];
       const now = ctx.currentTime;
-      const duration = 0.5;
-      
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      // Clean 425Hz tone (standard dial tone frequency)
-      oscillator.frequency.setValueAtTime(425, now);
-      oscillator.type = 'sine';
-      
-      // Smooth envelope to avoid clicks
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(0.12, now + 0.02);
-      gainNode.gain.setValueAtTime(0.12, now + duration - 0.05);
-      gainNode.gain.linearRampToValueAtTime(0, now + duration);
-      
-      activeOscillatorsRef.current.push(oscillator);
-      activeGainsRef.current.push(gainNode);
-      
-      oscillator.start(now);
-      oscillator.stop(now + duration);
-      
-      oscillator.onended = () => {
-        const idx = activeOscillatorsRef.current.indexOf(oscillator);
-        if (idx > -1) activeOscillatorsRef.current.splice(idx, 1);
-        oscillator.disconnect();
-        gainNode.disconnect();
-      };
+
+      switch (config.pattern) {
+        case 'single': {
+          const freq = (config as any).frequency || 425;
+          const dur = config.duration || 0.5;
+          playNote(ctx, freq, now, dur, config.volume, 0.02, 3);
+          break;
+        }
+        case 'double': {
+          const freq = (config as any).frequency || 440;
+          const dur = config.duration || 0.2;
+          const gap = (config as any).gap || 0.1;
+          playNote(ctx, freq, now, dur, config.volume, 0.02, 4);
+          playNote(ctx, freq, now + dur + gap, dur, config.volume, 0.02, 4);
+          break;
+        }
+        case 'arpeggio': {
+          const freqs = (config as any).frequencies || [392, 440, 494];
+          const dur = config.duration || 0.25;
+          const gap = (config as any).gap || 0.05;
+          freqs.forEach((freq: number, i: number) => {
+            const start = now + i * (dur + gap);
+            playNote(ctx, freq, start, dur, config.volume * (1 - i * 0.1), 0.02, 4);
+          });
+          break;
+        }
+      }
+
+      return true;
     } catch (e) {
       console.error('Error playing dial tone:', e);
+      return false;
     }
-  }, []);
+  }, [playNote]);
+
+  // Clean, soft dial tone (main function)
+  const playDialTone = useCallback(() => {
+    const type = getDialToneType();
+    playDialToneByType(type);
+  }, [playDialToneByType]);
+
+  // Preview a specific dial tone type
+  const previewDialTone = useCallback((type: DialToneType) => {
+    console.log('[CallSounds] Previewing dial tone:', type);
+    cleanupOscillators();
+    playDialToneByType(type);
+  }, [playDialToneByType, cleanupOscillators]);
 
   const startDialingSound = useCallback(() => {
     console.log('[CallSounds] Starting dialing sound');
@@ -515,5 +576,6 @@ export const useCallSounds = () => {
     playConnectedSound,
     playEndedSound,
     previewRingtone,
+    previewDialTone,
   };
 };
