@@ -108,11 +108,9 @@ serve(async (req) => {
       );
     }
 
-    // Send email via Resend
-    // IMPORTANT: Use your verified domain in production
-    // For testing, Resend allows sending to your own email from onboarding@resend.dev
+    // Send email via Resend with verified mask.app domain
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "MASK Relay <onboarding@resend.dev>", // Replace with your verified domain
+      from: "MASK Relay <relay@mask.app>",
       to: [to],
       subject: subject || "Message via MASK",
       html: `
