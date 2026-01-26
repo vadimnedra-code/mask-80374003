@@ -328,10 +328,9 @@ export const SendDialog = ({
           {/* Attachments section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2">
-                <Paperclip className="w-4 h-4" />
-                Вложения {totalAttachments > 0 && `(${totalAttachments})`}
-              </Label>
+              <span className="text-sm text-muted-foreground">
+                {totalAttachments > 0 && `Прикреплено: ${totalAttachments}`}
+              </span>
               
               {/* Hidden file input */}
               <input
