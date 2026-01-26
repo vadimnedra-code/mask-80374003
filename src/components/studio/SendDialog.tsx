@@ -59,6 +59,7 @@ export const SendDialog = ({
   const [availableArtifacts, setAvailableArtifacts] = useState<StudioArtifact[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [showFilePicker, setShowFilePicker] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Fetch available files and artifacts
   const fetchAssets = useCallback(async () => {
@@ -159,6 +160,45 @@ export const SendDialog = ({
     fileInputRef.current?.click();
   };
 
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name}: файл слишком большой (максимум 10MB)`);
+        continue;
+      }
+
+      try {
+        const uploadedFile = await uploadFile(file);
+        if (uploadedFile) {
+          setFilesToSend(prev => [...prev, uploadedFile]);
+          toast.success(`${file.name} загружен`);
+        }
+      } catch (error: any) {
+        toast.error(`Ошибка загрузки ${file.name}: ${error.message}`);
+      }
+    }
+  };
+
   const handleSend = async () => {
     if (!recipient.trim()) {
       toast.error('Укажите получателя');
@@ -230,7 +270,21 @@ export const SendDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded-lg pointer-events-none">
+            <div className="text-center">
+              <Upload className="w-10 h-10 mx-auto mb-2 text-primary" />
+              <p className="text-sm font-medium text-primary">Отпустите для загрузки</p>
+            </div>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
