@@ -6,3 +6,4 @@ export { FileUploadZone } from './FileUploadZone';
 export { ArtifactCard } from './ArtifactCard';
 export { SendDialog } from './SendDialog';
 export { StudioSettingsDialog } from './StudioSettingsDialog';
+export { ImageGenerationDialog } from './ImageGenerationDialog';

@@ -11,6 +11,7 @@ import { FileUploadZone } from './FileUploadZone';
 import { ArtifactCard } from './ArtifactCard';
 import { SendDialog } from './SendDialog';
 import { StudioSettingsDialog } from './StudioSettingsDialog';
+import { ImageGenerationDialog } from './ImageGenerationDialog';
 
 import { useAIChat, type AIMessage } from '@/hooks/useAIChat';
 import { useAISettings } from '@/hooks/useAISettings';
@@ -29,6 +30,8 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
   const [inputValue, setInputValue] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
   const [selectedArtifact, setSelectedArtifact] = useState<StudioArtifact | null>(null);
   const [sendChannel, setSendChannel] = useState<'email' | 'sms' | 'voice'>('email');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -107,6 +110,13 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
       return;
     }
 
+    // Handle image generation
+    if (action === 'generate_image') {
+      setImagePrompt('');
+      setShowImageDialog(true);
+      return;
+    }
+
     // Handle AI actions
     const actionPrompts: Record<string, string> = {
       convert: 'Конвертируй загруженный документ в другой формат',
@@ -114,7 +124,6 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
       extract_tasks: 'Извлеки задачи и пункты действий',
       extract_table: 'Извлеки данные в табличном формате',
       generate_presentation: 'Создай структуру презентации на основе контента',
-      generate_image: 'Сгенерируй изображение по описанию',
     };
 
     const prompt = actionPrompts[action];
@@ -295,6 +304,16 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
         channel={sendChannel}
         artifact={selectedArtifact}
         onChannelChange={setSendChannel}
+      />
+
+      {/* Image Generation Dialog */}
+      <ImageGenerationDialog
+        isOpen={showImageDialog}
+        onClose={() => {
+          setShowImageDialog(false);
+          fetchArtifacts(); // Refresh artifacts after image generation
+        }}
+        initialPrompt={imagePrompt}
       />
     </motion.div>
   );
