@@ -83,7 +83,7 @@ export const useCallSounds = () => {
     activeGainsRef.current = [];
   }, []);
 
-  // Generate melodious ringtone as HTML5 Audio fallback
+  // Generate clean phone ringtone as HTML5 Audio fallback
   const playRingtoneHTML5 = useCallback(() => {
     try {
       console.log('[CallSounds] Trying HTML5 Audio fallback');
@@ -95,9 +95,9 @@ export const useCallSounds = () => {
       
       const audio = fallbackAudioRef.current;
       
-      // Generate a pleasant melodious ringtone WAV
+      // Generate a clean phone ring WAV (two-tone: 440Hz + 480Hz)
       const sampleRate = 44100;
-      const duration = 1.2;
+      const duration = 0.8;
       const samples = Math.floor(sampleRate * duration);
       
       const buffer = new ArrayBuffer(44 + samples * 2);
@@ -123,45 +123,26 @@ export const useCallSounds = () => {
       writeString(36, 'data');
       view.setUint32(40, samples * 2, true);
       
-      // Generate pleasant chord-based ringtone (C major arpeggio style)
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      // Classic phone ring frequencies
+      const freq1 = 440;
+      const freq2 = 480;
       
       for (let i = 0; i < samples; i++) {
         const t = i / sampleRate;
         
-        // Smooth envelope with fade in/out
-        let envelope = 0;
-        if (t < 0.05) {
-          envelope = t / 0.05; // Fade in
-        } else if (t < 0.3) {
-          envelope = 1;
-        } else if (t < 0.35) {
-          envelope = 1 - (t - 0.3) / 0.05; // Fade out first note
-        } else if (t < 0.4) {
-          envelope = (t - 0.35) / 0.05; // Fade in second
-        } else if (t < 0.65) {
-          envelope = 1;
-        } else if (t < 0.7) {
-          envelope = 1 - (t - 0.65) / 0.05;
-        } else if (t < 0.75) {
-          envelope = (t - 0.7) / 0.05;
-        } else if (t < 1.0) {
-          envelope = 1;
-        } else {
-          envelope = Math.max(0, 1 - (t - 1.0) / 0.2);
+        // Smooth envelope - fade in/out to avoid clicks
+        let envelope = 1;
+        if (t < 0.02) {
+          envelope = t / 0.02; // Quick fade in
+        } else if (t > duration - 0.05) {
+          envelope = (duration - t) / 0.05; // Fade out
         }
         
-        // Select note based on time
-        let freq = notes[0];
-        if (t >= 0.35 && t < 0.7) freq = notes[1];
-        else if (t >= 0.7) freq = notes[2];
+        // Mix two tones for classic phone ring
+        const tone1 = Math.sin(2 * Math.PI * freq1 * t);
+        const tone2 = Math.sin(2 * Math.PI * freq2 * t);
         
-        // Add subtle harmonics for richness
-        const fundamental = Math.sin(2 * Math.PI * freq * t);
-        const harmonic2 = Math.sin(2 * Math.PI * freq * 2 * t) * 0.3;
-        const harmonic3 = Math.sin(2 * Math.PI * freq * 3 * t) * 0.1;
-        
-        const sample = (fundamental + harmonic2 + harmonic3) * envelope * 0.25;
+        const sample = (tone1 + tone2) * 0.5 * envelope * 0.3;
         view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
       }
       
@@ -225,7 +206,7 @@ export const useCallSounds = () => {
     }
   }, []);
 
-  // Play melodious ringtone with Web Audio API
+  // Play clean phone ringtone with Web Audio API
   const playRingtone = useCallback(() => {
     try {
       console.log('[CallSounds] Playing ringtone with WebAudio');
@@ -241,41 +222,33 @@ export const useCallSounds = () => {
         return;
       }
 
-      // Pleasant ascending arpeggio (C major chord tones)
-      const notes = [
-        { freq: 523.25, start: 0, duration: 0.25 },    // C5
-        { freq: 659.25, start: 0.3, duration: 0.25 },  // E5
-        { freq: 783.99, start: 0.6, duration: 0.35 },  // G5
-      ];
-      
       const now = ctx.currentTime;
       
-      notes.forEach(note => {
-        if (!isPlayingRef.current) return; // Check again before each note
-        
+      // Classic phone ring: two-tone burst (440Hz + 480Hz) like traditional phones
+      const frequencies = [440, 480]; // Standard ring tone frequencies
+      const ringDuration = 0.8; // Ring duration
+      
+      frequencies.forEach(freq => {
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
         
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
         
-        oscillator.frequency.setValueAtTime(note.freq, now + note.start);
+        oscillator.frequency.setValueAtTime(freq, now);
         oscillator.type = 'sine';
         
-        // Smooth envelope for pleasant sound
-        const attackTime = 0.02;
-        const releaseTime = 0.1;
-        
-        gainNode.gain.setValueAtTime(0, now + note.start);
-        gainNode.gain.linearRampToValueAtTime(0.5, now + note.start + attackTime);
-        gainNode.gain.setValueAtTime(0.5, now + note.start + note.duration - releaseTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, now + note.start + note.duration);
+        // Smooth envelope - fade in/out to avoid clicks
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.15, now + 0.02); // Quick fade in
+        gainNode.gain.setValueAtTime(0.15, now + ringDuration - 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, now + ringDuration); // Fade out
         
         activeOscillatorsRef.current.push(oscillator);
         activeGainsRef.current.push(gainNode);
         
-        oscillator.start(now + note.start);
-        oscillator.stop(now + note.start + note.duration);
+        oscillator.start(now);
+        oscillator.stop(now + ringDuration);
         
         oscillator.onended = () => {
           const idx = activeOscillatorsRef.current.indexOf(oscillator);
