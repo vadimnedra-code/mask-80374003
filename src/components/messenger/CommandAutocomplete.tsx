@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Sparkles, Languages, FileText, ListTodo, MessageSquare, Bot } from 'lucide-react';
+import { Sparkles, Languages, FileText, ListTodo, MessageSquare, Bot, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -8,7 +8,7 @@ export interface ChatCommand {
   label: string;
   description: string;
   icon: React.ReactNode;
-  action: 'ai' | 'translate' | 'summarise' | 'tasks' | 'draft';
+  action: 'ai' | 'translate' | 'summarise' | 'tasks' | 'draft' | 'email';
 }
 
 const COMMANDS: ChatCommand[] = [
@@ -46,6 +46,13 @@ const COMMANDS: ChatCommand[] = [
     description: 'Сгенерировать ответ',
     icon: <MessageSquare className="w-4 h-4" />,
     action: 'draft',
+  },
+  {
+    command: '/email',
+    label: 'Email',
+    description: 'Анонимно отправить email через MASK Relay',
+    icon: <Mail className="w-4 h-4" />,
+    action: 'email',
   },
 ];
 
