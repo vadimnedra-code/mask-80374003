@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-r
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { MaskProvider } from "@/hooks/useMask";
 import { WallpaperProvider } from "@/providers/WallpaperProvider";
+import { EnergySavingProvider } from "@/hooks/useEnergySaving";
 import Auth from "./pages/Auth";
 import Messenger from "./pages/Messenger";
 import Admin from "./pages/Admin";
@@ -133,10 +134,12 @@ function App() {
         <AuthProvider>
           <MaskProvider>
             <WallpaperProvider>
-              <TooltipProvider>
-                <Toaster />
-                <AppRoutes />
-              </TooltipProvider>
+              <EnergySavingProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <AppRoutes />
+                </TooltipProvider>
+              </EnergySavingProvider>
             </WallpaperProvider>
           </MaskProvider>
         </AuthProvider>
