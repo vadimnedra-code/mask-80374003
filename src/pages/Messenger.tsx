@@ -60,8 +60,8 @@ const Messenger = () => {
     keepActive,
     wakeLockActive 
   } = useAppLifecycle({
-    minActiveTime: 10 * 60 * 1000, // 10 minutes minimum
-    idleWarningTime: 9 * 60 * 1000, // Show warning after 9 min idle
+    minActiveTime: 5 * 60 * 1000, // 5 minutes minimum
+    idleWarningTime: 4 * 60 * 1000, // Show warning after 4 min idle
     idleCloseTime: 60 * 1000, // Close 1 min after warning
     keepScreenOn: true,
     onIdleWarning: () => {
