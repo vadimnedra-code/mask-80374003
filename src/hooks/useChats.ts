@@ -183,9 +183,10 @@ export const useChats = () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
+      // Increased debounce time to reduce battery drain from frequent refetches
       debounceRef.current = setTimeout(() => {
         fetchChats();
-      }, 300);
+      }, 500);
     };
 
     const channel = supabase
@@ -232,18 +233,28 @@ export const useChats = () => {
           schema: 'public',
           table: 'chats',
         },
-        () => {
-          debouncedFetch();
+        (payload) => {
+          // Only refetch if this is a chat the user participates in
+          const chatId = (payload.new as { id?: string })?.id || (payload.old as { id?: string })?.id;
+          if (chatId && chatIdsRef.current.includes(chatId)) {
+            debouncedFetch();
+          }
         }
       )
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages',
         },
-        () => debouncedFetch()
+        (payload) => {
+          // Only refetch if message is in user's chats
+          const chatId = (payload.new as { chat_id?: string })?.chat_id;
+          if (chatId && chatIdsRef.current.includes(chatId)) {
+            debouncedFetch();
+          }
+        }
       )
       .subscribe();
 

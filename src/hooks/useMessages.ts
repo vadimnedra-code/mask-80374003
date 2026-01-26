@@ -48,7 +48,10 @@ export const useMessages = (chatId: string | null) => {
   useEffect(() => {
     initialLoadRef.current = true;
     fetchMessages().then(() => {
-      initialLoadRef.current = false;
+      // Delay setting initialLoad to false to avoid sound on rapid message load
+      setTimeout(() => {
+        initialLoadRef.current = false;
+      }, 500);
     });
 
     if (!chatId) return;

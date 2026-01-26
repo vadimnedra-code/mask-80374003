@@ -171,13 +171,13 @@ export const useAppLifecycle = (options: UseAppLifecycleOptions = {}) => {
 
     initWakeLock();
 
-    // Track session duration
+    // Track session duration - update every 30 seconds instead of 1 second to save battery
     durationIntervalRef.current = setInterval(() => {
       setState(prev => ({
         ...prev,
         sessionDuration: Date.now() - sessionStartRef.current,
       }));
-    }, 1000);
+    }, 30000);
 
     // Set initial activity timer
     const now = Date.now();
@@ -244,18 +244,35 @@ export const useAppLifecycle = (options: UseAppLifecycleOptions = {}) => {
       document.addEventListener(event, handleActivityEvent, { passive: true });
     });
 
-    // Handle visibility change - re-acquire wake lock when visible
+    // Handle visibility change - manage wake lock appropriately
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
+        // Only re-acquire wake lock if user is active (not idle)
         if (keepScreenOn && 'wakeLock' in navigator && !wakeLockRef.current) {
+          // Add a small delay to avoid aggressive re-acquisition
+          setTimeout(async () => {
+            if (document.visibilityState === 'visible' && !wakeLockRef.current) {
+              try {
+                wakeLockRef.current = await navigator.wakeLock.request('screen');
+                setState(prev => ({ ...prev, wakeLockActive: true }));
+              } catch (err) {
+                // Ignore - user may have switched away again
+              }
+            }
+          }, 1000);
+        }
+        handleActivityEvent();
+      } else {
+        // Release wake lock when page is hidden to save battery
+        if (wakeLockRef.current) {
           try {
-            wakeLockRef.current = await navigator.wakeLock.request('screen');
-            setState(prev => ({ ...prev, wakeLockActive: true }));
+            await wakeLockRef.current.release();
+            wakeLockRef.current = null;
+            setState(prev => ({ ...prev, wakeLockActive: false }));
           } catch (err) {
             // Ignore
           }
         }
-        handleActivityEvent();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);

@@ -60,9 +60,10 @@ export const useChatsTypingStatus = (chatIds: string[]) => {
 
     if (!user || chatIds.length === 0) return;
 
-    // Subscribe to typing status changes for all chats
+    // Create a more targeted subscription - only subscribe if there are chats
+    // Use a single channel but filter events client-side for efficiency
     const channel = supabase
-      .channel('all-chats-typing')
+      .channel(`typing-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -129,7 +130,7 @@ export const useChatsTypingStatus = (chatIds: string[]) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, chatIds.join(','), fetchTypingStatuses]);
+  }, [user?.id, chatIds.join(','), fetchTypingStatuses]);
 
   const getTypingText = useCallback((chatId: string): string | null => {
     const typingUsers = typingByChatId[chatId];
