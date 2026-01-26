@@ -54,7 +54,10 @@ export const useStudioFiles = () => {
     setUploading(true);
     
     try {
-      const filename = `${crypto.randomUUID()}-${file.name}`;
+      // Sanitize filename - remove non-ASCII characters and special chars
+      const extension = file.name.split('.').pop() || '';
+      const sanitizedName = `file_${Date.now()}.${extension}`;
+      const filename = `${crypto.randomUUID()}-${sanitizedName}`;
       const storagePath = `${user.id}/${filename}`;
 
       // Upload to storage
