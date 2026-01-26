@@ -48,6 +48,7 @@ import { EditNicknameDialog } from './EditNicknameDialog';
 import { MediaItem } from './MediaGalleryLightbox';
 import { AIActionsMenu } from '@/components/ai/AIActionsMenu';
 import { CommandAutocomplete, useCommandAutocomplete, ChatCommand } from './CommandAutocomplete';
+import { SendDialog } from '@/components/studio/SendDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,6 +114,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showNicknameDialog, setShowNicknameDialog] = useState(false);
   const [showAIActions, setShowAIActions] = useState(false);
   const [aiActionType, setAiActionType] = useState<'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
   const prevMessagesLengthRef = useRef(0);
   const isAtBottomRef = useRef(true);
   
@@ -440,6 +442,9 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
       case 'draft':
         setAiActionType('draft_reply');
         setShowAIActions(true);
+        break;
+      case 'email':
+        setShowEmailDialog(true);
         break;
     }
   }, [onOpenAIChat, setSelectedIndex]);
@@ -877,6 +882,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
         }
         onInsertDraft={(text) => setMessageText(text)}
         initialAction={aiActionType}
+      />
+
+      {/* Email Relay Dialog */}
+      <SendDialog
+        isOpen={showEmailDialog}
+        onClose={() => setShowEmailDialog(false)}
+        artifact={null}
       />
 
       {/* Messages container */}
