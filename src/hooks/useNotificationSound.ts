@@ -3,6 +3,7 @@ import { useCallback, useRef, useEffect } from 'react';
 // Shared AudioContext singleton
 let sharedAudioContext: AudioContext | null = null;
 let audioContextUnlocked = false;
+let unlockListenersAdded = false;
 
 const getAudioContext = (): AudioContext => {
   if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
@@ -35,21 +36,6 @@ const unlockAudioContext = async () => {
   }
 };
 
-// Setup unlock listeners once
-if (typeof window !== 'undefined') {
-  const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
-  const handleUnlock = () => {
-    unlockAudioContext();
-    // Remove listeners after first interaction
-    unlockEvents.forEach(event => {
-      document.removeEventListener(event, handleUnlock, true);
-    });
-  };
-  unlockEvents.forEach(event => {
-    document.addEventListener(event, handleUnlock, true);
-  });
-}
-
 export type NotificationSoundType = 'default' | 'soft' | 'chime' | 'bell' | 'pop';
 
 export const NOTIFICATION_SOUNDS: { id: NotificationSoundType; name: string }[] = [
@@ -60,14 +46,37 @@ export const NOTIFICATION_SOUNDS: { id: NotificationSoundType; name: string }[] 
   { id: 'pop', name: 'Поп' },
 ];
 
-// Pre-generated base64 notification sound (short beep) for mobile fallback
-const FALLBACK_SOUND_DATA = 'data:audio/wav;base64,UklGRl9vT19LTgAAV0FWRWZtdCAQAAAAAQABAHAAAADIAAAAAgAQAGRhdGE7';
-
 export const useNotificationSound = () => {
   const lastPlayedRef = useRef<number>(0);
   const enabledRef = useRef<boolean>(true);
   const soundTypeRef = useRef<NotificationSoundType>('default');
   const fallbackAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Setup unlock listeners once on mount
+  useEffect(() => {
+    if (unlockListenersAdded) return;
+    unlockListenersAdded = true;
+
+    const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
+    
+    const handleUnlock = () => {
+      unlockAudioContext();
+      // Remove listeners after first interaction
+      unlockEvents.forEach(event => {
+        document.removeEventListener(event, handleUnlock, true);
+      });
+    };
+    
+    unlockEvents.forEach(event => {
+      document.addEventListener(event, handleUnlock, { capture: true, passive: true });
+    });
+
+    return () => {
+      unlockEvents.forEach(event => {
+        document.removeEventListener(event, handleUnlock, true);
+      });
+    };
+  }, []);
 
   // Load preferences from localStorage
   useEffect(() => {
