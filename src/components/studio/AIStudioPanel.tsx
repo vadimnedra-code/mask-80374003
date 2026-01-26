@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, Sparkles } from 'lucide-react';
-
+import { Bot, User, Sparkles, Download, Mail, X, ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { StudioHeader } from './StudioHeader';
 import { StudioQuickActions } from './StudioQuickActions';
 import { StudioChatInput } from './StudioChatInput';
@@ -34,6 +34,8 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
   const [imagePrompt, setImagePrompt] = useState('');
   const [selectedArtifact, setSelectedArtifact] = useState<StudioArtifact | null>(null);
   const [sendChannel, setSendChannel] = useState<'email' | 'sms' | 'voice'>('email');
+  const [generatedImages, setGeneratedImages] = useState<Array<{id: string; url: string; prompt: string}>>([]);
+  const [pendingEmailImage, setPendingEmailImage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -75,7 +77,17 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, generatedImages]);
+
+  const handleImageGenerated = useCallback((imageUrl: string, prompt: string) => {
+    setGeneratedImages(prev => [...prev, { id: Date.now().toString(), url: imageUrl, prompt }]);
+  }, []);
+
+  const handleSendImageEmail = useCallback((imageUrl: string) => {
+    setPendingEmailImage(imageUrl);
+    setSendChannel('email');
+    setShowSendDialog(true);
+  }, []);
 
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -213,6 +225,17 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
                 <MessageBubble key={message.id} message={message} />
               ))}
 
+              {/* Generated images inline */}
+              {generatedImages.map((img) => (
+                <GeneratedImageCard 
+                  key={img.id}
+                  imageUrl={img.url}
+                  prompt={img.prompt}
+                  onSendEmail={() => handleSendImageEmail(img.url)}
+                  onRemove={() => setGeneratedImages(prev => prev.filter(i => i.id !== img.id))}
+                />
+              ))}
+
               {/* Loading indicator */}
               {isLoading && (
                 <div className="flex items-center gap-3 text-muted-foreground">
@@ -311,9 +334,11 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
         isOpen={showImageDialog}
         onClose={() => {
           setShowImageDialog(false);
-          fetchArtifacts(); // Refresh artifacts after image generation
+          fetchArtifacts();
         }}
         initialPrompt={imagePrompt}
+        onImageGenerated={handleImageGenerated}
+        onSendEmail={handleSendImageEmail}
       />
     </motion.div>
   );
@@ -356,6 +381,63 @@ const MessageBubble = ({ message }: { message: AIMessage }) => {
             <ReactMarkdown>{message.content}</ReactMarkdown>
           </div>
         )}
+      </div>
+    </motion.div>
+  );
+};
+
+// Generated image card component
+interface GeneratedImageCardProps {
+  imageUrl: string;
+  prompt: string;
+  onSendEmail: () => void;
+  onRemove: () => void;
+}
+
+const GeneratedImageCard = ({ imageUrl, prompt, onSendEmail, onRemove }: GeneratedImageCardProps) => {
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `mask-generated-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex gap-3"
+    >
+      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <ImageIcon className="w-4 h-4 text-primary" />
+      </div>
+
+      <div className="flex-1 max-w-[80%]">
+        <div className="rounded-2xl overflow-hidden border border-border bg-muted/30">
+          <img 
+            src={imageUrl} 
+            alt={prompt}
+            className="w-full max-h-[300px] object-contain"
+          />
+          <div className="p-3 border-t border-border/50">
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{prompt}</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleDownload}>
+                <Download className="w-3 h-3 mr-1" />
+                Скачать
+              </Button>
+              <Button size="sm" onClick={onSendEmail}>
+                <Mail className="w-3 h-3 mr-1" />
+                Email
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onRemove} className="ml-auto">
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
