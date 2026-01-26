@@ -83,7 +83,7 @@ export const useCallSounds = () => {
     activeGainsRef.current = [];
   }, []);
 
-  // Generate clean phone ringtone as HTML5 Audio fallback
+  // Generate clean, pleasant ringtone as HTML5 Audio fallback
   const playRingtoneHTML5 = useCallback(() => {
     try {
       console.log('[CallSounds] Trying HTML5 Audio fallback');
@@ -95,9 +95,9 @@ export const useCallSounds = () => {
       
       const audio = fallbackAudioRef.current;
       
-      // Generate a clean phone ring WAV (two-tone: 440Hz + 480Hz)
+      // Generate a pleasant chime WAV (C5 and E5 notes)
       const sampleRate = 44100;
-      const duration = 0.8;
+      const duration = 0.7;
       const samples = Math.floor(sampleRate * duration);
       
       const buffer = new ArrayBuffer(44 + samples * 2);
@@ -123,26 +123,28 @@ export const useCallSounds = () => {
       writeString(36, 'data');
       view.setUint32(40, samples * 2, true);
       
-      // Classic phone ring frequencies
-      const freq1 = 440;
-      const freq2 = 480;
+      // Pleasant chime notes (C5 and E5)
+      const freq1 = 523.25;
+      const freq2 = 659.25;
       
       for (let i = 0; i < samples; i++) {
         const t = i / sampleRate;
         
-        // Smooth envelope - fade in/out to avoid clicks
-        let envelope = 1;
-        if (t < 0.02) {
-          envelope = t / 0.02; // Quick fade in
-        } else if (t > duration - 0.05) {
-          envelope = (duration - t) / 0.05; // Fade out
+        // Smooth attack and natural decay envelope
+        let envelope = 0;
+        if (t < 0.05) {
+          envelope = t / 0.05; // Soft attack
+        } else {
+          // Exponential decay
+          envelope = Math.exp(-(t - 0.05) * 4);
         }
         
-        // Mix two tones for classic phone ring
+        // First note starts immediately, second note starts slightly later
         const tone1 = Math.sin(2 * Math.PI * freq1 * t);
-        const tone2 = Math.sin(2 * Math.PI * freq2 * t);
+        const tone2 = t > 0.08 ? Math.sin(2 * Math.PI * freq2 * (t - 0.08)) : 0;
+        const env2 = t > 0.08 ? Math.exp(-(t - 0.13) * 4) : 0;
         
-        const sample = (tone1 + tone2) * 0.5 * envelope * 0.3;
+        const sample = (tone1 * envelope + tone2 * env2 * 0.8) * 0.15;
         view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
       }
       
@@ -150,7 +152,7 @@ export const useCallSounds = () => {
       const url = URL.createObjectURL(blob);
       
       audio.src = url;
-      audio.volume = 0.7;
+      audio.volume = 0.6;
       
       const playPromise = audio.play();
       if (playPromise) {
@@ -169,6 +171,7 @@ export const useCallSounds = () => {
     }
   }, []);
 
+  // Clean, soft dial tone - single pure tone with smooth envelope
   const playDialTone = useCallback(() => {
     try {
       console.log('[CallSounds] Playing dial tone');
@@ -177,23 +180,30 @@ export const useCallSounds = () => {
         ctx.resume();
       }
 
+      const now = ctx.currentTime;
+      const duration = 0.5;
+      
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
       
       oscillator.connect(gainNode);
       gainNode.connect(ctx.destination);
       
-      oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+      // Clean 425Hz tone (standard dial tone frequency)
+      oscillator.frequency.setValueAtTime(425, now);
       oscillator.type = 'sine';
       
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      // Smooth envelope to avoid clicks
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(0.15, now + 0.03); // Soft fade in
+      gainNode.gain.setValueAtTime(0.15, now + duration - 0.1);
+      gainNode.gain.linearRampToValueAtTime(0, now + duration); // Soft fade out
       
       activeOscillatorsRef.current.push(oscillator);
       activeGainsRef.current.push(gainNode);
       
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.4);
+      oscillator.start(now);
+      oscillator.stop(now + duration);
       
       oscillator.onended = () => {
         const idx = activeOscillatorsRef.current.indexOf(oscillator);
@@ -206,7 +216,7 @@ export const useCallSounds = () => {
     }
   }, []);
 
-  // Play clean phone ringtone with Web Audio API
+  // Clean, pleasant ringtone - soft musical tone
   const playRingtone = useCallback(() => {
     try {
       console.log('[CallSounds] Playing ringtone with WebAudio');
@@ -223,12 +233,12 @@ export const useCallSounds = () => {
       }
 
       const now = ctx.currentTime;
+      const ringDuration = 0.6;
       
-      // Classic phone ring: two-tone burst (440Hz + 480Hz) like traditional phones
-      const frequencies = [440, 480]; // Standard ring tone frequencies
-      const ringDuration = 0.8; // Ring duration
+      // Play a pleasant two-note chime (C5 and E5)
+      const notes = [523.25, 659.25]; // C5 and E5 - pleasant interval
       
-      frequencies.forEach(freq => {
+      notes.forEach((freq, index) => {
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
         
@@ -238,17 +248,20 @@ export const useCallSounds = () => {
         oscillator.frequency.setValueAtTime(freq, now);
         oscillator.type = 'sine';
         
-        // Smooth envelope - fade in/out to avoid clicks
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(0.15, now + 0.02); // Quick fade in
-        gainNode.gain.setValueAtTime(0.15, now + ringDuration - 0.05);
-        gainNode.gain.linearRampToValueAtTime(0, now + ringDuration); // Fade out
+        // Stagger the notes slightly for a chime effect
+        const noteStart = now + index * 0.08;
+        const noteEnd = noteStart + ringDuration;
+        
+        // Very smooth envelope for clean sound
+        gainNode.gain.setValueAtTime(0, noteStart);
+        gainNode.gain.linearRampToValueAtTime(0.12, noteStart + 0.05); // Soft attack
+        gainNode.gain.exponentialRampToValueAtTime(0.01, noteEnd); // Natural decay
         
         activeOscillatorsRef.current.push(oscillator);
         activeGainsRef.current.push(gainNode);
         
-        oscillator.start(now);
-        oscillator.stop(now + ringDuration);
+        oscillator.start(noteStart);
+        oscillator.stop(noteEnd + 0.1);
         
         oscillator.onended = () => {
           const idx = activeOscillatorsRef.current.indexOf(oscillator);
