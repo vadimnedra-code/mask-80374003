@@ -46,16 +46,16 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
   }, [call, isVideoCall, onAccept, onReject, showIncomingCallNotification, closeNotification, startRingtoneSound, stopAllSounds]);
 
   const handleAccept = () => {
-    console.log('[IncomingCallDialog] Accept clicked - stopping sounds FIRST');
-    // Stop sounds immediately before anything else
+    console.log('[IncomingCallDialog] Accept clicked - stopping sounds and accepting');
+    // Stop sounds immediately
     stopAllSounds();
-    console.log('[IncomingCallDialog] Sounds stopped, closing notification');
     closeNotification();
-    // Small delay to ensure sounds are fully stopped
+    // Accept call immediately - don't delay!
+    onAccept();
+    // Play connected sound after accepting
     setTimeout(() => {
       playConnectedSound();
-      onAccept();
-    }, 50);
+    }, 100);
   };
 
   const handleReject = () => {
