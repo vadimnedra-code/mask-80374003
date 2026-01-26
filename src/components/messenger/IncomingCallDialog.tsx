@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { IncomingCall } from '@/hooks/useIncomingCalls';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { useCallNotifications } from '@/hooks/useCallNotifications';
+import { useCallVibration } from '@/hooks/useCallVibration';
 
 interface IncomingCallDialogProps {
   call: IncomingCall;
@@ -16,13 +17,15 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
   const isVideoCall = call.call_type === 'video';
   const { startRingtoneSound, stopAllSounds, playConnectedSound } = useCallSounds();
   const { showIncomingCallNotification, closeNotification } = useCallNotifications();
+  const { startCallVibration, stopVibration } = useCallVibration();
   
   console.log('[IncomingCallDialog] Component rendered for call:', call.id);
 
-  // Start ringtone when dialog appears
+  // Start ringtone and vibration when dialog appears
   useEffect(() => {
-    console.log('[IncomingCallDialog] useEffect triggered, starting ringtone');
+    console.log('[IncomingCallDialog] useEffect triggered, starting ringtone and vibration');
     startRingtoneSound();
+    startCallVibration();
     
     // Show notification if page is not focused
     if (document.hidden) {
@@ -39,16 +42,18 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
     }
 
     return () => {
-      console.log('[IncomingCallDialog] Cleanup - stopping sounds');
+      console.log('[IncomingCallDialog] Cleanup - stopping sounds and vibration');
       stopAllSounds();
+      stopVibration();
       closeNotification();
     };
-  }, [call, isVideoCall, onAccept, onReject, showIncomingCallNotification, closeNotification, startRingtoneSound, stopAllSounds]);
+  }, [call, isVideoCall, onAccept, onReject, showIncomingCallNotification, closeNotification, startRingtoneSound, stopAllSounds, startCallVibration, stopVibration]);
 
   const handleAccept = () => {
-    console.log('[IncomingCallDialog] Accept clicked - stopping sounds and accepting');
-    // Stop sounds immediately
+    console.log('[IncomingCallDialog] Accept clicked - stopping sounds/vibration and accepting');
+    // Stop sounds and vibration immediately
     stopAllSounds();
+    stopVibration();
     closeNotification();
     // Accept call immediately - don't delay!
     onAccept();
@@ -61,6 +66,7 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
   const handleReject = () => {
     console.log('IncomingCallDialog: reject clicked for call', call.id);
     stopAllSounds();
+    stopVibration();
     closeNotification();
     onReject();
   };

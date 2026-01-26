@@ -150,7 +150,26 @@ export const useAppLifecycle = (options: UseAppLifecycleOptions = {}) => {
   // Initialize lifecycle management
   useEffect(() => {
     // Request wake lock on mount
-    requestWakeLock();
+    const initWakeLock = async () => {
+      if (!keepScreenOn || !('wakeLock' in navigator)) {
+        return;
+      }
+
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        setState(prev => ({ ...prev, wakeLockActive: true }));
+        console.log('[AppLifecycle] Wake Lock acquired');
+
+        wakeLockRef.current.addEventListener('release', () => {
+          console.log('[AppLifecycle] Wake Lock released');
+          setState(prev => ({ ...prev, wakeLockActive: false }));
+        });
+      } catch (err) {
+        console.log('[AppLifecycle] Wake Lock request failed:', err);
+      }
+    };
+
+    initWakeLock();
 
     // Track session duration
     durationIntervalRef.current = setInterval(() => {
@@ -161,29 +180,82 @@ export const useAppLifecycle = (options: UseAppLifecycleOptions = {}) => {
     }, 1000);
 
     // Set initial activity timer
-    resetActivityTimer();
+    const now = Date.now();
+    setState(prev => ({
+      ...prev,
+      lastActivityTime: now,
+      isIdle: false,
+      showIdleWarning: false,
+    }));
+
+    idleTimerRef.current = setTimeout(() => {
+      const sessionDuration = Date.now() - sessionStartRef.current;
+      
+      if (sessionDuration >= minActiveTime) {
+        setState(prev => ({ ...prev, isIdle: true, showIdleWarning: true }));
+        onIdleWarning?.();
+        
+        closeTimerRef.current = setTimeout(() => {
+          onIdleClose?.();
+        }, idleCloseTime);
+      }
+    }, idleWarningTime);
 
     // Activity event listeners
+    const handleActivityEvent = () => {
+      const now = Date.now();
+      setState(prev => ({
+        ...prev,
+        lastActivityTime: now,
+        isIdle: false,
+        showIdleWarning: false,
+      }));
+
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+
+      idleTimerRef.current = setTimeout(() => {
+        const sessionDuration = Date.now() - sessionStartRef.current;
+        
+        if (sessionDuration >= minActiveTime) {
+          setState(prev => ({ ...prev, isIdle: true, showIdleWarning: true }));
+          onIdleWarning?.();
+          
+          closeTimerRef.current = setTimeout(() => {
+            onIdleClose?.();
+          }, idleCloseTime);
+        }
+      }, idleWarningTime);
+    };
+
     const activityEvents = [
       'mousedown',
-      'mousemove',
       'keydown',
       'scroll',
       'touchstart',
-      'touchmove',
       'click',
-      'focus',
     ];
 
     activityEvents.forEach(event => {
-      document.addEventListener(event, handleActivity, { passive: true });
+      document.addEventListener(event, handleActivityEvent, { passive: true });
     });
 
     // Handle visibility change - re-acquire wake lock when visible
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        requestWakeLock();
-        handleActivity();
+        if (keepScreenOn && 'wakeLock' in navigator && !wakeLockRef.current) {
+          try {
+            wakeLockRef.current = await navigator.wakeLock.request('screen');
+            setState(prev => ({ ...prev, wakeLockActive: true }));
+          } catch (err) {
+            // Ignore
+          }
+        }
+        handleActivityEvent();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -191,17 +263,21 @@ export const useAppLifecycle = (options: UseAppLifecycleOptions = {}) => {
     return () => {
       // Cleanup
       activityEvents.forEach(event => {
-        document.removeEventListener(event, handleActivity);
+        document.removeEventListener(event, handleActivityEvent);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       
-      releaseWakeLock();
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
       
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
     };
-  }, [requestWakeLock, releaseWakeLock, resetActivityTimer, handleActivity]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     ...state,
