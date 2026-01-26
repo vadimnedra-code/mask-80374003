@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
-import { X, Bell, Volume2, VolumeX, Vibrate } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, Vibrate, Music } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useNotificationSound, NOTIFICATION_SOUNDS, NotificationSoundType } from '@/hooks/useNotificationSound';
+import { cn } from '@/lib/utils';
 
 interface NotificationSettingsPanelProps {
   onClose: () => void;
 }
 
 export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanelProps) => {
-  const { isEnabled, setEnabled, playMessageSound } = useNotificationSound();
+  const { isEnabled, setEnabled, playMessageSound, soundType, setSoundType } = useNotificationSound();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const [selectedSound, setSelectedSound] = useState<NotificationSoundType>('default');
 
   useEffect(() => {
     setSoundEnabled(isEnabled());
+    setSelectedSound(soundType);
     const savedVibration = localStorage.getItem('notification_vibration');
     setVibrationEnabled(savedVibration !== 'false');
-  }, [isEnabled]);
+  }, [isEnabled, soundType]);
 
   const handleSoundToggle = (enabled: boolean) => {
     setSoundEnabled(enabled);
@@ -33,6 +36,15 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
     if (enabled && 'vibrate' in navigator) {
       navigator.vibrate(100);
     }
+  };
+
+  const handleSoundTypeChange = (type: NotificationSoundType) => {
+    setSelectedSound(type);
+    setSoundType(type);
+    // Play preview of the selected sound
+    setTimeout(() => {
+      playMessageSound();
+    }, 50);
   };
 
   return (
@@ -86,6 +98,48 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
               onCheckedChange={handleSoundToggle}
             />
           </div>
+
+          {/* Sound Type Selector */}
+          {soundEnabled && (
+            <div className="p-4 bg-card rounded-xl border border-border space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Music className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Мелодия уведомления</p>
+                  <p className="text-xs text-muted-foreground">
+                    Выберите звук для новых сообщений
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2 mt-3">
+                {NOTIFICATION_SOUNDS.map((sound) => (
+                  <button
+                    key={sound.id}
+                    onClick={() => handleSoundTypeChange(sound.id)}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg border transition-all",
+                      selectedSound === sound.id
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-sm",
+                      selectedSound === sound.id ? "font-medium text-primary" : ""
+                    )}>
+                      {sound.name}
+                    </span>
+                    {selectedSound === sound.id && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Vibration */}
           <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">
