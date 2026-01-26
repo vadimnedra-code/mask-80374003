@@ -206,7 +206,7 @@ export const MessageBubble = ({
     if (message.type === 'voice') {
       return (
         <div className="mb-1">
-          <VoicePlayer src={message.mediaUrl} isOwn={isOwn} />
+          <VoicePlayer src={resolvedMediaUrl || message.mediaUrl} isOwn={isOwn} />
         </div>
       );
     }
