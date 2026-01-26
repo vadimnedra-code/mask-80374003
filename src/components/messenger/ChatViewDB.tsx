@@ -23,8 +23,10 @@ import {
   ChevronLeft,
   Users,
   Timer,
-  UserPen
+  UserPen,
+  Leaf
 } from 'lucide-react';
+import { useEnergySavingContext } from '@/hooks/useEnergySaving';
 import maskLogo from '@/assets/mask-logo.png';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -119,6 +121,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const isAtBottomRef = useRef(true);
   
   const isMobile = useIsMobile();
+  const { isEnergySavingEnabled } = useEnergySavingContext();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesStartRef = useRef<HTMLDivElement>(null);
@@ -715,6 +718,15 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             )}
             {/* Disappearing Messages Indicator */}
             <DisappearingMessagesIndicator chatId={chat.id} />
+            {/* Energy Saving Indicator */}
+            {isEnergySavingEnabled && (
+              <div 
+                className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-300"
+                title="Режим энергосбережения активен"
+              >
+                <Leaf className="w-3 h-3" />
+              </div>
+            )}
           </div>
           <p className={cn(
             'text-[11px] sm:text-[13px] truncate leading-tight',
