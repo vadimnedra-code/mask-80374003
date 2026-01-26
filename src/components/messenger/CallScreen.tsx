@@ -98,33 +98,40 @@ export const CallScreen = ({
 
   // Handle call status changes for sounds
   useEffect(() => {
+    console.log('[CallScreen] Call status changed:', previousStatus.current, '->', callStatus);
+    
     // Start dialing sound when calling/ringing
     if (callStatus === 'calling' || callStatus === 'ringing') {
       startDialingSound();
     }
     
-    // Play connected sound when call becomes active
+    // Stop dialing and play connected sound when call becomes active
     if (callStatus === 'active' && previousStatus.current !== 'active') {
+      console.log('[CallScreen] Call connected - stopping all sounds');
       stopAllSounds();
       playConnectedSound();
     }
     
-    previousStatus.current = callStatus;
+    // If status changed FROM calling/ringing to something else, stop sounds
+    if ((previousStatus.current === 'calling' || previousStatus.current === 'ringing') && 
+        callStatus !== 'calling' && callStatus !== 'ringing') {
+      console.log('[CallScreen] Status changed from calling/ringing - stopping sounds');
+      stopAllSounds();
+    }
     
-    return () => {
-      if (callStatus === 'calling' || callStatus === 'ringing') {
-        stopAllSounds();
-      }
-    };
+    previousStatus.current = callStatus;
   }, [callStatus, startDialingSound, stopAllSounds, playConnectedSound]);
 
-  // Play ended sound when component unmounts during active call
+  // Cleanup sounds when component unmounts
   useEffect(() => {
     return () => {
+      console.log('[CallScreen] Component unmounting - stopping all sounds');
+      // Always stop all sounds on unmount
+      stopAllSounds();
+      // Play ended sound if call was active
       if (previousStatus.current === 'active') {
         playEndedSound();
       }
-      stopAllSounds();
     };
   }, [playEndedSound, stopAllSounds]);
 
