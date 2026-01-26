@@ -1,9 +1,11 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
+  const { playMessageSound } = useNotificationSound();
   const permissionGrantedRef = useRef(false);
 
   // Request notification permission
@@ -108,6 +110,9 @@ export const usePushNotifications = () => {
             body = '📎 Файл';
           }
 
+          // Play notification sound
+          playMessageSound();
+
           showNotification(sender?.display_name || 'Новое сообщение', {
             body,
             tag: message.chat_id,
@@ -119,7 +124,7 @@ export const usePushNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, requestPermission, showNotification]);
+  }, [user, requestPermission, showNotification, playMessageSound]);
 
   return {
     requestPermission,
