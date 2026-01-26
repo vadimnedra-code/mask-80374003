@@ -313,6 +313,18 @@ const Messenger = () => {
 
   const isInCall = callState.status !== 'idle' && callParticipant;
   const isInGroupCall = groupCallState.status !== 'idle';
+  
+  // Debug: Log incoming call state changes
+  useEffect(() => {
+    console.log('[Messenger] incomingCall state:', incomingCall ? {
+      id: incomingCall.id,
+      caller: incomingCall.caller_name,
+      type: incomingCall.call_type,
+      status: incomingCall.status
+    } : null);
+    console.log('[Messenger] isInCall:', isInCall);
+    console.log('[Messenger] Should show IncomingCallDialog:', !!(incomingCall && !isInCall));
+  }, [incomingCall, isInCall]);
 
   return (
     <div className="h-full w-full overflow-hidden bg-background flex flex-col safe-area-top">
