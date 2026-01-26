@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Mail, Send, Loader2, Shield, Paperclip, X, Plus, FileText, Image } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Mail, Send, Loader2, Shield, Paperclip, X, Plus, FileText, Image, Upload } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import type { StudioArtifact, StudioFile } from '@/types/studio';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useStudioFiles } from '@/hooks/useStudioFiles';
 
 interface SendDialogProps {
   isOpen: boolean;
@@ -31,8 +32,10 @@ interface SendDialogProps {
   artifact: StudioArtifact | null;
   attachedFiles?: StudioFile[];
   pendingImageUrl?: string | null;
-  allowFilePicker?: boolean; // Enable browsing studio files/artifacts
+  allowFilePicker?: boolean;
 }
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for email attachments
 
 export const SendDialog = ({
   isOpen,
@@ -43,6 +46,8 @@ export const SendDialog = ({
   allowFilePicker = true,
 }: SendDialogProps) => {
   const { user } = useAuth();
+  const { uploadFile, uploading: uploadingFile } = useStudioFiles();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -120,6 +125,38 @@ export const SendDialog = ({
       setSelectedArtifacts(prev => [...prev, art]);
     }
     setShowFilePicker(false);
+  };
+
+  // Handle local file upload
+  const handleLocalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name}: файл слишком большой (максимум 10MB)`);
+        continue;
+      }
+
+      try {
+        const uploadedFile = await uploadFile(file);
+        if (uploadedFile) {
+          setFilesToSend(prev => [...prev, uploadedFile]);
+          toast.success(`${file.name} загружен`);
+        }
+      } catch (error: any) {
+        toast.error(`Ошибка загрузки ${file.name}: ${error.message}`);
+      }
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSend = async () => {
@@ -244,12 +281,40 @@ export const SendDialog = ({
               </Label>
               
               {allowFilePicker && (
-                <Popover open={showFilePicker} onOpenChange={setShowFilePicker}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 text-xs">
-                      <Plus className="w-3 h-3 mr-1" />
-                      Добавить
-                    </Button>
+                <div className="flex items-center gap-2">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpg,.jpeg,.png,.webp"
+                    onChange={handleLocalFileUpload}
+                    className="hidden"
+                  />
+                  
+                  {/* Upload from disk button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs"
+                    onClick={triggerFileInput}
+                    disabled={uploadingFile}
+                  >
+                    {uploadingFile ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Upload className="w-3 h-3 mr-1" />
+                    )}
+                    С диска
+                  </Button>
+
+                  {/* Browse existing files */}
+                  <Popover open={showFilePicker} onOpenChange={setShowFilePicker}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 text-xs">
+                        <Plus className="w-3 h-3 mr-1" />
+                        Из студии
+                      </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-0" align="end">
                     <ScrollArea className="h-[300px]">
@@ -307,8 +372,9 @@ export const SendDialog = ({
                         )}
                       </div>
                     </ScrollArea>
-                  </PopoverContent>
-                </Popover>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               )}
             </div>
 
