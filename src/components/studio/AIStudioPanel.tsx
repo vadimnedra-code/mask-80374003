@@ -33,7 +33,7 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imagePrompt, setImagePrompt] = useState('');
   const [selectedArtifact, setSelectedArtifact] = useState<StudioArtifact | null>(null);
-  const [sendChannel, setSendChannel] = useState<'email' | 'sms' | 'voice'>('email');
+  
   const [generatedImages, setGeneratedImages] = useState<Array<{id: string; url: string; prompt: string}>>([]);
   const [pendingEmailImage, setPendingEmailImage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -85,7 +85,6 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
 
   const handleSendImageEmail = useCallback((imageUrl: string) => {
     setPendingEmailImage(imageUrl);
-    setSendChannel('email');
     setShowSendDialog(true);
   }, []);
 
@@ -115,9 +114,8 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
   }, [uploadFile]);
 
   const handleQuickAction = useCallback(async (action: StudioAction) => {
-    // Handle communication actions
-    if (action === 'send_email' || action === 'send_sms' || action === 'voice_call') {
-      setSendChannel(action === 'send_email' ? 'email' : action === 'send_sms' ? 'sms' : 'voice');
+    // Handle email action
+    if (action === 'send_email') {
       setShowSendDialog(true);
       return;
     }
@@ -325,9 +323,7 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
           setSelectedArtifact(null);
           setPendingEmailImage(null);
         }}
-        channel={sendChannel}
         artifact={selectedArtifact}
-        onChannelChange={setSendChannel}
         attachedFiles={files}
         pendingImageUrl={pendingEmailImage}
       />
