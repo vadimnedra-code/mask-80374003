@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { X, Bell, Volume2, VolumeX, Music } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, Music, Battery, ChevronRight } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNotificationSound, NOTIFICATION_SOUNDS, NotificationSoundType } from '@/hooks/useNotificationSound';
 import { RingtoneSelector, RingtoneType } from './RingtoneSelector';
 import { DialToneSelector, DialToneType } from './DialToneSelector';
 import { VibrationPatternSelector } from './VibrationPatternSelector';
+import { EnergySavingPanel } from './EnergySavingPanel';
 import { useCallSounds } from '@/hooks/useCallSounds';
 import { useCallVibration, VibrationPatternType } from '@/hooks/useCallVibration';
+import { useEnergySavingContext } from '@/hooks/useEnergySaving';
 import { cn } from '@/lib/utils';
 
 interface NotificationSettingsPanelProps {
@@ -18,8 +20,10 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
   const { isEnabled, setEnabled, playMessageSound, getSoundType, setSoundType } = useNotificationSound();
   const { previewRingtone, previewDialTone } = useCallSounds();
   const { previewVibration } = useCallVibration();
+  const { isEnergySavingEnabled } = useEnergySavingContext();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>('default');
+  const [showEnergySaving, setShowEnergySaving] = useState(false);
 
   useEffect(() => {
     setSoundEnabled(isEnabled());
@@ -54,6 +58,10 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
     previewVibration(type);
   };
 
+  if (showEnergySaving) {
+    return <EnergySavingPanel onClose={() => setShowEnergySaving(false)} />;
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-background animate-slide-in-right flex flex-col">
       {/* Header */}
@@ -79,6 +87,36 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
               </p>
             </div>
           </div>
+
+          {/* Energy Saving Button */}
+          <button
+            onClick={() => setShowEnergySaving(true)}
+            className={cn(
+              "w-full flex items-center justify-between p-4 rounded-xl border transition-all group",
+              isEnergySavingEnabled 
+                ? "bg-amber-500/10 border-amber-500/30" 
+                : "bg-card border-border hover:border-primary/30"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-full",
+                isEnergySavingEnabled ? "bg-amber-500/20" : "bg-muted"
+              )}>
+                <Battery className={cn(
+                  "w-5 h-5",
+                  isEnergySavingEnabled ? "text-amber-500" : "text-muted-foreground"
+                )} />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">Энергосбережение</p>
+                <p className="text-xs text-muted-foreground">
+                  {isEnergySavingEnabled ? 'Включено' : 'Экономия батареи'}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+          </button>
 
           {/* Sound */}
           <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">
