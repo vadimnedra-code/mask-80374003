@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, Bell, Volume2, VolumeX, Vibrate, Music } from 'lucide-react';
+import { X, Bell, Volume2, VolumeX, Music } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNotificationSound, NOTIFICATION_SOUNDS, NotificationSoundType } from '@/hooks/useNotificationSound';
 import { RingtoneSelector, RingtoneType } from './RingtoneSelector';
 import { DialToneSelector, DialToneType } from './DialToneSelector';
+import { VibrationPatternSelector } from './VibrationPatternSelector';
 import { useCallSounds } from '@/hooks/useCallSounds';
+import { useCallVibration, VibrationPatternType } from '@/hooks/useCallVibration';
 import { cn } from '@/lib/utils';
 
 interface NotificationSettingsPanelProps {
@@ -15,15 +17,13 @@ interface NotificationSettingsPanelProps {
 export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanelProps) => {
   const { isEnabled, setEnabled, playMessageSound, getSoundType, setSoundType } = useNotificationSound();
   const { previewRingtone, previewDialTone } = useCallSounds();
+  const { previewVibration } = useCallVibration();
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>('default');
 
   useEffect(() => {
     setSoundEnabled(isEnabled());
     setSelectedSound(getSoundType());
-    const savedVibration = localStorage.getItem('notification_vibration');
-    setVibrationEnabled(savedVibration !== 'false');
   }, [isEnabled, getSoundType]);
 
   const handleSoundToggle = (enabled: boolean) => {
@@ -31,14 +31,6 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
     setEnabled(enabled);
     if (enabled) {
       playMessageSound();
-    }
-  };
-
-  const handleVibrationToggle = (enabled: boolean) => {
-    setVibrationEnabled(enabled);
-    localStorage.setItem('notification_vibration', enabled ? 'true' : 'false');
-    if (enabled && 'vibrate' in navigator) {
-      navigator.vibrate(100);
     }
   };
 
@@ -56,6 +48,10 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
 
   const handleDialTonePreview = (type: DialToneType) => {
     previewDialTone(type);
+  };
+
+  const handleVibrationPreview = (type: VibrationPatternType) => {
+    previewVibration(type);
   };
 
   return (
@@ -158,27 +154,8 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
           {/* Dial Tone Selector */}
           <DialToneSelector onPreview={handleDialTonePreview} />
 
-          {/* Vibration */}
-          <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-primary/10">
-                <Vibrate className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <Label htmlFor="vibration" className="font-medium">
-                  Вибрация
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Вибрировать при входящих звонках
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="vibration"
-              checked={vibrationEnabled}
-              onCheckedChange={handleVibrationToggle}
-            />
-          </div>
+          {/* Vibration Pattern Selector */}
+          <VibrationPatternSelector onPreview={handleVibrationPreview} />
 
           {/* Note */}
           <p className="text-xs text-muted-foreground text-center px-4">
