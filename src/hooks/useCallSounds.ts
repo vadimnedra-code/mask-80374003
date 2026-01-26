@@ -189,8 +189,6 @@ export const useCallSounds = () => {
   }, []);
 
   const playDialTone = useCallback(() => {
-    if (!isPlayingRef.current) return; // Don't play if stopped
-    
     try {
       console.log('[CallSounds] Playing dial tone');
       const ctx = getSharedAudioContext();
@@ -229,11 +227,6 @@ export const useCallSounds = () => {
 
   // Play melodious ringtone with Web Audio API
   const playRingtone = useCallback(() => {
-    if (!isPlayingRef.current) {
-      console.log('[CallSounds] Skipping ringtone - playback stopped');
-      return;
-    }
-    
     try {
       console.log('[CallSounds] Playing ringtone with WebAudio');
       const ctx = getSharedAudioContext();
@@ -274,8 +267,8 @@ export const useCallSounds = () => {
         const releaseTime = 0.1;
         
         gainNode.gain.setValueAtTime(0, now + note.start);
-        gainNode.gain.linearRampToValueAtTime(0.35, now + note.start + attackTime);
-        gainNode.gain.setValueAtTime(0.35, now + note.start + note.duration - releaseTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, now + note.start + attackTime);
+        gainNode.gain.setValueAtTime(0.5, now + note.start + note.duration - releaseTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, now + note.start + note.duration);
         
         activeOscillatorsRef.current.push(oscillator);
