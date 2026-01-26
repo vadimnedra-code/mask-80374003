@@ -1,7 +1,7 @@
 project_id = "wenxswpqgbzwaowdjdqc"
 
 [functions.send-voip-push]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-login-token]
 verify_jwt = false
