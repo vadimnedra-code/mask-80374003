@@ -271,7 +271,7 @@ export const SendDialog = ({
               <strong>Подтверждение:</strong>
               <ul className="mt-2 space-y-1 text-sm">
                 <li>✓ Ваш номер/email скрыт</li>
-                <li>✓ Получатель увидит relay@mask.app</li>
+                <li>✓ Получатель увидит relay@mask.international</li>
                 <li>✓ Данные не сохраняются</li>
                 {totalAttachments > 0 && (
                   <li>✓ {totalAttachments} файл(ов) будет прикреплено</li>

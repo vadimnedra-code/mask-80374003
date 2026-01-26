@@ -188,7 +188,7 @@ serve(async (req) => {
 
     // Build email options
     const emailOptions: any = {
-      from: "MASK Relay <onboarding@resend.dev>",
+      from: "MASK Relay <relay@mask.international>",
       to: [to],
       subject: subject || "Message via MASK",
       html: `
