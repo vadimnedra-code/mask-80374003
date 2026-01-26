@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Mail, MessageSquare, Phone, HardDrive, Cloud, Trash2 } from 'lucide-react';
+import { Shield, Mail, HardDrive, Cloud, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -24,8 +24,6 @@ export const StudioSettingsDialog = ({ isOpen, onClose }: StudioSettingsDialogPr
   const { settings, updateSettings, loading } = useAISettings();
   
   const [allowEmail, setAllowEmail] = useState(false);
-  const [allowSms, setAllowSms] = useState(false);
-  const [allowCalls, setAllowCalls] = useState(false);
   const [allowFileAnalysis, setAllowFileAnalysis] = useState(true);
   const [alwaysConfirm, setAlwaysConfirm] = useState(true);
   const [memoryMode, setMemoryMode] = useState<AIMemoryMode>('none');
@@ -34,8 +32,8 @@ export const StudioSettingsDialog = ({ isOpen, onClose }: StudioSettingsDialogPr
   useEffect(() => {
     if (settings) {
       setAllowEmail((settings as any).allow_outbound_email ?? false);
-      setAllowSms((settings as any).allow_outbound_sms ?? false);
-      setAllowCalls((settings as any).allow_outbound_calls ?? false);
+      setAllowFileAnalysis((settings as any).allow_file_analysis ?? true);
+      setAlwaysConfirm((settings as any).always_confirm_before_send ?? true);
       setAllowFileAnalysis((settings as any).allow_file_analysis ?? true);
       setAlwaysConfirm((settings as any).always_confirm_before_send ?? true);
       setMemoryMode(settings.memory_mode);
@@ -45,8 +43,6 @@ export const StudioSettingsDialog = ({ isOpen, onClose }: StudioSettingsDialogPr
   const handleSave = async () => {
     const { error } = await updateSettings({
       allow_outbound_email: allowEmail,
-      allow_outbound_sms: allowSms,
-      allow_outbound_calls: allowCalls,
       allow_file_analysis: allowFileAnalysis,
       always_confirm_before_send: alwaysConfirm,
       memory_mode: memoryMode,
@@ -87,30 +83,6 @@ export const StudioSettingsDialog = ({ isOpen, onClose }: StudioSettingsDialogPr
                 id="allow-email"
                 checked={allowEmail}
                 onCheckedChange={setAllowEmail}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                <Label htmlFor="allow-sms">SMS relay</Label>
-              </div>
-              <Switch
-                id="allow-sms"
-                checked={allowSms}
-                onCheckedChange={setAllowSms}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <Label htmlFor="allow-calls">Voice calls</Label>
-              </div>
-              <Switch
-                id="allow-calls"
-                checked={allowCalls}
-                onCheckedChange={setAllowCalls}
               />
             </div>
           </div>

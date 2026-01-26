@@ -5,8 +5,6 @@ import {
   Presentation, 
   ImageIcon, 
   Mail, 
-  MessageSquare, 
-  Phone,
   ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,8 +35,6 @@ const actions: {
   { id: 'generate_presentation', label: 'Presentation', icon: Presentation, description: 'Создать PPTX' },
   { id: 'generate_image', label: 'Image', icon: ImageIcon, description: 'Сгенерировать PNG' },
   { id: 'send_email', label: 'Email', icon: Mail, description: 'Отправить', permissionKey: 'allow_outbound_email' },
-  { id: 'send_sms', label: 'SMS', icon: MessageSquare, description: 'Отправить', permissionKey: 'allow_outbound_sms' },
-  { id: 'voice_call', label: 'Call', icon: Phone, description: 'Анонимный звонок', permissionKey: 'allow_outbound_calls' },
 ];
 
 export const StudioQuickActions = ({ onAction, hasFile, permissions }: StudioQuickActionsProps) => {
