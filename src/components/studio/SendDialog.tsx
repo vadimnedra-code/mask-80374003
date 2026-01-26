@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Mail, Send, Loader2, Shield, Paperclip, X, FileText, Image, HardDrive, FolderOpen, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Mail, Send, Loader2, Shield, Paperclip, X, FileText, Image, HardDrive, FolderOpen, Sparkles, ClipboardPaste } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,7 @@ export const SendDialog = ({
 }: SendDialogProps) => {
   const { user } = useAuth();
   const { uploadFile, uploading: uploadingFile } = useStudioFiles();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -61,6 +62,7 @@ export const SendDialog = ({
   const [availableArtifacts, setAvailableArtifacts] = useState<StudioArtifact[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [showFilePicker, setShowFilePicker] = useState(false);
+  const [clipboardImages, setClipboardImages] = useState<{ id: string; name: string; blob: Blob; preview: string }[]>([]);
 
   // Fetch available files and artifacts
   const fetchAssets = useCallback(async () => {
@@ -102,10 +104,59 @@ export const SendDialog = ({
       setMessage(artifact?.text_content?.slice(0, 500) || '');
       setFilesToSend([]);
       setSelectedArtifacts(artifact ? [artifact] : []);
+      setClipboardImages([]);
       setShowConfirm(false);
       fetchAssets();
     }
   }, [isOpen, artifact, fetchAssets]);
+
+  // Handle paste from clipboard
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+          if (!blob) continue;
+
+          if (blob.size > MAX_FILE_SIZE) {
+            toast.error('Изображение слишком большое (максимум 10MB)');
+            continue;
+          }
+
+          const id = `clipboard-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          const name = `Изображение ${clipboardImages.length + 1}.png`;
+          const preview = URL.createObjectURL(blob);
+
+          setClipboardImages(prev => [...prev, { id, name, blob, preview }]);
+          toast.success('Изображение добавлено из буфера обмена');
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [isOpen, clipboardImages.length]);
+
+  // Cleanup preview URLs
+  useEffect(() => {
+    return () => {
+      clipboardImages.forEach(img => URL.revokeObjectURL(img.preview));
+    };
+  }, [clipboardImages]);
+
+  const removeClipboardImage = (id: string) => {
+    setClipboardImages(prev => {
+      const img = prev.find(i => i.id === id);
+      if (img) URL.revokeObjectURL(img.preview);
+      return prev.filter(i => i.id !== id);
+    });
+  };
 
   const removeFileFromSend = (fileId: string) => {
     setFilesToSend(prev => prev.filter(f => f.id !== fileId));
@@ -166,7 +217,18 @@ export const SendDialog = ({
     setIsSending(true);
     
     try {
-      const fileIds = filesToSend.map(f => f.id);
+      // Upload clipboard images first
+      const uploadedClipboardFiles: StudioFile[] = [];
+      for (const img of clipboardImages) {
+        const file = new File([img.blob], img.name, { type: 'image/png' });
+        const uploaded = await uploadFile(file);
+        if (uploaded) {
+          uploadedClipboardFiles.push(uploaded);
+        }
+      }
+
+      const allFiles = [...filesToSend, ...uploadedClipboardFiles];
+      const fileIds = allFiles.map(f => f.id);
       
       const artifactContent = selectedArtifacts
         .filter(a => a.text_content)
@@ -194,7 +256,7 @@ export const SendDialog = ({
         throw new Error(data.error);
       }
 
-      const attachmentCount = filesToSend.length + selectedArtifacts.length + (pendingImageUrl ? 1 : 0);
+      const attachmentCount = allFiles.length + selectedArtifacts.length + (pendingImageUrl ? 1 : 0);
       toast.success(
         attachmentCount > 0 
           ? `Email отправлен анонимно с ${attachmentCount} вложением(ями)` 
@@ -208,6 +270,7 @@ export const SendDialog = ({
       setMessage('');
       setSelectedArtifacts([]);
       setFilesToSend([]);
+      setClipboardImages([]);
     } catch (error: any) {
       console.error('Send error:', error);
       toast.error(error.message || 'Ошибка отправки');
@@ -216,7 +279,7 @@ export const SendDialog = ({
     }
   };
 
-  const totalAttachments = filesToSend.length + selectedArtifacts.length + (pendingImageUrl ? 1 : 0);
+  const totalAttachments = filesToSend.length + selectedArtifacts.length + clipboardImages.length + (pendingImageUrl ? 1 : 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -407,6 +470,26 @@ export const SendDialog = ({
                     </button>
                   </Badge>
                 ))}
+                {clipboardImages.map((img) => (
+                  <Badge 
+                    key={img.id} 
+                    variant="secondary"
+                    className="flex items-center gap-1 pr-1"
+                  >
+                    <img 
+                      src={img.preview} 
+                      alt={img.name}
+                      className="w-4 h-4 rounded object-cover"
+                    />
+                    <span className="truncate max-w-[100px]">{img.name}</span>
+                    <button
+                      onClick={() => removeClipboardImage(img.id)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
                 {selectedArtifacts.map((art) => (
                   <Badge 
                     key={art.id} 
@@ -435,6 +518,12 @@ export const SendDialog = ({
                 )}
               </div>
             )}
+
+            {/* Paste hint */}
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <ClipboardPaste className="w-3 h-3" />
+              Ctrl+V для вставки изображения из буфера
+            </p>
           </div>
         </div>
 
