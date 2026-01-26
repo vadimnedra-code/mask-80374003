@@ -204,9 +204,18 @@ export const MessageBubble = ({
     }
 
     if (message.type === 'voice') {
+      // Only render VoicePlayer when we have a valid signed URL
+      if (!resolvedMediaUrl) {
+        return (
+          <div className="mb-1 flex items-center gap-2 min-w-[200px] text-muted-foreground text-sm">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Загрузка...</span>
+          </div>
+        );
+      }
       return (
         <div className="mb-1">
-          <VoicePlayer src={resolvedMediaUrl || message.mediaUrl} isOwn={isOwn} />
+          <VoicePlayer src={resolvedMediaUrl} isOwn={isOwn} />
         </div>
       );
     }
