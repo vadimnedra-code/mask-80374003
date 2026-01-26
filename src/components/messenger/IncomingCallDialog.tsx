@@ -16,13 +16,17 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
   const isVideoCall = call.call_type === 'video';
   const { startRingtoneSound, stopAllSounds, playConnectedSound } = useCallSounds();
   const { showIncomingCallNotification, closeNotification } = useCallNotifications();
+  
+  console.log('[IncomingCallDialog] Component rendered for call:', call.id);
 
   // Start ringtone when dialog appears
   useEffect(() => {
+    console.log('[IncomingCallDialog] useEffect triggered, starting ringtone');
     startRingtoneSound();
     
     // Show notification if page is not focused
     if (document.hidden) {
+      console.log('[IncomingCallDialog] Page hidden, showing notification');
       showIncomingCallNotification(
         call.caller_name || 'Неизвестный',
         call.caller_avatar || '',
@@ -30,9 +34,12 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
         onAccept,
         onReject
       );
+    } else {
+      console.log('[IncomingCallDialog] Page visible, skipping notification');
     }
 
     return () => {
+      console.log('[IncomingCallDialog] Cleanup - stopping sounds');
       stopAllSounds();
       closeNotification();
     };
