@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, Send, Loader2, Shield, Paperclip, X, Plus, FileText, Image, Upload, CheckCircle2 } from 'lucide-react';
+import { Mail, Send, Loader2, Shield, Paperclip, X, Plus, FileText, Image, Upload, CheckCircle2, HardDrive, FolderOpen, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
   Popover,
   PopoverContent,
@@ -374,7 +381,7 @@ export const SendDialog = ({
               </Label>
               
               {allowFilePicker && (
-                <div className="flex items-center gap-2">
+                <>
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -385,89 +392,110 @@ export const SendDialog = ({
                     className="hidden"
                   />
                   
-                  {/* Upload from disk button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 text-xs"
-                    onClick={triggerFileInput}
-                    disabled={uploadingFile}
-                  >
-                    {uploadingFile ? (
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                    ) : (
-                      <Upload className="w-3 h-3 mr-1" />
-                    )}
-                    С диска
-                  </Button>
+                  {/* Single paperclip dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 gap-2"
+                        disabled={uploadingFile}
+                      >
+                        {uploadingFile ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Paperclip className="w-4 h-4" />
+                        )}
+                        <span className="text-xs">Прикрепить</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={triggerFileInput} className="gap-2 cursor-pointer">
+                        <HardDrive className="w-4 h-4" />
+                        <span>С диска</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setShowFilePicker(true)} 
+                        className="gap-2 cursor-pointer"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        <span>Из медиатеки</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => setShowFilePicker(true)} 
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Из студии</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                  {/* Browse existing files */}
+                  {/* Studio/Media library popover */}
                   <Popover open={showFilePicker} onOpenChange={setShowFilePicker}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 text-xs">
-                        <Plus className="w-3 h-3 mr-1" />
-                        Из студии
-                      </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="end">
-                    <ScrollArea className="h-[300px]">
-                      <div className="p-2">
-                        {loadingAssets ? (
-                          <div className="flex items-center justify-center py-4">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          </div>
-                        ) : (
-                          <>
-                            {availableFiles.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs font-medium text-muted-foreground px-2 py-1">Файлы</p>
-                                {availableFiles.map((file) => (
-                                  <button
-                                    key={file.id}
-                                    onClick={() => addFile(file)}
-                                    disabled={!!filesToSend.find(f => f.id === file.id)}
-                                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                                    <span className="truncate">{file.original_name}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {availableArtifacts.length > 0 && (
-                              <div>
-                                <p className="text-xs font-medium text-muted-foreground px-2 py-1">Артефакты</p>
-                                {availableArtifacts.map((art) => (
-                                  <button
-                                    key={art.id}
-                                    onClick={() => addArtifact(art)}
-                                    disabled={!!selectedArtifacts.find(a => a.id === art.id)}
-                                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {art.artifact_type === 'image' ? (
-                                      <Image className="w-4 h-4 text-muted-foreground shrink-0" />
-                                    ) : (
+                      <span className="hidden" />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-0" align="end">
+                      <ScrollArea className="h-[300px]">
+                        <div className="p-2">
+                          {loadingAssets ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </div>
+                          ) : (
+                            <>
+                              {availableFiles.length > 0 && (
+                                <div className="mb-3">
+                                  <p className="text-xs font-medium text-muted-foreground px-2 py-1">📁 Медиатека</p>
+                                  {availableFiles.map((file) => (
+                                    <button
+                                      key={file.id}
+                                      onClick={() => addFile(file)}
+                                      disabled={!!filesToSend.find(f => f.id === file.id)}
+                                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                       <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                                    )}
-                                    <span className="truncate">{art.title}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {availableFiles.length === 0 && availableArtifacts.length === 0 && (
-                              <p className="text-sm text-muted-foreground text-center py-4">
-                                Нет доступных файлов или артефактов
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </ScrollArea>
+                                      <span className="truncate">{file.original_name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {availableArtifacts.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground px-2 py-1">✨ Артефакты студии</p>
+                                  {availableArtifacts.map((art) => (
+                                    <button
+                                      key={art.id}
+                                      onClick={() => addArtifact(art)}
+                                      disabled={!!selectedArtifacts.find(a => a.id === art.id)}
+                                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {art.artifact_type === 'image' ? (
+                                        <Image className="w-4 h-4 text-muted-foreground shrink-0" />
+                                      ) : (
+                                        <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                                      )}
+                                      <span className="truncate">{art.title}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {availableFiles.length === 0 && availableArtifacts.length === 0 && (
+                                <p className="text-sm text-muted-foreground text-center py-4">
+                                  Нет доступных файлов или артефактов
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </PopoverContent>
                   </Popover>
-                </div>
+                </>
               )}
             </div>
 
