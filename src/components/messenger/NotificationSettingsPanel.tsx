@@ -10,17 +10,17 @@ interface NotificationSettingsPanelProps {
 }
 
 export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanelProps) => {
-  const { isEnabled, setEnabled, playMessageSound, soundType, setSoundType } = useNotificationSound();
+  const { isEnabled, setEnabled, playMessageSound, getSoundType, setSoundType } = useNotificationSound();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [selectedSound, setSelectedSound] = useState<NotificationSoundType>('default');
 
   useEffect(() => {
     setSoundEnabled(isEnabled());
-    setSelectedSound(soundType);
+    setSelectedSound(getSoundType());
     const savedVibration = localStorage.getItem('notification_vibration');
     setVibrationEnabled(savedVibration !== 'false');
-  }, [isEnabled, soundType]);
+  }, [isEnabled, getSoundType]);
 
   const handleSoundToggle = (enabled: boolean) => {
     setSoundEnabled(enabled);

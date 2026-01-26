@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 // Shared AudioContext singleton
 let sharedAudioContext: AudioContext | null = null;
@@ -23,7 +23,7 @@ export const NOTIFICATION_SOUNDS: { id: NotificationSoundType; name: string }[] 
 export const useNotificationSound = () => {
   const lastPlayedRef = useRef<number>(0);
   const enabledRef = useRef<boolean>(true);
-  const [soundType, setSoundTypeState] = useState<NotificationSoundType>('default');
+  const soundTypeRef = useRef<NotificationSoundType>('default');
 
   // Load preferences from localStorage
   useEffect(() => {
@@ -32,7 +32,7 @@ export const useNotificationSound = () => {
     
     const savedType = localStorage.getItem('notification_sound_type') as NotificationSoundType;
     if (savedType && NOTIFICATION_SOUNDS.some(s => s.id === savedType)) {
-      setSoundTypeState(savedType);
+      soundTypeRef.current = savedType;
     }
   }, []);
 
@@ -42,9 +42,11 @@ export const useNotificationSound = () => {
   }, []);
 
   const setSoundType = useCallback((type: NotificationSoundType) => {
-    setSoundTypeState(type);
+    soundTypeRef.current = type;
     localStorage.setItem('notification_sound_type', type);
   }, []);
+
+  const getSoundType = useCallback(() => soundTypeRef.current, []);
 
   const isEnabled = useCallback(() => enabledRef.current, []);
 
@@ -63,6 +65,7 @@ export const useNotificationSound = () => {
       }
 
       const currentTime = ctx.currentTime;
+      const soundType = soundTypeRef.current;
 
       switch (soundType) {
         case 'soft': {
@@ -153,7 +156,7 @@ export const useNotificationSound = () => {
     } catch (err) {
       console.log('Could not play notification sound:', err);
     }
-  }, [soundType]);
+  }, []);
 
   const playCallSound = useCallback(() => {
     if (!enabledRef.current) return;
@@ -196,7 +199,7 @@ export const useNotificationSound = () => {
     playCallSound,
     setEnabled,
     isEnabled,
-    soundType,
+    getSoundType,
     setSoundType,
   };
 };
