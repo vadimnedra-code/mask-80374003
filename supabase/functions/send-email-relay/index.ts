@@ -111,7 +111,7 @@ serve(async (req) => {
 
     // Send email via Resend with verified mask.app domain
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "MASK Relay <relay@mask.app>",
+      from: "MASK Relay <onboarding@resend.dev>",
       to: [to],
       subject: subject || "Message via MASK",
       html: `
