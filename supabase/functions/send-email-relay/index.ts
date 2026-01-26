@@ -14,6 +14,13 @@ interface EmailRequest {
   subject: string;
   body: string;
   artifactId?: string;
+  fileIds?: string[];
+  imageUrl?: string;
+}
+
+interface Attachment {
+  filename: string;
+  content: string; // base64
 }
 
 serve(async (req) => {
@@ -65,7 +72,7 @@ serve(async (req) => {
       );
     }
 
-    const { to, subject, body, artifactId }: EmailRequest = await req.json();
+    const { to, subject, body, artifactId, fileIds, imageUrl }: EmailRequest = await req.json();
 
     // Validate input
     if (!to || !body) {
@@ -84,7 +91,77 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Sending anonymous email to: ${to}`);
+    console.log(`Sending anonymous email to: ${to}, with ${fileIds?.length || 0} files`);
+
+    // Prepare attachments
+    const attachments: Attachment[] = [];
+
+    // Process attached files from studio-files bucket
+    if (fileIds && fileIds.length > 0) {
+      // Get file records
+      const { data: fileRecords, error: filesError } = await supabase
+        .from("studio_files")
+        .select("*")
+        .in("id", fileIds)
+        .eq("user_id", userId);
+
+      if (filesError) {
+        console.error("Error fetching file records:", filesError);
+      } else if (fileRecords && fileRecords.length > 0) {
+        // Use service role client to download files
+        const serviceClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+
+        for (const fileRecord of fileRecords) {
+          try {
+            const { data: fileData, error: downloadError } = await serviceClient.storage
+              .from("studio-files")
+              .download(fileRecord.storage_path);
+
+            if (downloadError) {
+              console.error(`Error downloading file ${fileRecord.original_name}:`, downloadError);
+              continue;
+            }
+
+            // Convert to base64
+            const arrayBuffer = await fileData.arrayBuffer();
+            const base64 = btoa(
+              new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+
+            attachments.push({
+              filename: fileRecord.original_name,
+              content: base64,
+            });
+
+            console.log(`Attached file: ${fileRecord.original_name}`);
+          } catch (err) {
+            console.error(`Failed to process file ${fileRecord.original_name}:`, err);
+          }
+        }
+      }
+    }
+
+    // Process inline image URL (generated images)
+    if (imageUrl && imageUrl.startsWith('data:image/')) {
+      try {
+        // Extract base64 from data URL
+        const matches = imageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (matches) {
+          const extension = matches[1];
+          const base64Data = matches[2];
+          attachments.push({
+            filename: `mask-generated-${Date.now()}.${extension}`,
+            content: base64Data,
+          });
+          console.log("Attached generated image");
+        }
+      } catch (err) {
+        console.error("Failed to process image URL:", err);
+      }
+    }
 
     // Create outbound message record
     const { data: outboundMsg, error: insertError } = await supabase
@@ -109,8 +186,8 @@ serve(async (req) => {
       );
     }
 
-    // Send email via Resend with verified mask.app domain
-    const { data: emailData, error: emailError } = await resend.emails.send({
+    // Build email options
+    const emailOptions: any = {
       from: "MASK Relay <onboarding@resend.dev>",
       to: [to],
       subject: subject || "Message via MASK",
@@ -122,13 +199,28 @@ serve(async (req) => {
           </div>
           <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
             <div style="background: #fff; padding: 20px; border-radius: 8px; white-space: pre-wrap;">${body}</div>
+            ${attachments.length > 0 ? `
+              <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <p style="color: #666; font-size: 14px; margin: 0;">
+                  📎 ${attachments.length} attachment(s) included
+                </p>
+              </div>
+            ` : ''}
           </div>
           <p style="color: #888; font-size: 12px; text-align: center; margin-top: 20px;">
             This message was sent anonymously via MASK relay. The sender's identity is protected.
           </p>
         </div>
       `,
-    });
+    };
+
+    // Add attachments if any
+    if (attachments.length > 0) {
+      emailOptions.attachments = attachments;
+    }
+
+    // Send email via Resend
+    const { data: emailData, error: emailError } = await resend.emails.send(emailOptions);
 
     if (emailError) {
       console.error("Resend error:", emailError);
@@ -148,7 +240,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Email sent successfully:", emailData?.id);
+    console.log("Email sent successfully:", emailData?.id, `with ${attachments.length} attachments`);
 
     // Update outbound message with success
     await supabase
@@ -164,7 +256,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         messageId: outboundMsg.id,
-        externalId: emailData?.id 
+        externalId: emailData?.id,
+        attachmentCount: attachments.length,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

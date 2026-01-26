@@ -323,10 +323,13 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
         onClose={() => {
           setShowSendDialog(false);
           setSelectedArtifact(null);
+          setPendingEmailImage(null);
         }}
         channel={sendChannel}
         artifact={selectedArtifact}
         onChannelChange={setSendChannel}
+        attachedFiles={files}
+        pendingImageUrl={pendingEmailImage}
       />
 
       {/* Image Generation Dialog */}
