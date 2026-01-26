@@ -83,7 +83,7 @@ export const useCallSounds = () => {
     activeGainsRef.current = [];
   }, []);
 
-  // Generate ringtone as HTML5 Audio fallback
+  // Generate melodious ringtone as HTML5 Audio fallback
   const playRingtoneHTML5 = useCallback(() => {
     try {
       console.log('[CallSounds] Trying HTML5 Audio fallback');
@@ -95,9 +95,9 @@ export const useCallSounds = () => {
       
       const audio = fallbackAudioRef.current;
       
-      // Generate a simple ringtone WAV
-      const sampleRate = 22050;
-      const duration = 0.7;
+      // Generate a pleasant melodious ringtone WAV
+      const sampleRate = 44100;
+      const duration = 1.2;
       const samples = Math.floor(sampleRate * duration);
       
       const buffer = new ArrayBuffer(44 + samples * 2);
@@ -123,31 +123,60 @@ export const useCallSounds = () => {
       writeString(36, 'data');
       view.setUint32(40, samples * 2, true);
       
-      // Generate two-tone ringtone
+      // Generate pleasant chord-based ringtone (C major arpeggio style)
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      
       for (let i = 0; i < samples; i++) {
         const t = i / sampleRate;
-        const envelope = Math.min(1, Math.min(t * 20, (duration - t) * 10));
         
-        // Two frequencies like a real ringtone
-        const freq1 = t < 0.15 ? 440 : (t < 0.3 ? 0 : (t < 0.45 ? 440 : 0));
-        const freq2 = t < 0.15 ? 0 : (t < 0.3 ? 480 : (t < 0.45 ? 0 : 480));
+        // Smooth envelope with fade in/out
+        let envelope = 0;
+        if (t < 0.05) {
+          envelope = t / 0.05; // Fade in
+        } else if (t < 0.3) {
+          envelope = 1;
+        } else if (t < 0.35) {
+          envelope = 1 - (t - 0.3) / 0.05; // Fade out first note
+        } else if (t < 0.4) {
+          envelope = (t - 0.35) / 0.05; // Fade in second
+        } else if (t < 0.65) {
+          envelope = 1;
+        } else if (t < 0.7) {
+          envelope = 1 - (t - 0.65) / 0.05;
+        } else if (t < 0.75) {
+          envelope = (t - 0.7) / 0.05;
+        } else if (t < 1.0) {
+          envelope = 1;
+        } else {
+          envelope = Math.max(0, 1 - (t - 1.0) / 0.2);
+        }
         
-        const sample = (Math.sin(2 * Math.PI * freq1 * t) + Math.sin(2 * Math.PI * freq2 * t)) * envelope * 0.3;
-        view.setInt16(44 + i * 2, sample * 32767, true);
+        // Select note based on time
+        let freq = notes[0];
+        if (t >= 0.35 && t < 0.7) freq = notes[1];
+        else if (t >= 0.7) freq = notes[2];
+        
+        // Add subtle harmonics for richness
+        const fundamental = Math.sin(2 * Math.PI * freq * t);
+        const harmonic2 = Math.sin(2 * Math.PI * freq * 2 * t) * 0.3;
+        const harmonic3 = Math.sin(2 * Math.PI * freq * 3 * t) * 0.1;
+        
+        const sample = (fundamental + harmonic2 + harmonic3) * envelope * 0.25;
+        view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
       }
       
       const blob = new Blob([buffer], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       
       audio.src = url;
-      audio.volume = 1.0;
+      audio.volume = 0.7;
       
       const playPromise = audio.play();
       if (playPromise) {
         playPromise
           .then(() => {
             console.log('[CallSounds] HTML5 Audio played successfully');
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
           })
           .catch(err => {
             console.warn('[CallSounds] HTML5 Audio play failed:', err);
@@ -160,6 +189,8 @@ export const useCallSounds = () => {
   }, []);
 
   const playDialTone = useCallback(() => {
+    if (!isPlayingRef.current) return; // Don't play if stopped
+    
     try {
       console.log('[CallSounds] Playing dial tone');
       const ctx = getSharedAudioContext();
@@ -196,7 +227,13 @@ export const useCallSounds = () => {
     }
   }, []);
 
+  // Play melodious ringtone with Web Audio API
   const playRingtone = useCallback(() => {
+    if (!isPlayingRef.current) {
+      console.log('[CallSounds] Skipping ringtone - playback stopped');
+      return;
+    }
+    
     try {
       console.log('[CallSounds] Playing ringtone with WebAudio');
       const ctx = getSharedAudioContext();
@@ -211,24 +248,41 @@ export const useCallSounds = () => {
         return;
       }
 
-      const playTone = (freq: number, startTime: number, duration: number) => {
+      // Pleasant ascending arpeggio (C major chord tones)
+      const notes = [
+        { freq: 523.25, start: 0, duration: 0.25 },    // C5
+        { freq: 659.25, start: 0.3, duration: 0.25 },  // E5
+        { freq: 783.99, start: 0.6, duration: 0.35 },  // G5
+      ];
+      
+      const now = ctx.currentTime;
+      
+      notes.forEach(note => {
+        if (!isPlayingRef.current) return; // Check again before each note
+        
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
         
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
         
-        oscillator.frequency.setValueAtTime(freq, startTime);
+        oscillator.frequency.setValueAtTime(note.freq, now + note.start);
         oscillator.type = 'sine';
         
-        gainNode.gain.setValueAtTime(0.4, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        // Smooth envelope for pleasant sound
+        const attackTime = 0.02;
+        const releaseTime = 0.1;
+        
+        gainNode.gain.setValueAtTime(0, now + note.start);
+        gainNode.gain.linearRampToValueAtTime(0.35, now + note.start + attackTime);
+        gainNode.gain.setValueAtTime(0.35, now + note.start + note.duration - releaseTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + note.start + note.duration);
         
         activeOscillatorsRef.current.push(oscillator);
         activeGainsRef.current.push(gainNode);
         
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
+        oscillator.start(now + note.start);
+        oscillator.stop(now + note.start + note.duration);
         
         oscillator.onended = () => {
           const idx = activeOscillatorsRef.current.indexOf(oscillator);
@@ -236,13 +290,7 @@ export const useCallSounds = () => {
           oscillator.disconnect();
           gainNode.disconnect();
         };
-      };
-
-      const now = ctx.currentTime;
-      playTone(440, now, 0.15);
-      playTone(480, now + 0.15, 0.15);
-      playTone(440, now + 0.4, 0.15);
-      playTone(480, now + 0.55, 0.15);
+      });
     } catch (e) {
       console.error('Error playing ringtone:', e);
       // Fallback to HTML5 Audio
@@ -283,17 +331,22 @@ export const useCallSounds = () => {
   }, [playRingtone]);
 
   const stopAllSounds = useCallback(() => {
-    console.log('[CallSounds] Stopping all sounds');
+    console.log('[CallSounds] Stopping all sounds - IMMEDIATE');
+    
+    // Set flag first to prevent any new sounds
     isPlayingRef.current = false;
     
+    // Clear intervals immediately
     if (dialingIntervalRef.current) {
       window.clearInterval(dialingIntervalRef.current);
       dialingIntervalRef.current = null;
+      console.log('[CallSounds] Cleared dialing interval');
     }
     
     if (ringtoneIntervalRef.current) {
       window.clearInterval(ringtoneIntervalRef.current);
       ringtoneIntervalRef.current = null;
+      console.log('[CallSounds] Cleared ringtone interval');
     }
     
     // Clean up any active oscillators to prevent audio artifacts
@@ -301,8 +354,14 @@ export const useCallSounds = () => {
     
     // Stop HTML5 Audio if playing
     if (fallbackAudioRef.current) {
-      fallbackAudioRef.current.pause();
-      fallbackAudioRef.current.currentTime = 0;
+      try {
+        fallbackAudioRef.current.pause();
+        fallbackAudioRef.current.currentTime = 0;
+        fallbackAudioRef.current.src = '';
+        console.log('[CallSounds] Stopped HTML5 Audio');
+      } catch (e) {
+        console.warn('[CallSounds] Error stopping HTML5 Audio:', e);
+      }
     }
   }, [cleanupOscillators]);
 
