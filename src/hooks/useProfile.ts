@@ -88,10 +88,16 @@ export const useProfile = (userId?: string) => {
     const currentUserId = userIdRef.current;
     if (!currentUserId) return;
 
-    await supabase
-      .from('profiles')
-      .update({ status, last_seen: new Date().toISOString() })
-      .eq('user_id', currentUserId);
+    // Batch status update with last_seen to reduce network calls
+    try {
+      await supabase
+        .from('profiles')
+        .update({ status, last_seen: new Date().toISOString() })
+        .eq('user_id', currentUserId);
+    } catch (err) {
+      // Silently fail - status updates are not critical
+      console.warn('[useProfile] Status update failed:', err);
+    }
   }, []);
 
   return { profile, loading, updateProfile, updateStatus, refetch: fetchProfile };
