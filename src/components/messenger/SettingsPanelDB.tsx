@@ -88,7 +88,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   };
 
   const menuItems = [
-    { icon: User, label: 'Аккаунт', description: 'Профиль, номер телефона' },
+    { icon: User, label: 'Аккаунт', description: 'Профиль, настройки' },
     { icon: Bell, label: 'Уведомления', description: 'Звуки, вибрация' },
     { icon: Shield, label: 'Конфиденциальность', description: 'Блокировка, безопасность' },
     { icon: Palette, label: 'Оформление', description: 'Тема, фон чатов' },
@@ -190,7 +190,9 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
             <button
               key={item.label}
               onClick={() => {
-                if (item.label === 'Конфиденциальность') {
+                if (item.label === 'Аккаунт') {
+                  setShowProfileEdit(true);
+                } else if (item.label === 'Конфиденциальность') {
                   setShowPrivacy(true);
                 } else if (item.label === 'Уведомления') {
                   setShowNotifications(true);
