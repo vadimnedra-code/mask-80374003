@@ -18,6 +18,17 @@ export interface SearchResult {
   sender_name: string;
 }
 
+// Escape SQL LIKE wildcards to prevent pattern injection attacks
+const escapeLikePattern = (pattern: string): string => {
+  return pattern
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_');
+};
+
+// Limit search query length for security
+const MAX_SEARCH_LENGTH = 100;
+
 export const useMessageSearch = () => {
   const { user } = useAuth();
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -26,13 +37,16 @@ export const useMessageSearch = () => {
   const [filter, setFilter] = useState<FilterType>('all');
 
   const search = useCallback(async (searchQuery: string, filterType: FilterType = 'all') => {
-    if (!user || !searchQuery.trim()) {
+    // Validate and sanitize input
+    const trimmedQuery = searchQuery.trim().slice(0, MAX_SEARCH_LENGTH);
+    
+    if (!user || !trimmedQuery) {
       setResults([]);
       return;
     }
 
     setLoading(true);
-    setQuery(searchQuery);
+    setQuery(trimmedQuery);
     setFilter(filterType);
 
     try {
@@ -73,9 +87,10 @@ export const useMessageSearch = () => {
         messageQuery = messageQuery.in('message_type', ['image', 'video', 'file', 'voice']);
       }
 
-      // Search in content
+      // Search in content - escape SQL wildcards to prevent injection
       if (filterType !== 'media') {
-        messageQuery = messageQuery.ilike('content', `%${searchQuery}%`);
+        const sanitizedQuery = escapeLikePattern(trimmedQuery);
+        messageQuery = messageQuery.ilike('content', `%${sanitizedQuery}%`);
       }
 
       const { data: messages, error } = await messageQuery;
