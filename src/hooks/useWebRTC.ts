@@ -5,6 +5,10 @@ import { VIDEO_QUALITY_CONSTRAINTS, VideoQuality } from '@/hooks/useConnectionSt
 import { useCallDiagnosticLogs } from '@/hooks/useCallDiagnosticLogs';
 import { useAutoReconnect, ReconnectionState } from '@/hooks/useAutoReconnect';
 
+// Cached TURN credentials
+let cachedIceServers: RTCIceServer[] | null = null;
+let cacheExpiry = 0;
+
 export interface PeerConnectionState {
   iceConnectionState: string;
   iceGatheringState: string;
@@ -32,55 +36,42 @@ interface UseWebRTCOptions {
   onCallRejected?: () => void;
 }
 
-const ICE_SERVERS: RTCIceServer[] = [
-  // STUN servers - multiple for redundancy
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' },
-  // Additional public STUN servers for mobile networks
-  { urls: 'stun:stun.stunprotocol.org:3478' },
-  { urls: 'stun:stun.voip.blackberry.com:3478' },
-  // Free TURN servers from OpenRelay - critical for mobile/NAT
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  // Additional free TURN from Metered - better for mobile
-  {
-    urls: 'turn:a.relay.metered.ca:80',
-    username: 'e8dd65c92d865b653b024fe8',
-    credential: 'uWdWNmkhvyqTmhWu',
-  },
-  {
-    urls: 'turn:a.relay.metered.ca:443',
-    username: 'e8dd65c92d865b653b024fe8',
-    credential: 'uWdWNmkhvyqTmhWu',
-  },
-  {
-    urls: 'turn:a.relay.metered.ca:443?transport=tcp',
-    username: 'e8dd65c92d865b653b024fe8',
-    credential: 'uWdWNmkhvyqTmhWu',
-  },
-  // UDP relay - often works better on mobile
-  {
-    urls: 'turn:relay.metered.ca:80?transport=udp',
-    username: 'e8dd65c92d865b653b024fe8',
-    credential: 'uWdWNmkhvyqTmhWu',
-  },
 ];
+
+const fetchTurnCredentials = async (): Promise<RTCIceServer[]> => {
+  // Return cached if still valid (cache for 10 min, credentials last ~24h)
+  if (cachedIceServers && Date.now() < cacheExpiry) {
+    return cachedIceServers;
+  }
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      console.warn('No auth session, using fallback ICE servers');
+      return FALLBACK_ICE_SERVERS;
+    }
+
+    const { data, error } = await supabase.functions.invoke('get-turn-credentials', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (error || !data?.iceServers) {
+      console.error('Failed to fetch TURN credentials:', error);
+      return FALLBACK_ICE_SERVERS;
+    }
+
+    cachedIceServers = data.iceServers;
+    cacheExpiry = Date.now() + 10 * 60 * 1000; // 10 min cache
+    console.log('Fetched TURN credentials:', cachedIceServers.length, 'servers');
+    return cachedIceServers;
+  } catch (err) {
+    console.error('Error fetching TURN credentials:', err);
+    return FALLBACK_ICE_SERVERS;
+  }
+};
 
 // Detect if running on mobile
 const isMobile = () => {
@@ -348,17 +339,19 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     }
   }, []);
 
-  const setupPeerConnection = useCallback((callId: string, callType: 'voice' | 'video') => {
+  const setupPeerConnection = useCallback(async (callId: string, callType: 'voice' | 'video') => {
     const mobile = isMobile();
     console.log('Setting up peer connection for call:', callId, 'type:', callType, 'mobile:', mobile);
     addLog('info', 'Setting up peer connection', `callId: ${callId}, type: ${callType}, mobile: ${mobile}`);
     
+    // Fetch dynamic TURN credentials from Metered
+    const iceServers = await fetchTurnCredentials();
+    addLog('ice', 'ICE servers loaded', `${iceServers.length} servers`);
+    
     // Create peer connection with mobile-optimized settings
     const pc = new RTCPeerConnection({ 
-      iceServers: ICE_SERVERS,
+      iceServers,
       iceCandidatePoolSize: mobile ? 5 : 10,
-      // Enable ICE transport policy to relay for mobile (more reliable on cellular)
-      // iceTransportPolicy: mobile ? 'relay' : 'all',
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',
     });
@@ -660,7 +653,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         });
 
         // Setup peer connection
-        const pc = setupPeerConnection(call.id, callType);
+        const pc = await setupPeerConnection(call.id, callType);
 
         // Subscribe EARLY so we can't miss a fast answer update
         subscribeToCall(call.id, true);
@@ -760,7 +753,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         });
 
         // Setup peer connection
-        const pc = setupPeerConnection(callId, callType);
+        const pc = await setupPeerConnection(callId, callType);
 
         // Get media stream FIRST (may prompt for permission)
         addLog('media', 'Requesting local media', callType);
