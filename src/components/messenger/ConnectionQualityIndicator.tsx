@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Wifi, WifiOff, Signal, SignalLow, SignalMedium, SignalHigh, Settings, ChevronDown } from 'lucide-react';
-import { ConnectionStats, VideoQuality } from '@/hooks/useConnectionStats';
+import { Wifi, WifiOff, Signal, SignalLow, SignalMedium, SignalHigh, Settings, ChevronDown, Shield, Globe, Router } from 'lucide-react';
+import { ConnectionStats, VideoQuality, ConnectionType } from '@/hooks/useConnectionStats';
 import {
   Tooltip,
   TooltipContent,
@@ -93,6 +93,53 @@ export const ConnectionQualityIndicator: React.FC<ConnectionQualityIndicatorProp
     return '—';
   };
 
+  const getConnectionTypeInfo = () => {
+    switch (stats.connectionType) {
+      case 'relay':
+        return { 
+          label: 'TURN', 
+          description: stats.relayProtocol ? `Relay (${stats.relayProtocol.toUpperCase()})` : 'Relay',
+          icon: <Shield className="w-3.5 h-3.5" />,
+          color: 'text-blue-400',
+          bgColor: 'bg-blue-500/20 border-blue-500/30',
+        };
+      case 'srflx':
+        return { 
+          label: 'STUN', 
+          description: 'Server Reflexive',
+          icon: <Globe className="w-3.5 h-3.5" />,
+          color: 'text-cyan-400',
+          bgColor: 'bg-cyan-500/20 border-cyan-500/30',
+        };
+      case 'prflx':
+        return { 
+          label: 'P2P', 
+          description: 'Peer Reflexive',
+          icon: <Router className="w-3.5 h-3.5" />,
+          color: 'text-green-400',
+          bgColor: 'bg-green-500/20 border-green-500/30',
+        };
+      case 'host':
+        return { 
+          label: 'Direct', 
+          description: 'Прямое соединение',
+          icon: <Router className="w-3.5 h-3.5" />,
+          color: 'text-green-400',
+          bgColor: 'bg-green-500/20 border-green-500/30',
+        };
+      default:
+        return { 
+          label: '...', 
+          description: 'Определение...',
+          icon: <Wifi className="w-3.5 h-3.5 animate-pulse" />,
+          color: 'text-white/50',
+          bgColor: 'bg-white/10 border-white/20',
+        };
+    }
+  };
+
+  const connTypeInfo = getConnectionTypeInfo();
+
   return (
     <TooltipProvider>
       <div className="flex items-center gap-2">
@@ -103,14 +150,34 @@ export const ConnectionQualityIndicator: React.FC<ConnectionQualityIndicatorProp
               <span className="text-xs font-medium text-white/90">
                 {stats.latency !== null ? `${stats.latency}ms` : '...'}
               </span>
+              {/* Connection type badge */}
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded-full border",
+                connTypeInfo.bgColor, connTypeInfo.color
+              )}>
+                {connTypeInfo.label}
+              </span>
             </div>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-background/95 backdrop-blur-sm border-border">
+          <TooltipContent side="bottom" className="bg-background/95 backdrop-blur-sm border-border max-w-xs">
             <div className="space-y-2 p-1">
               <div className="flex items-center gap-2">
                 {getQualityIcon()}
                 <span className="font-medium">{getQualityLabel()}</span>
               </div>
+              
+              {/* Connection type info */}
+              <div className={cn(
+                "flex items-center gap-2 px-2 py-1.5 rounded-lg border text-sm",
+                connTypeInfo.bgColor
+              )}>
+                <span className={connTypeInfo.color}>{connTypeInfo.icon}</span>
+                <div>
+                  <span className={cn("font-medium", connTypeInfo.color)}>{connTypeInfo.label}</span>
+                  <span className="text-muted-foreground ml-1.5">— {connTypeInfo.description}</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                 <span className="text-muted-foreground">Задержка:</span>
                 <span className="font-mono">
@@ -131,6 +198,18 @@ export const ConnectionQualityIndicator: React.FC<ConnectionQualityIndicatorProp
                 <span className="font-mono">
                   {stats.bitrate !== null ? `${stats.bitrate} кбит/с` : '—'}
                 </span>
+
+                <span className="text-muted-foreground">Маршрут:</span>
+                <span className="font-mono text-xs">
+                  {stats.localCandidateType ?? '?'} → {stats.remoteCandidateType ?? '?'}
+                </span>
+
+                {stats.relayProtocol && (
+                  <>
+                    <span className="text-muted-foreground">Relay протокол:</span>
+                    <span className="font-mono">{stats.relayProtocol.toUpperCase()}</span>
+                  </>
+                )}
 
                 {isVideoCall && (
                   <>

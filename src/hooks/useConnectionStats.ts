@@ -9,12 +9,18 @@ export interface VideoStats {
   bitrate: number | null;
 }
 
+export type ConnectionType = 'relay' | 'srflx' | 'prflx' | 'host' | 'unknown';
+
 export interface ConnectionStats {
   latency: number | null;
   packetLoss: number | null;
   jitter: number | null;
   bitrate: number | null;
   quality: 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
+  connectionType: ConnectionType;
+  localCandidateType: string | null;
+  remoteCandidateType: string | null;
+  relayProtocol: string | null;
   videoStats: VideoStats;
   currentVideoQuality: VideoQuality;
 }
@@ -54,6 +60,10 @@ export const useConnectionStats = (
     jitter: null,
     bitrate: null,
     quality: 'unknown',
+    connectionType: 'unknown',
+    localCandidateType: null,
+    remoteCandidateType: null,
+    relayProtocol: null,
     videoStats: {
       width: null,
       height: null,
@@ -104,6 +114,10 @@ export const useConnectionStats = (
         jitter: null,
         bitrate: null,
         quality: 'unknown',
+        connectionType: 'unknown',
+        localCandidateType: null,
+        remoteCandidateType: null,
+        relayProtocol: null,
         videoStats: {
           width: null,
           height: null,
@@ -128,13 +142,35 @@ export const useConnectionStats = (
         let videoWidth: number | null = null;
         let videoHeight: number | null = null;
         let frameRate: number | null = null;
+        let localCandidateId: string | null = null;
+        let remoteCandidateId: string | null = null;
+        let detectedLocalType: string | null = null;
+        let detectedRemoteType: string | null = null;
+        let detectedRelayProtocol: string | null = null;
 
+        // First pass: find succeeded candidate pair
         statsReport.forEach((report) => {
-          // Get RTT from candidate-pair
           if (report.type === 'candidate-pair' && report.state === 'succeeded') {
             if (report.currentRoundTripTime !== undefined) {
               latency = Math.round(report.currentRoundTripTime * 1000);
             }
+            localCandidateId = report.localCandidateId ?? null;
+            remoteCandidateId = report.remoteCandidateId ?? null;
+          }
+        });
+
+        // Second pass: resolve candidate types and gather RTP stats
+        statsReport.forEach((report) => {
+          // Resolve local candidate type
+          if (report.type === 'local-candidate' && report.id === localCandidateId) {
+            detectedLocalType = report.candidateType ?? null;
+            if (report.relayProtocol) {
+              detectedRelayProtocol = report.relayProtocol;
+            }
+          }
+          // Resolve remote candidate type
+          if (report.type === 'remote-candidate' && report.id === remoteCandidateId) {
+            detectedRemoteType = report.candidateType ?? null;
           }
 
           // Get packet loss and jitter from inbound-rtp audio
@@ -169,6 +205,13 @@ export const useConnectionStats = (
             }
           }
         });
+
+        // Determine connection type
+        const connectionType: ConnectionType = 
+          detectedLocalType === 'relay' || detectedRemoteType === 'relay' ? 'relay' :
+          detectedLocalType === 'srflx' || detectedRemoteType === 'srflx' ? 'srflx' :
+          detectedLocalType === 'prflx' || detectedRemoteType === 'prflx' ? 'prflx' :
+          detectedLocalType === 'host' ? 'host' : 'unknown';
 
         // Calculate audio bitrate
         let bitrate: number | null = null;
@@ -214,6 +257,10 @@ export const useConnectionStats = (
           jitter,
           bitrate,
           quality,
+          connectionType,
+          localCandidateType: detectedLocalType,
+          remoteCandidateType: detectedRemoteType,
+          relayProtocol: detectedRelayProtocol,
           videoStats: {
             width: videoWidth,
             height: videoHeight,
