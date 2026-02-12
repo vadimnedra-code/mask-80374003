@@ -14,26 +14,35 @@ interface UseGroupWebRTCOptions {
   onParticipantLeft?: (participant: GroupCallParticipant) => void;
 }
 
-const ICE_SERVERS: RTCIceServer[] = [
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:a.relay.metered.ca:443',
-    username: 'e8dd65c92d865b653b024fe8',
-    credential: 'uWdWNmkhvyqTmhWu',
-  },
 ];
+
+// Cached TURN credentials for group calls
+let groupCachedIceServers: RTCIceServer[] | null = null;
+let groupCacheExpiry = 0;
+
+const fetchGroupTurnCredentials = async (): Promise<RTCIceServer[]> => {
+  if (groupCachedIceServers && Date.now() < groupCacheExpiry) {
+    return groupCachedIceServers;
+  }
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return FALLBACK_ICE_SERVERS;
+
+    const { data, error } = await supabase.functions.invoke('get-turn-credentials', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (error || !data?.iceServers) return FALLBACK_ICE_SERVERS;
+
+    groupCachedIceServers = data.iceServers;
+    groupCacheExpiry = Date.now() + 10 * 60 * 1000;
+    return groupCachedIceServers;
+  } catch {
+    return FALLBACK_ICE_SERVERS;
+  }
+};
 
 const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -154,15 +163,17 @@ export const useGroupWebRTC = (options: UseGroupWebRTCOptions = {}) => {
     return stream;
   }, []);
 
-  const createPeerConnection = useCallback((
+  const createPeerConnection = useCallback(async (
     callId: string, 
     peerId: string, 
     callType: 'voice' | 'video'
-  ): RTCPeerConnection => {
+  ): Promise<RTCPeerConnection> => {
     console.log('[GroupWebRTC] Creating peer connection for:', peerId);
     
+    const iceServers = await fetchGroupTurnCredentials();
+    
     const pc = new RTCPeerConnection({
-      iceServers: ICE_SERVERS,
+      iceServers,
       iceCandidatePoolSize: 5,
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',
@@ -383,7 +394,7 @@ export const useGroupWebRTC = (options: UseGroupWebRTCOptions = {}) => {
     
     // Handle offer
     if (peerConn.offer && !pc) {
-      pc = createPeerConnection(callId, peerConn.from_user_id, callState.callType);
+      pc = await createPeerConnection(callId, peerConn.from_user_id, callState.callType);
       
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(peerConn.offer));
@@ -440,7 +451,7 @@ export const useGroupWebRTC = (options: UseGroupWebRTCOptions = {}) => {
     
     console.log('[GroupWebRTC] Initiating connection to:', peerId);
     
-    const pc = createPeerConnection(callId, peerId, callState.callType);
+    const pc = await createPeerConnection(callId, peerId, callState.callType);
     
     try {
       const offer = await pc.createOffer({
