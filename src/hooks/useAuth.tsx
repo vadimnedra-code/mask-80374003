@@ -64,27 +64,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // THEN check for existing session
-    supabase.auth
-      .getSession()
-      .then(({ data: { session }, error }) => {
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.warn('Session error, clearing:', error.message);
+          console.warn('Session error, attempting refresh:', error.message);
+          // Try refreshing the session instead of giving up
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && refreshData.session) {
+            setSession(refreshData.session);
+            setUser(refreshData.session.user);
+            setLoading(false);
+            return;
+          }
         }
         
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-      })
-      .catch((err) => {
-        console.warn('Session check failed, clearing:', err);
-        // Don't clear - Supabase will emit SIGNED_OUT if session is truly invalid
+      } catch (err) {
+        console.warn('Session check failed:', err);
+        // Don't clear immediately - try refreshing first
+        try {
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && refreshData.session) {
+            setSession(refreshData.session);
+            setUser(refreshData.session.user);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // Refresh also failed
+        }
         setSession(null);
         setUser(null);
         setLoading(false);
-      });
+      }
+    };
+
+    initSession();
+
+    // Refresh session when app returns from background (mobile)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Auth] App became visible, refreshing session');
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+          } else {
+            // Access token might be expired, try refresh
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData.session) {
+              setSession(refreshData.session);
+              setUser(refreshData.session.user);
+            }
+          }
+        } catch (err) {
+          console.warn('[Auth] Session refresh on visibility failed:', err);
+          // Don't sign out - keep existing state, user might just have no network briefly
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
