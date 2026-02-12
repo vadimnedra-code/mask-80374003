@@ -47,7 +47,9 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
       stopVibration();
       closeNotification();
     };
-  }, [call, isVideoCall, onAccept, onReject, showIncomingCallNotification, closeNotification, startRingtoneSound, stopAllSounds, startCallVibration, stopVibration]);
+  // Only re-run when call.id changes (not on every callback reference change)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call.id]);
 
   const handleAccept = () => {
     console.log('[IncomingCallDialog] Accept clicked - stopping sounds/vibration and accepting');

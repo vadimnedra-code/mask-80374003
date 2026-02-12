@@ -1423,6 +1423,32 @@ export type Database = {
         Args: { _password?: string; _token: string }
         Returns: string
       }
+      search_users_public: {
+        Args: { _limit?: number; _query: string }
+        Returns: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          last_seen: string | null
+          show_last_seen: boolean | null
+          show_online_status: boolean | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles_public"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      shares_chat_with: {
+        Args: { _other_user_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       ai_action_type:

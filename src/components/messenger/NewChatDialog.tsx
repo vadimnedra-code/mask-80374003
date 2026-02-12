@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, X, UserPlus, Users, Camera } from 'lucide-react';
-import { useUsers } from '@/hooks/useUsers';
+import { useUsers, PublicProfile } from '@/hooks/useUsers';
 import { useChats } from '@/hooks/useChats';
 import { useAuth } from '@/hooks/useAuth';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { supabase } from '@/integrations/supabase/client';
 import { Avatar } from './Avatar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -24,11 +25,50 @@ export const NewChatDialog = ({ onClose, onChatCreated }: NewChatDialogProps) =>
   const { users, searchUsers } = useUsers();
   const { createChat, chats } = useChats();
   const { isBlocked } = useBlockedUsers();
+  const [rpcResults, setRpcResults] = useState<PublicProfile[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  // Filter out current user and blocked users
-  const filteredUsers = searchUsers(searchQuery).filter(
+  // Search via RPC for user discovery (finds users outside shared chats)
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setRpcResults([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data, error } = await supabase.rpc('search_users_public', {
+          _query: query,
+          _limit: 20,
+        });
+        if (!error && data) {
+          setRpcResults(data as PublicProfile[]);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
+
+  // Merge local contacts (shared chat participants) with RPC search results
+  const localResults = searchUsers(searchQuery).filter(
     (u) => u.user_id !== user?.id && !isBlocked(u.user_id)
   );
+
+  // Deduplicate: local contacts + RPC results not already in local
+  const localIds = new Set(localResults.map(u => u.user_id));
+  const mergedResults = [
+    ...localResults,
+    ...rpcResults.filter(u => !localIds.has(u.user_id) && u.user_id !== user?.id && !isBlocked(u.user_id)),
+  ];
+
+  const filteredUsers = mergedResults;
 
   const isGroupChat = selectedUsers.length > 1;
 
