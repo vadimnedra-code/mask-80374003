@@ -516,6 +516,21 @@ export const useCallSounds = () => {
         fallbackAudioRef.current.src = '';
       } catch (e) {}
     }
+
+    // Suspend shared AudioContext briefly to kill any scheduled oscillators
+    // that might not be tracked in our refs (e.g., from timing races)
+    try {
+      if (sharedAudioContext && sharedAudioContext.state === 'running') {
+        sharedAudioContext.suspend().then(() => {
+          // Resume after a short delay so future sounds can play
+          setTimeout(() => {
+            if (sharedAudioContext && sharedAudioContext.state === 'suspended') {
+              sharedAudioContext.resume().catch(() => {});
+            }
+          }, 100);
+        }).catch(() => {});
+      }
+    } catch (e) {}
   }, [cleanupOscillators]);
 
   const playConnectedSound = useCallback(() => {

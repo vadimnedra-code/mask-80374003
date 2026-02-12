@@ -122,12 +122,28 @@ export const CallScreen = ({
     previousStatus.current = callStatus;
   }, [callStatus, startDialingSound, stopAllSounds, playConnectedSound]);
 
-  // Cleanup sounds when component unmounts
+  // Cleanup sounds and media elements when component unmounts
   useEffect(() => {
     return () => {
-      console.log('[CallScreen] Component unmounting - stopping all sounds');
+      console.log('[CallScreen] Component unmounting - stopping all sounds and cleaning media');
       // Always stop all sounds on unmount
       stopAllSounds();
+      
+      // Clean up media elements to prevent audio artifacts (beeping/clicking)
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.pause();
+        remoteAudioRef.current.srcObject = null;
+        remoteAudioRef.current.src = '';
+      }
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.pause();
+        remoteVideoRef.current.srcObject = null;
+      }
+      if (localVideoRef.current) {
+        localVideoRef.current.pause();
+        localVideoRef.current.srcObject = null;
+      }
+      
       // Play ended sound if call was active
       if (previousStatus.current === 'active') {
         playEndedSound();
