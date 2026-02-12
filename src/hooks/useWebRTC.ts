@@ -36,9 +36,10 @@ interface UseWebRTCOptions {
   onCallRejected?: () => void;
 }
 
-const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
+const GOOGLE_STUN_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
 ];
 
 const fetchTurnCredentials = async (): Promise<RTCIceServer[]> => {
@@ -51,7 +52,7 @@ const fetchTurnCredentials = async (): Promise<RTCIceServer[]> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       console.warn('No auth session, using fallback ICE servers');
-      return FALLBACK_ICE_SERVERS;
+      return GOOGLE_STUN_SERVERS;
     }
 
     const { data, error } = await supabase.functions.invoke('get-turn-credentials', {
@@ -60,16 +61,19 @@ const fetchTurnCredentials = async (): Promise<RTCIceServer[]> => {
 
     if (error || !data?.iceServers) {
       console.error('Failed to fetch TURN credentials:', error);
-      return FALLBACK_ICE_SERVERS;
+      return GOOGLE_STUN_SERVERS;
     }
 
-    cachedIceServers = data.iceServers;
+    // Always include Google STUN servers alongside Metered TURN/STUN
+    // This ensures connectivity even if Metered STUN is slow or unreliable
+    const mergedServers = [...GOOGLE_STUN_SERVERS, ...data.iceServers];
+    cachedIceServers = mergedServers;
     cacheExpiry = Date.now() + 10 * 60 * 1000; // 10 min cache
-    console.log('Fetched TURN credentials:', cachedIceServers.length, 'servers');
+    console.log('Fetched TURN credentials:', mergedServers.length, 'servers (incl. Google STUN)');
     return cachedIceServers;
   } catch (err) {
     console.error('Error fetching TURN credentials:', err);
-    return FALLBACK_ICE_SERVERS;
+    return GOOGLE_STUN_SERVERS;
   }
 };
 
@@ -387,10 +391,19 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       updatePeerConnectionState();
     };
     
+    // ICE restart timer - restart ICE if stuck at "checking" for too long
+    let iceCheckingTimer: ReturnType<typeof setTimeout> | null = null;
+    
     pc.oniceconnectionstatechange = () => {
       console.log('ICE connection state:', pc.iceConnectionState);
       addLog('ice', 'ICE connection state changed', pc.iceConnectionState);
       updatePeerConnectionState();
+      
+      // Clear any pending ICE restart timer
+      if (iceCheckingTimer) {
+        clearTimeout(iceCheckingTimer);
+        iceCheckingTimer = null;
+      }
       
       // Notify auto-reconnect handler about state changes
       if (autoReconnectHandlerRef.current) {
@@ -404,8 +417,22 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         options.onCallAccepted?.();
       } else if (pc.iceConnectionState === 'checking') {
         setCallState(prev => ({ ...prev, status: 'connecting', error: null }));
+        
+        // If stuck at "checking" for 8 seconds, restart ICE
+        iceCheckingTimer = setTimeout(() => {
+          if (pc.iceConnectionState === 'checking') {
+            console.log('[WebRTC] ICE stuck at checking for 8s, restarting ICE...');
+            addLog('ice', 'ICE restart triggered', 'Stuck at checking for 8 seconds');
+            pc.restartIce();
+          }
+        }, 8000);
+      } else if (pc.iceConnectionState === 'failed') {
+        // Immediate ICE restart on failure before auto-reconnect kicks in
+        console.log('[WebRTC] ICE failed, attempting restart...');
+        addLog('ice', 'ICE failed, restarting', 'Immediate restart attempt');
+        pc.restartIce();
       }
-      // Note: 'failed' and 'disconnected' states are now handled by useAutoReconnect
+      // Note: 'disconnected' states are handled by useAutoReconnect
     };
     
     pc.onconnectionstatechange = () => {
