@@ -257,7 +257,7 @@ const Messenger = () => {
     leaveGroupCall();
   };
 
-  const handleAcceptIncomingCall = async (callIdOverride?: string) => {
+  const handleAcceptIncomingCall = useCallback(async (callIdOverride?: string) => {
     const callId = callIdOverride ?? incomingCall?.id;
     if (!callId) return;
 
@@ -296,9 +296,9 @@ const Messenger = () => {
       setCallParticipant(null);
       if (incomingCall?.id === callId) clearIncomingCall();
     }
-  };
+  }, [incomingCall, acceptCall, clearIncomingCall]);
 
-  const handleRejectIncomingCall = async () => {
+  const handleRejectIncomingCall = useCallback(async () => {
     if (!incomingCall) return;
     console.log('[Messenger] Rejecting incoming call:', incomingCall.id);
     
@@ -311,7 +311,7 @@ const Messenger = () => {
     // Always clear incoming call state, even if rejectCall fails
     console.log('[Messenger] Clearing incoming call state');
     clearIncomingCall();
-  };
+  }, [incomingCall, rejectCall, clearIncomingCall]);
 
   const handleSearchSelectMessage = (chatId: string, messageId: string) => {
     setSelectedChatId(chatId);
