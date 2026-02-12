@@ -545,24 +545,33 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         }
 
         // Process ICE candidates - for BOTH caller and callee
+        // Each candidate is tagged with {sender_id, candidate} by the RPC
         if (call.ice_candidates && call.ice_candidates.length > 0 && peerConnection.current) {
           const total = call.ice_candidates.length as number;
           addLog('ice', 'Remote ICE candidates update', `total in call: ${total}`);
 
-          for (const candidate of call.ice_candidates) {
-            const candidateKey = JSON.stringify(candidate);
+          for (const entry of call.ice_candidates) {
+            // Skip our own candidates (tagged with sender_id by the DB function)
+            const tagged = entry as { sender_id?: string; candidate?: any };
+            const actualCandidate = tagged.candidate || entry;
+            const senderId = tagged.sender_id;
+
+            // If tagged, skip candidates we sent ourselves
+            if (senderId && senderId === user?.id) continue;
+
+            const candidateKey = JSON.stringify(actualCandidate);
             if (processedCandidates.current.has(candidateKey)) continue;
             processedCandidates.current.add(candidateKey);
 
             if (peerConnection.current.remoteDescription) {
               try {
-                await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+                await peerConnection.current.addIceCandidate(new RTCIceCandidate(actualCandidate));
               } catch (err) {
                 console.error('Error adding ICE candidate:', err);
                 addLog('error', 'Failed to add remote ICE candidate', String(err));
               }
             } else {
-              pendingCandidates.current.push(candidate);
+              pendingCandidates.current.push(actualCandidate);
             }
           }
         }
@@ -790,15 +799,22 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           await pc.setRemoteDescription(new RTCSessionDescription(offerData));
           addLog('sdp', 'Remote description (offer) set');
 
-          // Process existing ICE candidates
+          // Process existing ICE candidates (tagged with {sender_id, candidate})
           if (freshCall.ice_candidates) {
             addLog('ice', 'Processing existing ICE candidates', `count: ${freshCall.ice_candidates.length}`);
-            for (const candidate of freshCall.ice_candidates as RTCIceCandidateInit[]) {
-              const candidateKey = JSON.stringify(candidate);
+            for (const entry of freshCall.ice_candidates as any[]) {
+              const tagged = entry as { sender_id?: string; candidate?: any };
+              const actualCandidate = tagged.candidate || entry;
+              const senderId = tagged.sender_id;
+
+              // Skip our own candidates
+              if (senderId && senderId === user?.id) continue;
+
+              const candidateKey = JSON.stringify(actualCandidate);
               if (processedCandidates.current.has(candidateKey)) continue;
               processedCandidates.current.add(candidateKey);
               try {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                await pc.addIceCandidate(new RTCIceCandidate(actualCandidate));
               } catch (err) {
                 console.error('Error adding ICE candidate:', err);
                 addLog('error', 'Failed to add existing ICE candidate', String(err));
