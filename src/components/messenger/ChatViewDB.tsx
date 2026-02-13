@@ -24,6 +24,7 @@ import {
   Users,
   Timer,
   UserPen,
+  UserPlus,
   Leaf
 } from 'lucide-react';
 import { useEnergySavingContext } from '@/hooks/useEnergySaving';
@@ -47,6 +48,7 @@ import { E2EEIndicator } from './E2EEIndicator';
 import { StartGroupCallDialog } from './StartGroupCallDialog';
 import { DisappearingMessagesIndicator, DisappearingMessagesSelector } from './DisappearingMessagesSelector';
 import { EditNicknameDialog } from './EditNicknameDialog';
+import { AddToChatDialog } from './AddToChatDialog';
 import { MediaItem } from './MediaGalleryLightbox';
 import { AIActionsMenu } from '@/components/ai/AIActionsMenu';
 import { CommandAutocomplete, useCommandAutocomplete, ChatCommand } from './CommandAutocomplete';
@@ -117,6 +119,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showAIActions, setShowAIActions] = useState(false);
   const [aiActionType, setAiActionType] = useState<'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showAddToChatDialog, setShowAddToChatDialog] = useState(false);
   const prevMessagesLengthRef = useRef(0);
   const isAtBottomRef = useRef(true);
   
@@ -684,6 +687,16 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           }}
         />
       )}
+
+      {/* Add to Chat Dialog */}
+      <AddToChatDialog
+        isOpen={showAddToChatDialog}
+        onClose={() => setShowAddToChatDialog(false)}
+        chatId={chat.id}
+        isGroup={chat.is_group}
+        currentParticipantIds={chat.participants.map(p => p.user_id)}
+        chatName={chat.is_group ? chat.group_name || undefined : undefined}
+      />
       
       {/* Header - Premium Style */}
       <div className="whatsapp-header flex items-center gap-1 sm:gap-2 px-1 sm:px-3 py-1.5 sm:py-2 safe-area-top">
@@ -793,6 +806,10 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                   <UserPen className="w-4 h-4 mr-2" />
                   {currentNickname ? 'Изменить имя' : 'Задать имя'}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowAddToChatDialog(true)}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Добавить в группу
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {/* Disappearing Messages option */}
                 <DropdownMenuItem onClick={() => setShowDisappearingSelector(true)}>
@@ -838,6 +855,12 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                {/* Add participants to group */}
+                <DropdownMenuItem onClick={() => setShowAddToChatDialog(true)}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Добавить участников
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {/* Disappearing Messages option for groups */}
                 <DropdownMenuItem onClick={() => setShowDisappearingSelector(true)}>
                   <Timer className="w-4 h-4 mr-2" />
