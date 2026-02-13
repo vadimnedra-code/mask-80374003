@@ -140,21 +140,33 @@ export const AddToChatDialog = ({
 
         if (chatError) throw chatError;
 
-        // Add all participants including current user
-        const allIds = [user!.id, ...allParticipantIds.filter(id => id !== user!.id)];
-        const uniqueIds = [...new Set(allIds)];
-        
-        const participantInserts = uniqueIds.map((uid, idx) => ({
-          chat_id: newChat.id,
-          user_id: uid,
-          role: uid === user!.id ? 'owner' : 'member',
-        }));
-
-        const { error: partError } = await supabase
+        // First add the current user as owner (RLS requires this before adding others)
+        const { error: ownerError } = await supabase
           .from('chat_participants')
-          .insert(participantInserts);
+          .insert({
+            chat_id: newChat.id,
+            user_id: user!.id,
+            role: 'owner',
+          });
 
-        if (partError) throw partError;
+        if (ownerError) throw ownerError;
+
+        // Then add other participants
+        const otherIds = [...new Set([...allParticipantIds.filter(id => id !== user!.id)])];
+        
+        if (otherIds.length > 0) {
+          const otherInserts = otherIds.map(uid => ({
+            chat_id: newChat.id,
+            user_id: uid,
+            role: 'member',
+          }));
+
+          const { error: partError } = await supabase
+            .from('chat_participants')
+            .insert(otherInserts);
+
+          if (partError) throw partError;
+        }
 
         toast.success('Группа создана');
         onChatConverted?.(newChat.id);
