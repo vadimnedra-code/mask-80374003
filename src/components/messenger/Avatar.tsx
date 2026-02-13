@@ -40,7 +40,7 @@ export const Avatar = ({ src, alt, size = 'md', status, className }: AvatarProps
             statusSizeClasses[size],
             status === 'online' && 'status-online',
             status === 'offline' && 'status-offline',
-            status === 'away' && 'bg-amber-400'
+            status === 'away' && 'bg-[hsl(var(--away))]'
           )}
         />
       )}

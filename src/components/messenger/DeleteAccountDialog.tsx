@@ -73,7 +73,7 @@ export const DeleteAccountDialog = ({ isOpen, onClose, userEmail }: DeleteAccoun
             <div className="p-3 rounded-full bg-destructive/10">
               <AlertTriangle className="w-6 h-6 text-destructive" />
             </div>
-            <AlertDialogTitle className="text-xl">Удаление аккаунта</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-display font-semibold">Удаление аккаунта</AlertDialogTitle>
           </div>
           <AlertDialogDescription className="space-y-3 pt-4">
             <p>

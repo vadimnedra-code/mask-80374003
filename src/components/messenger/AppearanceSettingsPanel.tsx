@@ -19,7 +19,7 @@ export const AppearanceSettingsPanel = ({ onClose }: AppearanceSettingsPanelProp
         >
           <X className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-semibold">Оформление</h1>
+        <h1 className="text-xl font-display font-semibold">Оформление</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-[env(safe-area-inset-bottom)]">
@@ -27,7 +27,7 @@ export const AppearanceSettingsPanel = ({ onClose }: AppearanceSettingsPanelProp
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-4">
             <Palette className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold">Цвет темы</h2>
+            <h2 className="font-display font-semibold">Цвет темы</h2>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {THEME_COLORS.map((color) => (
@@ -60,7 +60,7 @@ export const AppearanceSettingsPanel = ({ onClose }: AppearanceSettingsPanelProp
         <div className="p-4">
           <div className="flex items-center gap-2 mb-4">
             <Image className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold">Фон чата</h2>
+            <h2 className="font-display font-semibold">Фон чата</h2>
           </div>
           
           {/* Preview */}

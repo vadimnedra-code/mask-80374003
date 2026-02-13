@@ -126,7 +126,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
         >
           <X className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-semibold">Настройки</h1>
+        <h1 className="text-xl font-display font-semibold">Настройки</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-[env(safe-area-inset-bottom)]">
@@ -146,7 +146,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
               <Edit2 className="w-3 h-3" />
             </div>
           </div>
-          <h2 className="mt-4 text-xl font-semibold">{profile?.display_name || 'Пользователь'}</h2>
+          <h2 className="mt-4 text-xl font-display font-semibold">{profile?.display_name || 'Пользователь'}</h2>
           <p className="text-sm text-muted-foreground">{user?.email}</p>
           {profile?.username && (
             <p className="text-sm text-primary">@{profile.username}</p>
@@ -239,16 +239,16 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
                 onClose();
                 navigate('/admin');
               }}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-600/5 border border-amber-500/20 hover:border-amber-500/40 transition-all group"
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/15 hover:border-primary/30 transition-all group"
             >
               <div className="flex items-center gap-4">
-                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <ShieldCheck className="w-5 h-5 text-primary" />
                 <div className="text-left">
-                  <p className="font-medium text-amber-100">Панель администратора</p>
-                  <p className="text-xs text-amber-400/60">Аналитика и управление</p>
+                  <p className="font-medium">Панель администратора</p>
+                  <p className="text-xs text-muted-foreground">Аналитика и управление</p>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="w-5 h-5 text-primary/60 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         )}

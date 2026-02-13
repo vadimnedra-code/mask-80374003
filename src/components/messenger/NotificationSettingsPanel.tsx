@@ -72,7 +72,7 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
         >
           <X className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-semibold">Уведомления</h1>
+        <h1 className="text-xl font-display font-semibold">Уведомления</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 pb-[env(safe-area-inset-bottom)]">
@@ -94,18 +94,18 @@ export const NotificationSettingsPanel = ({ onClose }: NotificationSettingsPanel
             className={cn(
               "w-full flex items-center justify-between p-4 rounded-xl border transition-all group",
               isEnergySavingEnabled 
-                ? "bg-amber-500/10 border-amber-500/30" 
-                : "bg-card border-border hover:border-primary/30"
+                ? "bg-primary/5 border-primary/20" 
+                : "bg-card border-border hover:border-primary/20"
             )}
           >
             <div className="flex items-center gap-3">
               <div className={cn(
                 "p-2 rounded-full",
-                isEnergySavingEnabled ? "bg-amber-500/20" : "bg-muted"
+                isEnergySavingEnabled ? "bg-primary/10" : "bg-muted"
               )}>
                 <Battery className={cn(
                   "w-5 h-5",
-                  isEnergySavingEnabled ? "text-amber-500" : "text-muted-foreground"
+                  isEnergySavingEnabled ? "text-primary" : "text-muted-foreground"
                 )} />
               </div>
               <div className="text-left">

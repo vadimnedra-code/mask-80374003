@@ -118,7 +118,7 @@ const Admin = () => {
           </p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-amber-500/25 transition-all"
+            className="px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition-all"
           >
             Вернуться в мессенджер
           </button>
@@ -133,7 +133,7 @@ const Admin = () => {
         <p className="text-red-400 mb-4">{error}</p>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 bg-amber-500 text-black rounded-lg font-medium"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium"
         >
           Повторить
         </button>
@@ -218,20 +218,18 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/95">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-amber-500/10">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="p-2 rounded-xl hover:bg-amber-500/10 transition-colors"
+              className="p-2 rounded-xl hover:bg-muted transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-amber-400" />
+              <ArrowLeft className="w-5 h-5 text-primary" />
             </button>
             <div>
-              <h1 className="text-xl font-bold">
-                <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">
-                  Панель администратора
-                </span>
+              <h1 className="text-xl font-display font-bold text-gold-gradient">
+                Панель администратора
               </h1>
               <p className="text-xs text-muted-foreground">Mask Messenger</p>
             </div>
@@ -239,17 +237,17 @@ const Admin = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={exportToCSV}
-              className="p-2.5 rounded-xl bg-green-500/10 hover:bg-green-500/20 transition-colors"
+              className="p-2.5 rounded-xl bg-[hsl(var(--online))]/10 hover:bg-[hsl(var(--online))]/20 transition-colors"
               title="Экспорт в CSV"
             >
-              <Download className="w-5 h-5 text-green-400" />
+              <Download className="w-5 h-5 text-[hsl(var(--online))]" />
             </button>
             <button
               onClick={() => refetch()}
-              className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+              className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors"
               title="Обновить"
             >
-              <RefreshCw className="w-5 h-5 text-amber-400" />
+              <RefreshCw className="w-5 h-5 text-primary" />
             </button>
           </div>
         </div>
@@ -263,8 +261,8 @@ const Admin = () => {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
               activeTab === 'analytics'
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                : "bg-black/20 text-muted-foreground hover:bg-black/40 border border-transparent"
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent"
             )}
           >
             <BarChart3 className="w-4 h-4" />
@@ -275,8 +273,8 @@ const Admin = () => {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
               activeTab === 'users'
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                : "bg-black/20 text-muted-foreground hover:bg-black/40 border border-transparent"
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent"
             )}
           >
             <UserCog className="w-4 h-4" />
@@ -364,9 +362,9 @@ const Admin = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="p-5 rounded-2xl border border-amber-500/10 bg-gradient-to-br from-amber-500/5 to-transparent"
+            className="p-5 rounded-2xl border border-border bg-card"
           >
-            <h3 className="text-lg font-semibold mb-4 text-amber-100">
+            <h3 className="text-lg font-display font-semibold mb-4 text-foreground">
               Сообщения за 30 дней
             </h3>
             <div className="h-64">

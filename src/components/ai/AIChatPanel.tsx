@@ -134,7 +134,7 @@ export const AIChatPanel = ({ onClose, onOpenSettings, activeChatName, onSendToC
     if (isIncognito) return { text: 'Инкогнито', color: 'bg-purple-500/20 text-purple-400' };
     switch (settings?.memory_mode) {
       case 'none': return { text: 'Без памяти', color: 'bg-muted text-muted-foreground' };
-      case 'local': return { text: 'Локальная память', color: 'bg-amber-500/20 text-amber-400' };
+      case 'local': return { text: 'Локальная память', color: 'bg-primary/15 text-primary' };
       case 'cloud_encrypted': return { text: 'Облачная память', color: 'bg-emerald-500/20 text-emerald-400' };
       default: return { text: 'Без памяти', color: 'bg-muted text-muted-foreground' };
     }

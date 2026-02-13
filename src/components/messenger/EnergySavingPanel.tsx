@@ -44,16 +44,16 @@ export const EnergySavingPanel = ({ onClose }: EnergySavingPanelProps) => {
         >
           <X className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-semibold">Энергосбережение</h1>
+        <h1 className="text-xl font-display font-semibold">Энергосбережение</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 pb-[env(safe-area-inset-bottom)]">
         <div className="space-y-6 max-w-md mx-auto">
           {/* Info */}
-          <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-            <Battery className="w-5 h-5 text-amber-500 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/10 rounded-xl">
+            <Battery className="w-5 h-5 text-primary mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-200">Режим энергосбережения</p>
+              <p className="text-sm font-medium text-foreground">Режим энергосбережения</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Уменьшает нагрузку на батарею, ограничивая фоновую активность и анимации
               </p>
@@ -65,11 +65,11 @@ export const EnergySavingPanel = ({ onClose }: EnergySavingPanelProps) => {
             <div className="flex items-center gap-3">
               <div className={cn(
                 "p-2 rounded-full",
-                settings.enabled ? "bg-amber-500/20" : "bg-muted"
+                settings.enabled ? "bg-primary/10" : "bg-muted"
               )}>
                 <Zap className={cn(
                   "w-5 h-5",
-                  settings.enabled ? "text-amber-500" : "text-muted-foreground"
+                  settings.enabled ? "text-primary" : "text-muted-foreground"
                 )} />
               </div>
               <div>
