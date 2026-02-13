@@ -490,10 +490,10 @@ export const ChatList = ({
                 {/* Pinned chats section */}
                 {pinnedChats.length > 0 && (
                   <>
-                    <div className="px-4 py-3 text-[11px] font-semibold text-amber-500/70 uppercase tracking-widest flex items-center gap-2">
+                    <div className="px-4 py-3 text-[11px] font-semibold text-primary/70 uppercase tracking-widest flex items-center gap-2">
                       <Pin className="w-3 h-3" />
                       Закреплённые
-                      <div className="flex-1 h-px bg-gradient-to-r from-amber-500/20 to-transparent" />
+                      <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent" />
                     </div>
                     {pinnedChats.map((chat) => renderChatItem(chat))}
                   </>
@@ -501,9 +501,9 @@ export const ChatList = ({
                 
                 {/* Regular chats section */}
                 {unpinnedChats.length > 0 && pinnedChats.length > 0 && (
-                  <div className="px-4 py-3 text-[11px] font-semibold text-amber-500/70 uppercase tracking-widest flex items-center gap-2">
+                  <div className="px-4 py-3 text-[11px] font-semibold text-primary/70 uppercase tracking-widest flex items-center gap-2">
                     Все чаты
-                    <div className="flex-1 h-px bg-gradient-to-r from-amber-500/20 to-transparent" />
+                    <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent" />
                   </div>
                 )}
                 {unpinnedChats.map((chat) => renderChatItem(chat))}
@@ -520,9 +520,9 @@ export const ChatList = ({
         className="relative flex items-center gap-3.5 px-4 py-4 cursor-pointer group pb-[max(1rem,env(safe-area-inset-bottom))]"
       >
         {/* Premium background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-950/30 via-amber-900/20 to-amber-950/30 opacity-80 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 opacity-80 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         
         <div className="relative z-10">
           <Avatar
@@ -531,16 +531,16 @@ export const ChatList = ({
             size="md"
             status="online"
           />
-          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full ring-2 ring-background" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gradient-to-br from-primary to-primary/70 rounded-full ring-2 ring-background" />
         </div>
         <div className="flex-1 min-w-0 relative z-10">
-          <p className="font-semibold text-[15px] truncate text-amber-100">{currentUserDisplayName}</p>
+          <p className="font-semibold text-[15px] truncate text-foreground">{currentUserDisplayName}</p>
           {currentUserProfile?.username && (
-            <p className="text-sm text-amber-400/60 truncate">@{currentUserProfile.username}</p>
+            <p className="text-sm text-primary/60 truncate">@{currentUserProfile.username}</p>
           )}
         </div>
-        <div className="relative z-10 p-2 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-          <Settings className="w-5 h-5 text-amber-400/70 group-hover:text-amber-300 transition-colors" />
+        <div className="relative z-10 p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+          <Settings className="w-5 h-5 text-primary/70 group-hover:text-primary transition-colors" />
         </div>
       </div>
 
@@ -626,7 +626,7 @@ export const ChatList = ({
               <button
                 onClick={(e) => handleArchiveChat(chat.id, e)}
                 disabled={isArchiving}
-                className="w-12 h-full flex items-center justify-center bg-amber-500 text-white"
+                className="w-12 h-full flex items-center justify-center bg-primary text-primary-foreground"
               >
                 {isArchiving ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -672,23 +672,23 @@ export const ChatList = ({
           onTouchEnd={handleTouchEnd}
           className={cn(
             'w-full flex items-center gap-3.5 px-4 py-3 transition-all duration-300 bg-background relative group',
-            isSelected && 'bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent',
-            !isSelected && 'hover:bg-amber-500/5',
+            isSelected && 'bg-gradient-to-r from-primary/10 via-primary/5 to-transparent',
+            !isSelected && 'hover:bg-primary/5',
             isSwiped && (isArchived ? '-translate-x-32' : '-translate-x-48')
           )}
         >
           {/* Bottom border with gradient */}
-          <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent" />
+          <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
           
           {/* Selected indicator */}
           {isSelected && (
-            <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-gradient-to-b from-amber-400 to-amber-600 rounded-r-full" />
+            <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-gradient-to-b from-primary to-primary/70 rounded-r-full" />
           )}
           
           <div className="relative flex-shrink-0">
             <div className={cn(
               "rounded-full transition-all duration-300",
-              isSelected && "ring-2 ring-amber-500/30 ring-offset-2 ring-offset-background"
+              isSelected && "ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
             )}>
               <Avatar
                 src={avatarUrl || ''}
@@ -698,8 +698,8 @@ export const ChatList = ({
               />
             </div>
             {isPinned && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30">
-                <Pin className="w-2.5 h-2.5 text-black" />
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
+                <Pin className="w-2.5 h-2.5 text-primary-foreground" />
               </div>
             )}
           </div>
@@ -708,14 +708,14 @@ export const ChatList = ({
               <div className="flex items-center gap-2 min-w-0">
                 <span className={cn(
                   "font-semibold truncate text-[15px] transition-colors",
-                  isSelected ? "text-amber-100" : "text-foreground group-hover:text-amber-100"
+                  isSelected ? "text-foreground" : "text-foreground group-hover:text-foreground"
                 )}>{displayName}</span>
                 {isMuted && <MutedBadge mutedUntil={currentParticipant?.muted_until || null} />}
               </div>
               {chat.lastMessage && (
                 <span className={cn(
                   "text-xs flex-shrink-0 transition-colors",
-                  isSelected ? "text-amber-400/70" : "text-muted-foreground"
+                  isSelected ? "text-primary/70" : "text-muted-foreground"
                 )}>
                   {new Date(chat.lastMessage.created_at).toLocaleTimeString('ru-RU', { 
                     hour: '2-digit', 
@@ -733,12 +733,12 @@ export const ChatList = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="text-sm text-amber-400 truncate flex-1 flex items-center gap-1.5"
+                    className="text-sm text-primary truncate flex-1 flex items-center gap-1.5"
                   >
                     <span className="flex gap-0.5">
-                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-typing" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-typing" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-typing" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-typing" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-typing" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-typing" style={{ animationDelay: '300ms' }} />
                     </span>
                     <span className="font-medium">{getTypingText(chat.id)}</span>
                   </motion.p>
@@ -752,7 +752,7 @@ export const ChatList = ({
                     className="text-sm text-muted-foreground/80 truncate flex-1"
                   >
                     {chat.lastMessage?.sender_id === user?.id && (
-                      <span className="text-amber-500 mr-1">✓</span>
+                      <span className="text-primary mr-1">✓</span>
                     )}
                     {chat.lastMessage?.content || 'Нет сообщений'}
                   </motion.p>
@@ -771,7 +771,7 @@ export const ChatList = ({
                       damping: 30,
                       duration: 0.2 
                     }}
-                    className="flex-shrink-0 min-w-6 h-6 px-2 flex items-center justify-center text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-amber-500 rounded-full shadow-lg shadow-amber-500/30"
+                    className="flex-shrink-0 min-w-6 h-6 px-2 flex items-center justify-center text-xs font-bold text-primary-foreground bg-gradient-to-r from-primary to-primary/80 rounded-full shadow-lg shadow-primary/30"
                   >
                     {chat.unreadCount}
                   </motion.span>
