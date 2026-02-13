@@ -123,7 +123,7 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
             >
               <X className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-semibold">Редактировать профиль</h1>
+            <h1 className="text-xl font-display font-semibold">Редактировать профиль</h1>
           </div>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -147,7 +147,7 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
           >
             <X className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-semibold">Редактировать профиль</h1>
+          <h1 className="text-xl font-display font-semibold">Редактировать профиль</h1>
         </div>
         <div className="flex items-center gap-2">
           {onOpenSettings && (

@@ -84,7 +84,7 @@ export const PrivacySettingsPanel = ({ onClose }: PrivacySettingsPanelProps) => 
         >
           <X className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-semibold">Конфиденциальность</h1>
+        <h1 className="text-xl font-display font-semibold">Конфиденциальность</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 pb-[env(safe-area-inset-bottom)]">
