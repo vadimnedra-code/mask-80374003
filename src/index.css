@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,152 +6,188 @@
 
 @layer base {
   :root {
-    /* === Luxury Premium Design System === */
+    /* === Venetian Palazzo Design System === */
     
-    /* Gold palette */
-    --gold: 43 74% 49%;
-    --gold-light: 45 80% 65%;
-    --gold-dark: 38 65% 38%;
-    --champagne: 38 35% 85%;
+    /* Antique gold palette */
+    --gold: 41 38% 57%;
+    --gold-light: 41 35% 67%;
+    --gold-dark: 41 42% 45%;
+    --champagne: 38 25% 88%;
     
-    /* Base surfaces - warm white */
-    --background: 40 20% 98%;
-    --surface-elevated: 40 15% 100%;
-    --surface-overlay: 40 10% 99%;
-    --foreground: 20 15% 12%;
+    /* Base surfaces - Ivory / Bone white */
+    --background: 36 24% 94%;
+    --surface-elevated: 37 22% 96%;
+    --surface-overlay: 38 20% 97%;
+    --foreground: 210 12% 14%;
 
-    --card: 40 20% 99%;
-    --card-foreground: 20 15% 12%;
+    --card: 37 22% 96%;
+    --card-foreground: 210 12% 14%;
 
-    --popover: 40 20% 99%;
-    --popover-foreground: 20 15% 12%;
+    --popover: 38 20% 97%;
+    --popover-foreground: 210 12% 14%;
 
-    /* Primary - Rich Gold */
-    --primary: 43 74% 49%;
-    --primary-foreground: 20 15% 8%;
+    /* Primary - Antique matte gold #B9A36A */
+    --primary: 41 38% 57%;
+    --primary-foreground: 210 12% 10%;
 
-    --secondary: 40 15% 94%;
-    --secondary-foreground: 20 15% 25%;
+    --secondary: 36 15% 90%;
+    --secondary-foreground: 210 10% 30%;
 
-    --muted: 40 12% 92%;
-    --muted-foreground: 20 10% 45%;
+    --muted: 36 12% 88%;
+    --muted-foreground: 210 6% 48%;
 
-    --accent: 43 50% 92%;
-    --accent-foreground: 20 15% 12%;
+    --accent: 41 25% 90%;
+    --accent-foreground: 210 12% 14%;
 
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
+    /* Deep burgundy #5A1F24 */
+    --destructive: 356 49% 24%;
+    --destructive-foreground: 36 24% 94%;
 
-    --border: 40 15% 88%;
-    --input: 40 15% 88%;
-    --ring: 43 74% 49%;
+    --border: 36 12% 85%;
+    --input: 36 12% 85%;
+    --ring: 41 38% 57%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Message bubbles - Luxury style */
-    --message-sent: 43 45% 92%;
-    --message-sent-foreground: 20 15% 10%;
-    --message-received: 0 0% 100%;
-    --message-received-foreground: 20 15% 10%;
+    /* Message bubbles - Ivory parchment */
+    --message-sent: 41 30% 91%;
+    --message-sent-foreground: 210 12% 12%;
+    --message-received: 37 22% 96%;
+    --message-received-foreground: 210 12% 12%;
     
     /* Status indicators */
-    --online: 142 60% 45%;
-    --offline: 20 5% 55%;
-    --away: 43 74% 49%;
+    --online: 155 35% 38%;
+    --offline: 210 5% 55%;
+    --away: 41 38% 57%;
     
-    /* Premium header */
-    --header-bg: 25 20% 15%;
-    --header-foreground: 45 50% 90%;
+    /* Premium header - Charcoal */
+    --header-bg: 210 10% 12%;
+    --header-foreground: 36 20% 92%;
     
-    /* Chat wallpaper - subtle champagne */
-    --chat-wallpaper: 40 18% 94%;
+    /* Chat wallpaper */
+    --chat-wallpaper: 36 18% 92%;
     
-    /* Shadows - warm */
-    --shadow-xs: 0 1px 2px rgba(20, 15, 10, 0.04);
-    --shadow-sm: 0 2px 4px rgba(20, 15, 10, 0.06);
-    --shadow-md: 0 4px 8px rgba(20, 15, 10, 0.08);
-    --shadow-lg: 0 8px 24px rgba(20, 15, 10, 0.1);
-    --shadow-xl: 0 16px 48px rgba(20, 15, 10, 0.12);
-    --shadow-glow: 0 0 40px rgba(212, 175, 55, 0.15);
+    /* Venetian midnight blue */
+    --venetian-blue: 210 30% 17%;
+    /* Deep burgundy */
+    --venetian-burgundy: 356 49% 24%;
+    /* Emerald shadow */
+    --venetian-emerald: 150 32% 18%;
+    /* Cold silver grey */
+    --venetian-silver: 210 4% 57%;
+    
+    /* Shadows - warm, subtle */
+    --shadow-xs: 0 1px 2px rgba(18, 18, 18, 0.03);
+    --shadow-sm: 0 2px 6px rgba(18, 18, 18, 0.04);
+    --shadow-md: 0 4px 12px rgba(18, 18, 18, 0.06);
+    --shadow-lg: 0 8px 24px rgba(18, 18, 18, 0.08);
+    --shadow-xl: 0 16px 48px rgba(18, 18, 18, 0.1);
+    --shadow-glow: 0 0 40px rgba(185, 163, 106, 0.1);
 
     /* Sidebar */
-    --sidebar-background: 40 20% 99%;
-    --sidebar-foreground: 20 15% 12%;
-    --sidebar-primary: 43 74% 49%;
-    --sidebar-primary-foreground: 20 15% 8%;
-    --sidebar-accent: 43 50% 94%;
-    --sidebar-accent-foreground: 20 15% 12%;
-    --sidebar-border: 40 15% 90%;
-    --sidebar-ring: 43 74% 49%;
+    --sidebar-background: 37 22% 96%;
+    --sidebar-foreground: 210 12% 14%;
+    --sidebar-primary: 41 38% 57%;
+    --sidebar-primary-foreground: 210 12% 10%;
+    --sidebar-accent: 41 25% 92%;
+    --sidebar-accent-foreground: 210 12% 14%;
+    --sidebar-border: 36 12% 87%;
+    --sidebar-ring: 41 38% 57%;
 
-    /* Solid logo background (prevents white corner artifacts) */
+    /* Mask colors */
+    --mask-business: 210 30% 17%;
+    --mask-personal: 41 38% 57%;
+    --mask-family: 150 32% 18%;
+    --mask-incognito: 356 49% 24%;
+    --mask-current: 41 38% 57%;
+    --mask-current-soft: 41 25% 90%;
+
+    /* Privacy */
+    --privacy-open: 155 35% 38%;
+    --privacy-private: 41 38% 57%;
+    --privacy-secure: 356 49% 24%;
+
+    /* Solid logo background */
     --logo-bg: 0 0% 0%;
   }
 
   .dark {
-    /* Dark theme - Luxury Dark with Gold accents */
-    --background: 20 15% 7%;
-    --surface-elevated: 20 12% 10%;
-    --surface-overlay: 20 10% 13%;
-    --foreground: 40 15% 92%;
+    /* Dark theme - Venetian Night */
+    --background: 210 8% 9%;
+    --surface-elevated: 210 7% 12%;
+    --surface-overlay: 210 6% 15%;
+    --foreground: 36 18% 88%;
 
-    --card: 20 12% 10%;
-    --card-foreground: 40 15% 92%;
+    --card: 210 7% 12%;
+    --card-foreground: 36 18% 88%;
 
-    --popover: 20 10% 13%;
-    --popover-foreground: 40 15% 92%;
+    --popover: 210 6% 15%;
+    --popover-foreground: 36 18% 88%;
 
-    --primary: 43 74% 55%;
-    --primary-foreground: 20 15% 7%;
+    --primary: 41 38% 57%;
+    --primary-foreground: 210 8% 9%;
 
-    --secondary: 20 10% 16%;
-    --secondary-foreground: 40 12% 80%;
+    --secondary: 210 6% 16%;
+    --secondary-foreground: 36 12% 75%;
 
-    --muted: 20 10% 14%;
-    --muted-foreground: 40 8% 50%;
+    --muted: 210 6% 14%;
+    --muted-foreground: 36 6% 48%;
 
-    --accent: 43 40% 15%;
-    --accent-foreground: 45 60% 85%;
+    --accent: 41 20% 16%;
+    --accent-foreground: 41 30% 78%;
 
-    --destructive: 0 60% 48%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 356 45% 32%;
+    --destructive-foreground: 36 24% 94%;
 
-    --border: 20 10% 16%;
-    --input: 20 10% 16%;
-    --ring: 43 74% 55%;
+    --border: 210 6% 16%;
+    --input: 210 6% 16%;
+    --ring: 41 38% 57%;
 
-    /* Message bubbles - Dark Luxury */
-    --message-sent: 43 35% 18%;
-    --message-sent-foreground: 40 20% 95%;
-    --message-received: 20 10% 14%;
-    --message-received-foreground: 40 15% 92%;
+    /* Message bubbles - Dark palazzo */
+    --message-sent: 41 22% 17%;
+    --message-sent-foreground: 36 18% 92%;
+    --message-received: 210 6% 14%;
+    --message-received-foreground: 36 18% 88%;
     
-    --online: 142 55% 50%;
-    --offline: 20 5% 45%;
-    --away: 43 74% 55%;
+    --online: 155 35% 42%;
+    --offline: 210 5% 40%;
+    --away: 41 38% 57%;
     
-    --header-bg: 20 12% 10%;
-    --header-foreground: 45 50% 92%;
+    --header-bg: 210 8% 10%;
+    --header-foreground: 36 18% 90%;
     
-    --chat-wallpaper: 20 15% 6%;
+    --chat-wallpaper: 210 8% 8%;
 
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 60px rgba(212, 175, 55, 0.12);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.45);
+    --shadow-glow: 0 0 50px rgba(185, 163, 106, 0.08);
 
-    --sidebar-background: 20 12% 10%;
-    --sidebar-foreground: 40 15% 92%;
-    --sidebar-primary: 43 74% 55%;
-    --sidebar-primary-foreground: 20 15% 7%;
-    --sidebar-accent: 20 10% 16%;
-    --sidebar-accent-foreground: 45 50% 88%;
-    --sidebar-border: 20 10% 14%;
-    --sidebar-ring: 43 74% 55%;
+    --sidebar-background: 210 7% 12%;
+    --sidebar-foreground: 36 18% 88%;
+    --sidebar-primary: 41 38% 57%;
+    --sidebar-primary-foreground: 210 8% 9%;
+    --sidebar-accent: 210 6% 16%;
+    --sidebar-accent-foreground: 36 18% 82%;
+    --sidebar-border: 210 6% 14%;
+    --sidebar-ring: 41 38% 57%;
 
-    /* Solid logo background (prevents white corner artifacts) */
+    /* Mask colors - dark */
+    --mask-business: 210 25% 30%;
+    --mask-personal: 41 35% 50%;
+    --mask-family: 150 28% 28%;
+    --mask-incognito: 356 40% 30%;
+    --mask-current: 41 35% 55%;
+    --mask-current-soft: 41 20% 16%;
+
+    /* Privacy */
+    --privacy-open: 155 30% 42%;
+    --privacy-private: 41 35% 55%;
+    --privacy-secure: 356 40% 35%;
+
+    /* Solid logo background */
     --logo-bg: 0 0% 0%;
   }
 }
@@ -169,7 +205,6 @@
     width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
-    /* Prevent text size adjustment on orientation change */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -182,16 +217,13 @@
     overflow-x: hidden;
     overflow-y: auto;
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    font-feature-settings: 'cv02' on, 'cv03' on, 'cv04' on;
+    font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     overscroll-behavior: none;
-    letter-spacing: -0.01em;
-    /* Improve font rendering on mobile */
+    letter-spacing: 0.005em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Fix mobile viewport */
     min-height: 100dvh;
     min-height: -webkit-fill-available;
   }
@@ -207,12 +239,10 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    /* Ensure proper stacking context */
     position: relative;
     isolation: isolate;
   }
   
-  /* Prevent iOS bounce scroll in main app */
   @supports (-webkit-touch-callout: none) {
     .no-bounce {
       overscroll-behavior: none;
@@ -220,14 +250,12 @@
     }
   }
   
-  /* Fix for iOS Safari 100vh issue */
   @supports (height: 100dvh) {
     html, body, #root {
       height: 100dvh;
     }
   }
   
-  /* Ensure inputs don't zoom on iOS */
   @media screen and (max-width: 768px) {
     input, select, textarea {
       font-size: 16px !important;
@@ -236,28 +264,28 @@
 }
 
 @layer utilities {
-  /* Glass morphism - Premium */
+  /* Glass morphism - Palazzo */
   .glass {
-    background: hsl(var(--glass));
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--surface-overlay) / 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
   
   .glass-subtle {
-    background: hsl(var(--glass) / 0.6);
+    background: hsl(var(--surface-overlay) / 0.6);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
   
-  /* Premium hover effects */
+  /* Subtle hover effects */
   .hover-lift {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   }
   
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
   
   .hover-glow {
@@ -265,7 +293,7 @@
   }
   
   .hover-glow:hover {
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+    box-shadow: 0 0 24px rgba(185, 163, 106, 0.1);
   }
   
   .hover-scale-subtle {
@@ -273,7 +301,7 @@
   }
   
   .hover-scale-subtle:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
   }
   
   .hover-shine {
@@ -289,7 +317,7 @@
       120deg,
       transparent 0%,
       transparent 40%,
-      rgba(212, 175, 55, 0.1) 50%,
+      rgba(185, 163, 106, 0.06) 50%,
       transparent 60%,
       transparent 100%
     );
@@ -301,16 +329,16 @@
     transform: translateX(100%);
   }
   
-  /* Gold shimmer effect */
+  /* Antique gold shimmer */
   .shimmer-gold {
     background: linear-gradient(
       90deg,
       hsl(var(--primary)) 0%,
-      hsl(45 80% 65%) 50%,
+      hsl(41 35% 67%) 50%,
       hsl(var(--primary)) 100%
     );
     background-size: 200% 100%;
-    animation: shimmer 2.5s ease-in-out infinite;
+    animation: shimmer 3s ease-in-out infinite;
   }
   
   /* Premium button styles */
@@ -330,7 +358,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.15),
+      rgba(244, 241, 236, 0.1),
       transparent
     );
     transition: left 0.5s ease;
@@ -342,7 +370,7 @@
   
   .btn-premium:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.2);
+    box-shadow: var(--shadow-md);
   }
   
   .btn-premium:active {
@@ -351,26 +379,26 @@
   
   /* Gradient utilities */
   .gradient-primary {
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, hsl(41 38% 57%), hsl(41 42% 45%));
   }
   
   .gradient-surface {
-    background: var(--gradient-surface);
+    background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--surface-elevated)));
   }
   
   .gradient-gold {
-    background: linear-gradient(135deg, hsl(43 74% 49%), hsl(38 65% 45%));
+    background: linear-gradient(135deg, hsl(41 38% 57%), hsl(41 42% 48%));
   }
   
   .gradient-gold-subtle {
-    background: linear-gradient(135deg, hsl(43 50% 92%), hsl(40 40% 88%));
+    background: linear-gradient(135deg, hsl(41 25% 90%), hsl(36 20% 87%));
   }
   
   .dark .gradient-gold-subtle {
-    background: linear-gradient(135deg, hsl(43 35% 18%), hsl(38 30% 14%));
+    background: linear-gradient(135deg, hsl(41 22% 17%), hsl(41 18% 14%));
   }
   
-  /* Shadow utilities - layered premium */
+  /* Shadow utilities */
   .shadow-xs { box-shadow: var(--shadow-xs); }
   .shadow-soft { box-shadow: var(--shadow-sm); }
   .shadow-medium { box-shadow: var(--shadow-md); }
@@ -379,14 +407,14 @@
   .shadow-glow { box-shadow: var(--shadow-glow); }
   
   .shadow-gold {
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
+    box-shadow: 0 4px 20px rgba(185, 163, 106, 0.1);
   }
   
   .shadow-gold-lg {
-    box-shadow: 0 8px 40px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 8px 40px rgba(185, 163, 106, 0.15);
   }
   
-  /* Layer elevation with premium feel */
+  /* Layer elevation */
   .layer-base { background: hsl(var(--background)); }
   .layer-elevated { 
     background: hsl(var(--surface-elevated)); 
@@ -397,19 +425,19 @@
     box-shadow: var(--shadow-lg);
   }
   
-  /* Premium border effects */
+  /* Border effects */
   .border-gold {
-    border: 1px solid hsl(43 50% 50% / 0.3);
+    border: 1px solid hsl(41 38% 57% / 0.2);
   }
   
   .border-gold-glow {
-    border: 1px solid hsl(43 50% 50% / 0.3);
-    box-shadow: 0 0 20px hsl(43 50% 50% / 0.1);
+    border: 1px solid hsl(41 38% 57% / 0.2);
+    box-shadow: 0 0 16px hsl(41 38% 57% / 0.06);
   }
   
   /* Text effects */
   .text-gold-gradient {
-    background: linear-gradient(135deg, hsl(43 74% 55%), hsl(45 80% 65%));
+    background: linear-gradient(135deg, hsl(41 38% 57%), hsl(41 35% 67%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -428,11 +456,11 @@
   /* Scrollbar styling */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
   }
   
   .scrollbar-thin::-webkit-scrollbar {
-    width: 5px;
+    width: 4px;
   }
   
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -440,12 +468,12 @@
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.25);
-    border-radius: 3px;
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 2px;
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
+    background: hsl(var(--muted-foreground) / 0.35);
   }
   
   .scrollbar-none {
@@ -468,7 +496,6 @@
     min-width: 44px;
   }
   
-  /* Larger tap targets on mobile */
   @media screen and (max-width: 768px) {
     .tap-target-mobile {
       min-height: 48px;
@@ -482,7 +509,6 @@
     transition: transform 0.1s ease, opacity 0.1s ease;
   }
   
-  /* Haptic-like feedback for buttons */
   .touch-feedback {
     transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -491,84 +517,55 @@
     transform: scale(0.95);
   }
   
-  /* Scroll behavior */
   .scroll-smooth {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
   
-  /* Native momentum scrolling */
   .scroll-native {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
   
-  /* Safe area utilities with fallbacks */
-  .safe-area-top {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-  
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  
-  .safe-area-left {
-    padding-left: env(safe-area-inset-left, 0px);
-  }
-  
-  .safe-area-right {
-    padding-right: env(safe-area-inset-right, 0px);
-  }
-  
+  /* Safe area utilities */
+  .safe-area-top { padding-top: env(safe-area-inset-top, 0px); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .safe-area-left { padding-left: env(safe-area-inset-left, 0px); }
+  .safe-area-right { padding-right: env(safe-area-inset-right, 0px); }
   .safe-area-x {
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
-  
   .safe-area-y {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  
   .safe-area-all {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
+  .safe-margin-top { margin-top: env(safe-area-inset-top, 0px); }
+  .safe-margin-bottom { margin-bottom: env(safe-area-inset-bottom, 0px); }
   
-  /* Safe area margin variants */
-  .safe-margin-top {
-    margin-top: env(safe-area-inset-top, 0px);
-  }
-  
-  .safe-margin-bottom {
-    margin-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  
-  /* Mobile-specific utilities */
   @media screen and (max-width: 768px) {
     .mobile-full-height {
       height: 100dvh;
       height: -webkit-fill-available;
     }
-    
     .mobile-hide-scrollbar {
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
-    
     .mobile-hide-scrollbar::-webkit-scrollbar {
       display: none;
     }
-    
-    /* Prevent pull-to-refresh on mobile when not needed */
     .prevent-pull-refresh {
       overscroll-behavior-y: contain;
     }
   }
   
-  /* Disable hover effects on touch devices */
   @media (hover: none) and (pointer: coarse) {
     .hover-lift:hover,
     .hover-glow:hover,
@@ -580,13 +577,13 @@
 }
 
 @layer components {
-  /* === Luxury Premium Chat Wallpaper === */
+  /* === Venetian Palazzo Chat Wallpaper === */
   .chat-wallpaper {
     background: linear-gradient(
-      135deg,
-      hsl(40 20% 94%) 0%,
-      hsl(38 18% 91%) 50%,
-      hsl(40 22% 93%) 100%
+      180deg,
+      hsl(36 20% 93%) 0%,
+      hsl(37 18% 91%) 50%,
+      hsl(36 22% 92%) 100%
     );
     position: relative;
   }
@@ -595,31 +592,32 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    /* Subtle arch / diamond pattern inspired by Venetian architecture */
+    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23B9A36A' stroke-opacity='0.04' stroke-width='0.5'%3E%3Cpath d='M40 0 L80 40 L40 80 L0 40 Z'/%3E%3C/g%3E%3C/svg%3E");
     pointer-events: none;
   }
 
   .dark .chat-wallpaper {
     background: linear-gradient(
-      135deg,
-      hsl(20 15% 7%) 0%,
-      hsl(25 12% 8%) 50%,
-      hsl(20 18% 6%) 100%
+      180deg,
+      hsl(210 8% 9%) 0%,
+      hsl(210 7% 10%) 50%,
+      hsl(210 8% 8%) 100%
     );
   }
   
   .dark .chat-wallpaper::before {
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23B9A36A' stroke-opacity='0.03' stroke-width='0.5'%3E%3Cpath d='M40 0 L80 40 L40 80 L0 40 Z'/%3E%3C/g%3E%3C/svg%3E");
   }
 
-  /* === MESSAGE BUBBLES - Luxury Style === */
+  /* === MESSAGE BUBBLES - Palazzo parchment === */
   .message-bubble-sent {
     @apply relative;
-    background: linear-gradient(135deg, hsl(43 45% 94%), hsl(40 40% 90%));
-    color: hsl(20 15% 10%);
-    border-radius: 16px 4px 16px 16px;
-    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
-    border: 1px solid hsl(43 30% 88%);
+    background: hsl(41 28% 92%);
+    color: hsl(210 12% 12%);
+    border-radius: 14px 3px 14px 14px;
+    box-shadow: 0 1px 4px rgba(18, 18, 18, 0.04);
+    border: 1px solid hsl(41 20% 87%);
   }
   
   .message-bubble-sent::before {
@@ -629,17 +627,17 @@
     right: -6px;
     width: 12px;
     height: 12px;
-    background: linear-gradient(135deg, hsl(43 45% 94%), hsl(40 40% 90%));
+    background: hsl(41 28% 92%);
     clip-path: polygon(0 0, 100% 0, 0 100%);
   }
   
   .message-bubble-received {
     @apply relative;
-    background: linear-gradient(135deg, hsl(0 0% 100%), hsl(40 15% 98%));
-    color: hsl(20 15% 10%);
-    border-radius: 4px 16px 16px 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
-    border: 1px solid hsl(40 15% 92%);
+    background: hsl(var(--surface-elevated));
+    color: hsl(210 12% 12%);
+    border-radius: 3px 14px 14px 14px;
+    box-shadow: 0 1px 4px rgba(18, 18, 18, 0.03);
+    border: 1px solid hsl(var(--border));
   }
   
   .message-bubble-received::before {
@@ -649,44 +647,44 @@
     left: -6px;
     width: 12px;
     height: 12px;
-    background: linear-gradient(135deg, hsl(0 0% 100%), hsl(40 15% 98%));
+    background: hsl(var(--surface-elevated));
     clip-path: polygon(100% 0, 0 0, 100% 100%);
   }
   
   /* Dark theme message bubbles */
   .dark .message-bubble-sent {
-    background: linear-gradient(135deg, hsl(43 35% 18%), hsl(38 30% 15%));
-    color: hsl(40 20% 95%);
-    border: 1px solid hsl(43 25% 22%);
-    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.06), 0 1px 3px rgba(0, 0, 0, 0.2);
+    background: hsl(41 22% 17%);
+    color: hsl(36 18% 92%);
+    border: 1px solid hsl(41 18% 22%);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
   }
   
   .dark .message-bubble-sent::before {
-    background: linear-gradient(135deg, hsl(43 35% 18%), hsl(38 30% 15%));
+    background: hsl(41 22% 17%);
   }
   
   .dark .message-bubble-received {
-    background: linear-gradient(135deg, hsl(20 10% 14%), hsl(25 8% 12%));
-    color: hsl(40 15% 92%);
-    border: 1px solid hsl(20 10% 18%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background: hsl(210 6% 14%);
+    color: hsl(36 18% 88%);
+    border: 1px solid hsl(210 6% 18%);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   }
   
   .dark .message-bubble-received::before {
-    background: linear-gradient(135deg, hsl(20 10% 14%), hsl(25 8% 12%));
+    background: hsl(210 6% 14%);
   }
   
-  /* Premium Header */
+  /* Palazzo Header */
   .whatsapp-header {
-    background: linear-gradient(135deg, hsl(25 20% 15%), hsl(20 18% 12%));
-    color: hsl(45 50% 92%);
-    border-bottom: 1px solid hsl(43 40% 25% / 0.3);
+    background: hsl(210 10% 12%);
+    color: hsl(36 18% 92%);
+    border-bottom: 1px solid hsl(41 30% 30% / 0.15);
   }
   
   .dark .whatsapp-header {
-    background: linear-gradient(135deg, hsl(20 12% 10%), hsl(25 10% 8%));
-    color: hsl(45 50% 92%);
-    border-bottom: 1px solid hsl(43 40% 30% / 0.2);
+    background: hsl(210 8% 10%);
+    color: hsl(36 18% 92%);
+    border-bottom: 1px solid hsl(41 30% 30% / 0.1);
   }
   
   /* Status indicators */
@@ -701,17 +699,17 @@
   }
   
   .privacy-chip-open {
-    background: hsl(var(--privacy-open) / 0.12);
+    background: hsl(var(--privacy-open) / 0.1);
     color: hsl(var(--privacy-open));
   }
   
   .privacy-chip-private {
-    background: hsl(var(--privacy-private) / 0.12);
+    background: hsl(var(--privacy-private) / 0.1);
     color: hsl(var(--privacy-private));
   }
   
   .privacy-chip-secure {
-    background: hsl(var(--privacy-secure) / 0.12);
+    background: hsl(var(--privacy-secure) / 0.1);
     color: hsl(var(--privacy-secure));
   }
   
@@ -723,10 +721,11 @@
     transition: all 0.3s ease-out;
   }
   
-  /* Chat card as layer - Premium */
+  /* Chat card - Palazzo layer */
   .chat-card {
     @apply relative overflow-hidden;
-    @apply bg-card rounded-2xl;
+    @apply bg-card;
+    border-radius: var(--radius);
     @apply transition-all duration-300 ease-out;
     box-shadow: var(--shadow-xs);
   }
@@ -735,54 +734,34 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      135deg,
-      transparent 0%,
-      transparent 40%,
-      rgba(212, 175, 55, 0) 50%,
-      transparent 60%,
-      transparent 100%
-    );
+    background: transparent;
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
   }
   
   .chat-card:hover {
-    box-shadow: var(--shadow-md), 0 0 20px rgba(212, 175, 55, 0.05);
-    transform: translateY(-1px);
-  }
-  
-  .chat-card:hover::before {
-    opacity: 1;
-    background: linear-gradient(
-      135deg,
-      transparent 0%,
-      transparent 40%,
-      rgba(212, 175, 55, 0.03) 50%,
-      transparent 60%,
-      transparent 100%
-    );
+    box-shadow: var(--shadow-sm);
+    background: hsl(var(--muted) / 0.3);
   }
   
   .chat-card:active {
-    transform: translateY(0);
     transition-duration: 0.1s;
   }
   
   .chat-card-selected {
-    @apply ring-2 ring-primary/30;
+    @apply ring-1 ring-primary/20;
     background: hsl(var(--accent));
-    box-shadow: var(--shadow-sm), 0 0 30px rgba(212, 175, 55, 0.08);
+    box-shadow: var(--shadow-sm);
   }
   
-  /* Floating action button - Premium */
+  /* Floating action button - Antique gold */
   .fab {
     @apply flex items-center justify-center;
     @apply w-14 h-14 rounded-full;
-    background: linear-gradient(135deg, hsl(43 74% 49%), hsl(38 65% 45%));
-    color: hsl(20 15% 8%);
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25), 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: hsl(41 38% 57%);
+    color: hsl(210 8% 9%);
+    box-shadow: 0 4px 16px rgba(185, 163, 106, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08);
     @apply transition-all duration-300;
     position: relative;
     overflow: hidden;
@@ -794,7 +773,7 @@
     inset: 0;
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.2) 0%,
+      rgba(244, 241, 236, 0.15) 0%,
       transparent 50%
     );
     opacity: 0;
@@ -802,8 +781,8 @@
   }
   
   .fab:hover {
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 32px rgba(212, 175, 55, 0.35), 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.03) translateY(-1px);
+    box-shadow: 0 6px 24px rgba(185, 163, 106, 0.25), 0 3px 10px rgba(0, 0, 0, 0.1);
   }
   
   .fab:hover::before {
@@ -822,8 +801,8 @@
   }
   
   .input-premium:focus {
-    border-color: hsl(43 50% 50% / 0.5);
-    box-shadow: 0 0 0 3px hsl(43 50% 50% / 0.1), 0 2px 8px rgba(212, 175, 55, 0.08);
+    border-color: hsl(41 38% 57% / 0.4);
+    box-shadow: 0 0 0 2px hsl(41 38% 57% / 0.08);
   }
   
   /* Premium list item */
@@ -838,20 +817,20 @@
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 3px;
+    width: 2px;
     height: 0;
-    background: linear-gradient(180deg, hsl(43 74% 49%), hsl(38 65% 45%));
-    border-radius: 0 2px 2px 0;
+    background: hsl(41 38% 57%);
+    border-radius: 0 1px 1px 0;
     transition: height 0.2s ease;
   }
   
   .list-item-premium:hover::after,
   .list-item-premium.active::after {
-    height: 60%;
+    height: 50%;
   }
   
   .list-item-premium:hover {
-    background: hsl(var(--muted) / 0.5);
+    background: hsl(var(--muted) / 0.4);
   }
 }
 
@@ -871,7 +850,6 @@
   animation: none !important;
 }
 
-/* Respect system preference as well */
 @media (prefers-reduced-motion: reduce) {
   :root:not(.force-motion) * {
     animation-duration: 0.01ms !important;

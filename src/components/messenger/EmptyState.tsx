@@ -3,16 +3,16 @@ import maskLogo from '@/assets/mask-logo.png';
 export const EmptyState = () => {
   return (
     <div className="hidden lg:flex flex-col items-center justify-center h-full bg-background">
-      {/* Ambient glow effects */}
+      {/* Subtle ambient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-primary/3 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-primary/3 rounded-full blur-[120px]" />
       </div>
       
       <div className="relative">
-        {/* Golden glow behind logo */}
-        <div className="absolute inset-0 bg-primary/15 blur-3xl scale-150" />
-        <div className="relative w-44 h-44 bg-logo overflow-hidden">
+        {/* Muted glow behind logo */}
+        <div className="absolute inset-0 bg-primary/8 blur-3xl scale-150" />
+        <div className="relative w-36 h-36 bg-logo overflow-hidden">
           <img 
             src={maskLogo} 
             alt="Mask Logo" 
@@ -21,25 +21,27 @@ export const EmptyState = () => {
         </div>
       </div>
       
-      <h2 className="mt-8 text-3xl font-bold tracking-tight">
-        <span className="text-gold-gradient">
+      <h2 className="mt-10 text-3xl tracking-tight">
+        <span className="font-display font-semibold text-gold-gradient italic">
           Mask
         </span>
-        <span className="text-foreground/80 ml-2 font-normal">Messenger</span>
+        <span className="text-foreground/60 ml-3 font-light tracking-widest text-lg uppercase">
+          Messenger
+        </span>
       </h2>
       
-      <p className="mt-4 text-muted-foreground text-center max-w-sm text-base">
+      <p className="mt-5 text-muted-foreground text-center max-w-xs text-sm leading-relaxed">
         Выберите чат из списка слева, чтобы начать общение
       </p>
       
-      <div className="mt-8 flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-        <div className="w-2 h-2 rounded-full bg-[hsl(var(--online))] animate-pulse" />
-        <p className="text-xs text-primary">
+      <div className="mt-10 flex items-center gap-2.5 px-4 py-2 rounded-full bg-primary/6 border border-primary/10">
+        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--online))] animate-pulse" />
+        <p className="text-xs text-primary tracking-wide">
           Сквозное шифрование
         </p>
       </div>
       
-      <p className="mt-6 text-xs text-muted-foreground/50">
+      <p className="mt-6 text-[11px] text-muted-foreground/40 tracking-wider uppercase">
         Защита от просмотра сообщений третьими лицами
       </p>
     </div>
