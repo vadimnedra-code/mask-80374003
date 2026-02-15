@@ -40,6 +40,7 @@ export const useChats = () => {
   const [loading, setLoading] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const chatIdsRef = useRef<string[]>([]);
+  const fetchChatsRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const getChatSortTimestamp = useCallback((chat: ChatWithDetails) => {
     // Prefer real activity (last message time). This fixes cases where chats.updated_at
@@ -173,8 +174,13 @@ export const useChats = () => {
     setLoading(false);
   }, [user, getChatSortTimestamp]);
 
+  // Keep ref in sync so the realtime callback always calls the latest version
   useEffect(() => {
-    fetchChats();
+    fetchChatsRef.current = fetchChats;
+  }, [fetchChats]);
+
+  useEffect(() => {
+    fetchChatsRef.current();
 
     // Subscribe to chat updates - only to chat_participants for new chats
     if (!user) return;
@@ -183,9 +189,8 @@ export const useChats = () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
-      // Increased debounce time to reduce battery drain from frequent refetches
       debounceRef.current = setTimeout(() => {
-        fetchChats();
+        fetchChatsRef.current();
       }, 500);
     };
 
@@ -199,14 +204,11 @@ export const useChats = () => {
           table: 'chat_participants',
         },
         (payload) => {
-          // Refetch if current user was added to a chat OR if someone was added to one of user's chats
           const newParticipant = payload.new as { user_id: string; chat_id: string };
           if (newParticipant.user_id === user.id) {
-            // Current user was added to a new chat
             console.log('[useChats] Current user added to new chat, refetching...');
             debouncedFetch();
           } else {
-            // Check if this is for a chat the current user is in (use ref to avoid stale closure)
             if (chatIdsRef.current.includes(newParticipant.chat_id)) {
               console.log('[useChats] New participant added to user chat, refetching...');
               debouncedFetch();
@@ -234,7 +236,6 @@ export const useChats = () => {
           table: 'chats',
         },
         (payload) => {
-          // Only refetch if this is a chat the user participates in
           const chatId = (payload.new as { id?: string })?.id || (payload.old as { id?: string })?.id;
           if (chatId && chatIdsRef.current.includes(chatId)) {
             debouncedFetch();
@@ -249,7 +250,6 @@ export const useChats = () => {
           table: 'messages',
         },
         (payload) => {
-          // Only refetch if message is in user's chats
           const chatId = (payload.new as { chat_id?: string })?.chat_id;
           if (chatId && chatIdsRef.current.includes(chatId)) {
             debouncedFetch();
@@ -264,7 +264,7 @@ export const useChats = () => {
       }
       supabase.removeChannel(channel);
     };
-  }, [user, fetchChats]);
+  }, [user?.id]); // Only re-subscribe when user identity changes
 
   const findExistingDirectChat = async (otherUserId: string): Promise<string | null> => {
     if (!user) return null;
