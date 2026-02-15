@@ -727,7 +727,7 @@ export const ChatList = ({
             <div className="flex items-center justify-between mt-1 gap-2">
               <AnimatePresence mode="wait">
                 {typingByChatId[chat.id]?.length > 0 ? (
-                  <motion.p
+                  <motion.div
                     key={`typing-${chat.id}`}
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -741,9 +741,9 @@ export const ChatList = ({
                       <span className="w-1.5 h-1.5 bg-primary rounded-full animate-typing" style={{ animationDelay: '300ms' }} />
                     </span>
                     <span className="font-medium">{getTypingText(chat.id)}</span>
-                  </motion.p>
+                  </motion.div>
                 ) : (
-                  <motion.p
+                  <motion.div
                     key={`message-${chat.id}`}
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -755,7 +755,7 @@ export const ChatList = ({
                       <span className="text-primary mr-1">✓</span>
                     )}
                     {chat.lastMessage?.content || 'Нет сообщений'}
-                  </motion.p>
+                  </motion.div>
                 )}
               </AnimatePresence>
               <AnimatePresence mode="wait">
