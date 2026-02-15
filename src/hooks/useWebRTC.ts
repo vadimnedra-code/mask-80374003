@@ -5,9 +5,10 @@ import { VIDEO_QUALITY_CONSTRAINTS, VideoQuality } from '@/hooks/useConnectionSt
 import { useCallDiagnosticLogs } from '@/hooks/useCallDiagnosticLogs';
 import { useAutoReconnect, ReconnectionState } from '@/hooks/useAutoReconnect';
 
-// Cached TURN credentials
+// Cached TURN credentials (exported for pre-warming)
 let cachedIceServers: RTCIceServer[] | null = null;
 let cacheExpiry = 0;
+let pendingFetch: Promise<RTCIceServer[]> | null = null;
 
 export interface PeerConnectionState {
   iceConnectionState: string;
@@ -42,39 +43,47 @@ const GOOGLE_STUN_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun2.l.google.com:19302' },
 ];
 
-const fetchTurnCredentials = async (): Promise<RTCIceServer[]> => {
+export const fetchTurnCredentials = async (): Promise<RTCIceServer[]> => {
   // Return cached if still valid (cache for 10 min, credentials last ~24h)
   if (cachedIceServers && Date.now() < cacheExpiry) {
     return cachedIceServers;
   }
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      console.warn('No auth session, using fallback ICE servers');
+  // Deduplicate in-flight requests so concurrent callers share one fetch
+  if (pendingFetch) return pendingFetch;
+
+  pendingFetch = (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.warn('No auth session, using fallback ICE servers');
+        return GOOGLE_STUN_SERVERS;
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-turn-credentials', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error || !data?.iceServers) {
+        console.error('Failed to fetch TURN credentials:', error);
+        return GOOGLE_STUN_SERVERS;
+      }
+
+      // Always include Google STUN servers alongside Metered TURN/STUN
+      const mergedServers = [...GOOGLE_STUN_SERVERS, ...data.iceServers];
+      cachedIceServers = mergedServers;
+      cacheExpiry = Date.now() + 10 * 60 * 1000; // 10 min cache
+      console.log('Fetched TURN credentials:', mergedServers.length, 'servers (incl. Google STUN)');
+      return cachedIceServers;
+    } catch (err) {
+      console.error('Error fetching TURN credentials:', err);
       return GOOGLE_STUN_SERVERS;
+    } finally {
+      pendingFetch = null;
     }
+  })();
 
-    const { data, error } = await supabase.functions.invoke('get-turn-credentials', {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-
-    if (error || !data?.iceServers) {
-      console.error('Failed to fetch TURN credentials:', error);
-      return GOOGLE_STUN_SERVERS;
-    }
-
-    // Always include Google STUN servers alongside Metered TURN/STUN
-    // This ensures connectivity even if Metered STUN is slow or unreliable
-    const mergedServers = [...GOOGLE_STUN_SERVERS, ...data.iceServers];
-    cachedIceServers = mergedServers;
-    cacheExpiry = Date.now() + 10 * 60 * 1000; // 10 min cache
-    console.log('Fetched TURN credentials:', mergedServers.length, 'servers (incl. Google STUN)');
-    return cachedIceServers;
-  } catch (err) {
-    console.error('Error fetching TURN credentials:', err);
-    return GOOGLE_STUN_SERVERS;
-  }
+  return pendingFetch;
 };
 
 // Detect if running on mobile
@@ -652,27 +661,30 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       isCleaningUp.current = false;
 
       try {
-        // Get media stream first
-        const stream = await getMediaStream(callType);
-        localStreamRef.current = stream;
+        // Run media acquisition, call record creation, and TURN fetch in parallel
+        const [stream, callResult, iceServers] = await Promise.all([
+          getMediaStream(callType),
+          supabase
+            .from('calls')
+            .insert({
+              caller_id: user.id,
+              callee_id: calleeId,
+              chat_id: chatId,
+              call_type: callType,
+              status: 'pending',
+            })
+            .select()
+            .single(),
+          fetchTurnCredentials(),
+        ]);
 
-        // Create call record
-        const { data: call, error } = await supabase
-          .from('calls')
-          .insert({
-            caller_id: user.id,
-            callee_id: calleeId,
-            chat_id: chatId,
-            call_type: callType,
-            status: 'pending',
-          })
-          .select()
-          .single();
-
+        const { data: call, error } = callResult;
         if (error || !call) {
           stream.getTracks().forEach((t) => t.stop());
           throw error || new Error('Failed to create call');
         }
+
+        localStreamRef.current = stream;
 
         setCallState({
           callId: call.id,
@@ -688,7 +700,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           reconnectionState: null,
         });
 
-        // Setup peer connection
+        // Setup peer connection with pre-fetched ICE servers
         const pc = await setupPeerConnection(call.id, callType);
 
         // Subscribe EARLY so we can't miss a fast answer update
@@ -708,8 +720,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         await pc.setLocalDescription(offer);
         addLog('sdp', 'Created local offer');
 
-        // Update call with offer
-        await supabase
+        // Update call with offer + send VoIP push in parallel (neither blocks connection)
+        const offerUpdate = supabase
           .from('calls')
           .update({
             offer: JSON.parse(JSON.stringify(offer)),
@@ -717,29 +729,32 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           })
           .eq('id', call.id);
 
+        const voipPush = (async () => {
+          try {
+            const { data: callerProfile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', user.id)
+              .single();
+
+            await supabase.functions.invoke('send-voip-push', {
+              body: {
+                callee_id: calleeId,
+                caller_id: user.id,
+                caller_name: callerProfile?.display_name || 'Неизвестный',
+                call_id: call.id,
+                is_video: callType === 'video',
+              },
+            });
+            console.log('VoIP push sent');
+          } catch (pushError) {
+            console.log('VoIP push not sent (may not be configured):', pushError);
+          }
+        })();
+
+        await Promise.all([offerUpdate, voipPush]);
+
         setCallState((prev) => ({ ...prev, status: 'ringing' }));
-
-        // Send VoIP push notification to callee
-        try {
-          const { data: callerProfile } = await supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('user_id', user.id)
-            .single();
-
-          await supabase.functions.invoke('send-voip-push', {
-            body: {
-              callee_id: calleeId,
-              caller_id: user.id,
-              caller_name: callerProfile?.display_name || 'Неизвестный',
-              call_id: call.id,
-              is_video: callType === 'video',
-            },
-          });
-          console.log('VoIP push sent');
-        } catch (pushError) {
-          console.log('VoIP push not sent (may not be configured):', pushError);
-        }
 
         return call.id;
       } catch (error) {
@@ -767,13 +782,16 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       isCleaningUp.current = false;
 
       try {
-        // Fetch call details
+        // Pre-warm TURN credentials while we fetch call details and media in parallel
+        addLog('media', 'Requesting local media + call details + TURN in parallel');
+
+        // Fetch call details first (we need call_type to request correct media)
         const { data: call, error } = await supabase.from('calls').select('*').eq('id', callId).single();
         if (error || !call) throw error || new Error('Call not found');
 
         const callType = call.call_type as 'voice' | 'video';
 
-        // Immediately show call UI while we request mic/cam permissions
+        // Immediately show call UI
         setCallState({
           callId: call.id,
           status: 'connecting',
@@ -788,13 +806,16 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           reconnectionState: null,
         });
 
-        // Setup peer connection
-        const pc = await setupPeerConnection(callId, callType);
+        // Run TURN fetch + media acquisition in parallel (both are slow network/permission ops)
+        const [, stream] = await Promise.all([
+          fetchTurnCredentials(), // pre-warm cache so setupPeerConnection is instant
+          getMediaStream(callType),
+        ]);
 
-        // Get media stream FIRST (may prompt for permission)
-        addLog('media', 'Requesting local media', callType);
-        const stream = await getMediaStream(callType);
         localStreamRef.current = stream;
+
+        // Setup peer connection (TURN credentials are now cached — instant)
+        const pc = await setupPeerConnection(callId, callType);
 
         setCallState((prev) => (prev.callId === callId ? { ...prev, localStream: stream } : prev));
 
@@ -811,25 +832,20 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         // Subscribe to call updates AFTER tracks are ready
         subscribeToCall(callId, false);
 
-        // Re-fetch call to get latest state (offer might have arrived while we were getting media)
-        const { data: freshCall, error: freshError } = await supabase.from('calls').select('*').eq('id', callId).single();
-        if (freshError) {
-          addLog('error', 'Failed to re-fetch call', freshError.message);
-          throw freshError;
-        }
+        // Use already-fetched call data (no redundant re-fetch needed — offer was in the first query)
 
         // If offer is present, handle it now
-        if (freshCall.offer && !answerSentRef.current) {
+        if (call.offer && !answerSentRef.current) {
           answerSentRef.current = true;
           addLog('sdp', 'Offer present; setting remote description');
-          const offerData = freshCall.offer as unknown as RTCSessionDescriptionInit;
+          const offerData = call.offer as unknown as RTCSessionDescriptionInit;
           await pc.setRemoteDescription(new RTCSessionDescription(offerData));
           addLog('sdp', 'Remote description (offer) set');
 
           // Process existing ICE candidates (tagged with {sender_id, candidate})
-          if (freshCall.ice_candidates) {
-            addLog('ice', 'Processing existing ICE candidates', `count: ${freshCall.ice_candidates.length}`);
-            for (const entry of freshCall.ice_candidates as any[]) {
+          if (call.ice_candidates) {
+            addLog('ice', 'Processing existing ICE candidates', `count: ${call.ice_candidates.length}`);
+            for (const entry of call.ice_candidates as any[]) {
               const tagged = entry as { sender_id?: string; candidate?: any };
               const actualCandidate = tagged.candidate || entry;
               const senderId = tagged.sender_id;
@@ -872,7 +888,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           } else {
             addLog('connection', 'Call updated with answer');
           }
-        } else if (!freshCall.offer) {
+        } else if (!call.offer) {
           addLog('sdp', 'Offer not ready yet', 'Waiting for realtime update');
         }
       } catch (error) {
