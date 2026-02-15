@@ -170,6 +170,11 @@ serve(async (req) => {
     // Build system prompt based on action
     let systemPrompt = SYSTEM_PROMPTS[action] || SYSTEM_PROMPTS.chat;
 
+    // Inject current date so the model never hallucinates it
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    systemPrompt += `\n\nСегодняшняя дата: ${dateStr}.`;
+
     // Add personalization
     if (aiSettings?.preferred_language) {
       systemPrompt += `\n\nПредпочтительный язык пользователя: ${aiSettings.preferred_language}`;
