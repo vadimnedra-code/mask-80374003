@@ -17,7 +17,7 @@ import { AIStudioPanel } from '@/components/studio/AIStudioPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useChats } from '@/hooks/useChats';
 import { useProfile } from '@/hooks/useProfile';
-import { useWebRTC } from '@/hooks/useWebRTC';
+import { useWebRTC, fetchTurnCredentials } from '@/hooks/useWebRTC';
 import { useGroupWebRTC } from '@/hooks/useGroupWebRTC';
 import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { useCallKit } from '@/hooks/useCallKit';
@@ -52,6 +52,13 @@ const Messenger = () => {
   // Initialize push notifications and document title
   usePushNotifications();
   useDocumentTitle();
+  
+  // Pre-warm TURN credentials so calls connect faster
+  useEffect(() => {
+    if (user) {
+      fetchTurnCredentials().catch(() => {});
+    }
+  }, [user]);
   
   // App lifecycle management - keeps app open for 10 min, tracks activity
   const { 
