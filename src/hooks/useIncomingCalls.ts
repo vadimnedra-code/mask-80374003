@@ -17,6 +17,7 @@ export const useIncomingCalls = () => {
   const { user } = useAuth();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const incomingCallRef = useRef<IncomingCall | null>(null);
+  const hydrateRef = useRef<(call: any) => Promise<void>>(async () => {});
 
   useEffect(() => {
     incomingCallRef.current = incomingCall;
@@ -50,12 +51,16 @@ export const useIncomingCalls = () => {
     [user]
   );
 
+  // Keep ref in sync so realtime callback uses latest version
+  useEffect(() => {
+    hydrateRef.current = hydrateIncomingCall;
+  }, [hydrateIncomingCall]);
+
   useEffect(() => {
     if (!user) return;
 
     console.log('Setting up incoming call listener for user:', user.id);
 
-    // Prevent missing calls if subscription starts after INSERT
     const fetchLatestIncoming = async () => {
       try {
         const { data: call } = await supabase
@@ -69,7 +74,7 @@ export const useIncomingCalls = () => {
 
         if (call) {
           console.log('Found existing incoming call:', call.id, 'status:', call.status);
-          await hydrateIncomingCall(call);
+          await hydrateRef.current(call);
         }
       } catch (err) {
         console.error('Error fetching latest incoming call:', err);
@@ -91,7 +96,7 @@ export const useIncomingCalls = () => {
         async (payload) => {
           const call = payload.new as any;
           console.log('Incoming call INSERT received:', call.id, 'status:', call.status);
-          await hydrateIncomingCall(call);
+          await hydrateRef.current(call);
         }
       )
       .on(
@@ -106,13 +111,11 @@ export const useIncomingCalls = () => {
           const call = payload.new as any;
           console.log('Call UPDATE received:', call.id, 'status:', call.status);
 
-          // Surface ringing/pending even if we missed the INSERT
           if (call.status === 'pending' || call.status === 'ringing') {
-            await hydrateIncomingCall(call);
+            await hydrateRef.current(call);
             return;
           }
 
-          // Otherwise clear if this is the currently displayed incoming call
           const currentCall = incomingCallRef.current;
           if (currentCall?.id === call.id) {
             console.log('Clearing incoming call (status changed to:', call.status, ')');
@@ -128,7 +131,7 @@ export const useIncomingCalls = () => {
       console.log('Removing incoming calls channel');
       supabase.removeChannel(channel);
     };
-  }, [user, hydrateIncomingCall]);
+  }, [user?.id]); // Only re-subscribe when user identity changes
 
   const clearIncomingCall = useCallback(() => {
     console.log('Manually clearing incoming call');
