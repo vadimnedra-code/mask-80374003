@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, Sparkles, Download, Mail, X, ImageIcon } from 'lucide-react';
+import { Bot, User, Sparkles, Download, Mail, X, ImageIcon, Archive, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StudioHeader } from './StudioHeader';
 import { StudioQuickActions } from './StudioQuickActions';
@@ -12,11 +12,13 @@ import { ArtifactCard } from './ArtifactCard';
 import { SendDialog } from './SendDialog';
 import { StudioSettingsDialog } from './StudioSettingsDialog';
 import { ImageGenerationDialog } from './ImageGenerationDialog';
+import { AIChatArchivePanel } from './AIChatArchivePanel';
 
 import { useAIChat, type AIMessage } from '@/hooks/useAIChat';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useStudioFiles } from '@/hooks/useStudioFiles';
 import { useStudioArtifacts } from '@/hooks/useStudioArtifacts';
+import { useAIChatArchive } from '@/hooks/useAIChatArchive';
 import type { StudioAction, StudioArtifact } from '@/types/studio';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -31,8 +33,10 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [imagePrompt, setImagePrompt] = useState('');
   const [selectedArtifact, setSelectedArtifact] = useState<StudioArtifact | null>(null);
+  const [pendingContext, setPendingContext] = useState<string | null>(null);
   
   const [generatedImages, setGeneratedImages] = useState<Array<{id: string; url: string; prompt: string}>>([]);
   const [pendingEmailImage, setPendingEmailImage] = useState<string | null>(null);
@@ -43,6 +47,7 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
     isLoading, 
     isIncognito, 
     setIsIncognito, 
+    setInitialMessages,
     sendMessage,
     performAction,
   } = useAIChat();
@@ -65,6 +70,8 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
     deleteArtifact,
     saveToVault,
   } = useStudioArtifacts();
+
+  const { saveSession } = useAIChatArchive();
 
   // Fetch data on mount
   useEffect(() => {
@@ -100,9 +107,36 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
       const fileList = files.map(f => f.original_name).join(', ');
       messageContent = `[Прикреплённые файлы: ${fileList}]\n\n${content}`;
     }
+
+    // Prepend archived context if applied
+    if (pendingContext) {
+      messageContent = `[Контекст из архива]\n${pendingContext}\n[/Контекст]\n\n${messageContent}`;
+      setPendingContext(null);
+    }
     
     await sendMessage(messageContent);
-  }, [inputValue, isLoading, files, sendMessage]);
+  }, [inputValue, isLoading, files, sendMessage, pendingContext]);
+
+  const handleSaveToArchive = useCallback(async () => {
+    if (messages.length === 0) {
+      toast.error('Нет сообщений для сохранения');
+      return;
+    }
+    const sessionId = await saveSession(messages);
+    if (sessionId) {
+      toast.success('Чат сохранён в архив');
+    } else {
+      toast.error('Ошибка сохранения');
+    }
+  }, [messages, saveSession]);
+
+  const handleLoadFromArchive = useCallback((archivedMessages: AIMessage[]) => {
+    setInitialMessages(archivedMessages);
+  }, [setInitialMessages]);
+
+  const handleApplyContext = useCallback((context: string) => {
+    setPendingContext(context);
+  }, []);
 
   const handleFileUpload = useCallback(async (file: File) => {
     try {
@@ -191,12 +225,28 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
         onClose={onClose}
       />
 
-      {/* Quick Actions */}
-      <StudioQuickActions
-        onAction={handleQuickAction}
-        hasFile={files.length > 0}
-        permissions={permissions}
-      />
+      {/* Quick Actions + Archive/Save buttons */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30">
+        <div className="flex-1 overflow-x-auto">
+          <StudioQuickActions
+            onAction={handleQuickAction}
+            hasFile={files.length > 0}
+            permissions={permissions}
+          />
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {messages.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleSaveToArchive} title="Сохранить в архив">
+              <Save className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline text-xs">Сохранить</span>
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => setShowArchive(true)} title="Архив чатов">
+            <Archive className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline text-xs">Архив</span>
+          </Button>
+        </div>
+      </div>
 
       {/* Main content area */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -265,6 +315,22 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Pending context indicator */}
+          {pendingContext && (
+            <div className="px-4 py-2 border-t border-primary/20 bg-primary/5 flex items-center gap-2">
+              <Archive className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-xs text-primary flex-1 truncate">
+                Контекст из архива будет добавлен к следующему сообщению
+              </span>
+              <button
+                onClick={() => setPendingContext(null)}
+                className="text-primary/60 hover:text-primary"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -338,6 +404,25 @@ export const AIStudioPanel = ({ onClose }: AIStudioPanelProps) => {
         onImageGenerated={handleImageGenerated}
         onSendEmail={handleSendImageEmail}
       />
+
+      {/* Archive Panel Overlay */}
+      <AnimatePresence>
+        {showArchive && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="absolute inset-0 z-60 bg-background"
+          >
+            <AIChatArchivePanel
+              onLoadSession={handleLoadFromArchive}
+              onApplyAsContext={handleApplyContext}
+              onClose={() => setShowArchive(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
