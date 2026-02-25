@@ -473,6 +473,14 @@ export const useCallSounds = () => {
     playDialTone();
     
     dialingIntervalRef.current = window.setInterval(() => {
+      // Guard: if stopAllSounds was called between intervals, don't play
+      if (!isPlayingRef.current) {
+        if (dialingIntervalRef.current) {
+          window.clearInterval(dialingIntervalRef.current);
+          dialingIntervalRef.current = null;
+        }
+        return;
+      }
       playDialTone();
     }, 3000);
   }, [playDialTone]);
@@ -483,10 +491,20 @@ export const useCallSounds = () => {
     isPlayingRef.current = true;
     
     unlockAudioContext().then(() => {
+      // Check again after async unlock - stopAllSounds may have been called
+      if (!isPlayingRef.current) return;
+      
       console.log('[CallSounds] Starting ringtone');
       playRingtone();
       
       ringtoneIntervalRef.current = window.setInterval(() => {
+        if (!isPlayingRef.current) {
+          if (ringtoneIntervalRef.current) {
+            window.clearInterval(ringtoneIntervalRef.current);
+            ringtoneIntervalRef.current = null;
+          }
+          return;
+        }
         playRingtone();
       }, 2000);
     });
@@ -495,6 +513,7 @@ export const useCallSounds = () => {
   const stopAllSounds = useCallback(() => {
     console.log('[CallSounds] Stopping all sounds');
     
+    // Set flag FIRST to prevent interval callbacks from creating new oscillators
     isPlayingRef.current = false;
     
     if (dialingIntervalRef.current) {
@@ -513,22 +532,19 @@ export const useCallSounds = () => {
       try {
         fallbackAudioRef.current.pause();
         fallbackAudioRef.current.currentTime = 0;
+        fallbackAudioRef.current.srcObject = null;
         fallbackAudioRef.current.src = '';
       } catch (e) {}
     }
 
-    // Suspend shared AudioContext briefly to kill any scheduled oscillators
-    // that might not be tracked in our refs (e.g., from timing races)
+    // Close and recreate the AudioContext to guarantee all scheduled
+    // oscillators are killed (suspend/resume had race conditions)
     try {
-      if (sharedAudioContext && sharedAudioContext.state === 'running') {
-        sharedAudioContext.suspend().then(() => {
-          // Resume after a short delay so future sounds can play
-          setTimeout(() => {
-            if (sharedAudioContext && sharedAudioContext.state === 'suspended') {
-              sharedAudioContext.resume().catch(() => {});
-            }
-          }, 100);
-        }).catch(() => {});
+      if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
+        sharedAudioContext.close().catch(() => {});
+        sharedAudioContext = null;
+        audioContextUnlocked = false;
+        console.log('[CallSounds] AudioContext closed for clean shutdown');
       }
     } catch (e) {}
   }, [cleanupOscillators]);

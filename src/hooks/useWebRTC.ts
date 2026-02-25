@@ -645,7 +645,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
           }
         });
     },
-    [addLog, addPendingCandidates, cleanup, options, updatePeerConnectionState]
+    [addLog, addPendingCandidates, cleanup, options, updatePeerConnectionState, user]
   );
 
   const startCall = useCallback(
@@ -920,16 +920,23 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     
     console.log('Ending call:', callState.callId);
     
-    await supabase
-      .from('calls')
-      .update({
-        status: 'ended',
-        ended_at: new Date().toISOString(),
-      })
-      .eq('id', callState.callId);
-    
+    // Always cleanup locally first, then update DB
+    // This ensures sounds stop and resources are freed even if DB update fails
+    const callId = callState.callId;
     options.onCallEnded?.();
     cleanup();
+    
+    try {
+      await supabase
+        .from('calls')
+        .update({
+          status: 'ended',
+          ended_at: new Date().toISOString(),
+        })
+        .eq('id', callId);
+    } catch (err) {
+      console.error('Failed to update call status in DB:', err);
+    }
   }, [callState.callId, cleanup, options]);
 
   const toggleMute = useCallback(() => {

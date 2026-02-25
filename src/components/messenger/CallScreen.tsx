@@ -126,10 +126,18 @@ export const CallScreen = ({
   useEffect(() => {
     return () => {
       console.log('[CallScreen] Component unmounting - stopping all sounds and cleaning media');
-      // Always stop all sounds on unmount
-      stopAllSounds();
       
-      // Clean up media elements to prevent audio artifacts (beeping/clicking)
+      // Play ended sound BEFORE stopping all sounds (so AudioContext is still alive)
+      if (previousStatus.current === 'active') {
+        playEndedSound();
+      }
+      
+      // Small delay to let ended sound play, then kill everything
+      setTimeout(() => {
+        stopAllSounds();
+      }, 300);
+      
+      // Clean up media elements immediately to prevent audio artifacts
       if (remoteAudioRef.current) {
         remoteAudioRef.current.pause();
         remoteAudioRef.current.srcObject = null;
@@ -142,11 +150,6 @@ export const CallScreen = ({
       if (localVideoRef.current) {
         localVideoRef.current.pause();
         localVideoRef.current.srcObject = null;
-      }
-      
-      // Play ended sound if call was active
-      if (previousStatus.current === 'active') {
-        playEndedSound();
       }
     };
   }, [playEndedSound, stopAllSounds]);
