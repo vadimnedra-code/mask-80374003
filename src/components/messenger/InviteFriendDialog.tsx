@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Copy, Check, Share2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface InviteFriendDialogProps {
   isOpen: boolean;
@@ -106,6 +107,30 @@ export const InviteFriendDialog = ({ isOpen, onClose }: InviteFriendDialogProps)
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
+              </div>
+            </motion.div>
+
+            {/* QR Code */}
+            <motion.div
+              className="flex justify-center mb-5"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.18, type: 'spring', damping: 20 }}
+            >
+              <div className="p-3 bg-white rounded-2xl shadow-sm">
+                <QRCodeSVG
+                  value={INVITE_URL}
+                  size={140}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#1a1a1a"
+                  imageSettings={{
+                    src: '',
+                    height: 0,
+                    width: 0,
+                    excavate: false,
+                  }}
+                />
               </div>
             </motion.div>
 
