@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Shield, Mail, HardDrive, Cloud, Trash2 } from 'lucide-react';
+import { AIMemoryManager } from './AIMemoryManager';
 import {
   Dialog,
   DialogContent,
@@ -169,6 +170,11 @@ export const StudioSettingsDialog = ({ isOpen, onClose }: StudioSettingsDialogPr
               </div>
             </RadioGroup>
           </div>
+
+          <Separator />
+
+          {/* Memory Manager */}
+          <AIMemoryManager memoryMode={memoryMode} />
         </div>
 
         <div className="flex justify-end gap-2">
