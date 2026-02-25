@@ -15,7 +15,7 @@ interface IncomingCallDialogProps {
 
 export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDialogProps) => {
   const isVideoCall = call.call_type === 'video';
-  const { startRingtoneSound, stopAllSounds, playConnectedSound } = useCallSounds();
+  const { startRingtoneSound, stopAllSounds } = useCallSounds();
   const { showIncomingCallNotification, closeNotification } = useCallNotifications();
   const { startCallVibration, stopVibration } = useCallVibration();
   
@@ -53,16 +53,12 @@ export const IncomingCallDialog = ({ call, onAccept, onReject }: IncomingCallDia
 
   const handleAccept = () => {
     console.log('[IncomingCallDialog] Accept clicked - stopping sounds/vibration and accepting');
-    // Stop sounds and vibration immediately
+    // Stop looping sounds and vibration immediately
     stopAllSounds();
     stopVibration();
     closeNotification();
-    // Accept call immediately - don't delay!
+    // Accept call — CallScreen will play connected sound via its own status effect
     onAccept();
-    // Play connected sound after accepting
-    setTimeout(() => {
-      playConnectedSound();
-    }, 100);
   };
 
   const handleReject = () => {
