@@ -36,8 +36,20 @@ let audioContextUnlocked = false;
 const getSharedAudioContext = () => {
   if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
     sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioContextUnlocked = false;
   }
   return sharedAudioContext;
+};
+
+// Forcefully close and discard the shared AudioContext
+const destroySharedAudioContext = () => {
+  try {
+    if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
+      sharedAudioContext.close().catch(() => {});
+    }
+  } catch (e) {}
+  sharedAudioContext = null;
+  audioContextUnlocked = false;
 };
 
 // Unlock AudioContext on mobile - must be called from user interaction
@@ -121,7 +133,6 @@ const DIAL_TONE_CONFIGS = {
 // Ringtone configurations for different styles
 const RINGTONE_CONFIGS = {
   classic: {
-    // Traditional phone ring (two alternating frequencies)
     frequencies: [440, 480],
     pattern: 'alternating',
     duration: 0.4,
@@ -129,7 +140,6 @@ const RINGTONE_CONFIGS = {
     volume: 0.12,
   },
   chime: {
-    // Pleasant musical chime (C5 and E5)
     frequencies: [523.25, 659.25],
     pattern: 'chime',
     duration: 0.5,
@@ -137,7 +147,6 @@ const RINGTONE_CONFIGS = {
     volume: 0.1,
   },
   gentle: {
-    // Soft overlapping notes (G4 and B4)
     frequencies: [392, 493.88],
     pattern: 'gentle',
     duration: 0.6,
@@ -145,7 +154,6 @@ const RINGTONE_CONFIGS = {
     volume: 0.08,
   },
   modern: {
-    // Electronic style (A4, C#5, E5)
     frequencies: [440, 554.37, 659.25],
     pattern: 'arpeggio',
     duration: 0.15,
@@ -153,7 +161,6 @@ const RINGTONE_CONFIGS = {
     volume: 0.1,
   },
   minimal: {
-    // Simple single beep (A5)
     frequencies: [880],
     pattern: 'single',
     duration: 0.3,
@@ -162,12 +169,24 @@ const RINGTONE_CONFIGS = {
   },
 };
 
+// --- Module-level registry of ALL active intervals across hook instances ---
+// This ensures stopAllSounds from any instance can kill sounds from all instances.
+const globalIntervals = new Set<number>();
+
+const registerInterval = (id: number) => globalIntervals.add(id);
+const clearAllGlobalIntervals = () => {
+  globalIntervals.forEach(id => window.clearInterval(id));
+  globalIntervals.clear();
+};
+
+// Global playing flag — shared across all hook instances
+let globalIsPlaying = false;
+
 export const useCallSounds = () => {
   const dialingIntervalRef = useRef<number | null>(null);
   const ringtoneIntervalRef = useRef<number | null>(null);
   const activeOscillatorsRef = useRef<OscillatorNode[]>([]);
   const activeGainsRef = useRef<GainNode[]>([]);
-  const isPlayingRef = useRef(false);
   const fallbackAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Clean up active oscillators
@@ -176,23 +195,19 @@ export const useCallSounds = () => {
       try {
         osc.stop();
         osc.disconnect();
-      } catch (e) {
-        // Already stopped
-      }
+      } catch (e) {}
     });
     activeOscillatorsRef.current = [];
     
     activeGainsRef.current.forEach(gain => {
       try {
         gain.disconnect();
-      } catch (e) {
-        // Already disconnected
-      }
+      } catch (e) {}
     });
     activeGainsRef.current = [];
   }, []);
 
-  // Play a single note with envelope
+  // Play a single note with envelope — registers oscillator for cleanup
   const playNote = useCallback((
     ctx: AudioContext,
     frequency: number,
@@ -202,6 +217,8 @@ export const useCallSounds = () => {
     attack: number = 0.02,
     decay: number = 3
   ) => {
+    if (ctx.state === 'closed') return;
+    
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
@@ -211,7 +228,6 @@ export const useCallSounds = () => {
     oscillator.frequency.setValueAtTime(frequency, startTime);
     oscillator.type = 'sine';
     
-    // Smooth envelope
     gainNode.gain.setValueAtTime(0, startTime);
     gainNode.gain.linearRampToValueAtTime(volume, startTime + attack);
     gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
@@ -239,10 +255,7 @@ export const useCallSounds = () => {
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
-      
-      if (ctx.state !== 'running') {
-        return false;
-      }
+      if (ctx.state === 'closed') return false;
 
       const config = RINGTONE_CONFIGS[type];
       const userVolume = getRingtoneVolume();
@@ -250,39 +263,30 @@ export const useCallSounds = () => {
       
       switch (config.pattern) {
         case 'alternating':
-          // Classic phone ring: two frequencies alternating
           config.frequencies.forEach((freq, i) => {
             const start = now + i * (config.duration + config.gap);
             playNote(ctx, freq, start, config.duration, config.volume * userVolume, 0.01);
           });
           break;
-          
         case 'chime':
-          // Musical chime: notes played in sequence
           config.frequencies.forEach((freq, i) => {
             const start = now + i * config.gap;
             playNote(ctx, freq, start, config.duration, config.volume * userVolume * (1 - i * 0.15), 0.03);
           });
           break;
-          
         case 'gentle':
-          // Soft overlapping notes
           config.frequencies.forEach((freq, i) => {
             const start = now + i * config.gap;
             playNote(ctx, freq, start, config.duration, config.volume * userVolume, 0.05, 2);
           });
           break;
-          
         case 'arpeggio':
-          // Quick ascending arpeggio
           config.frequencies.forEach((freq, i) => {
             const start = now + i * config.gap;
             playNote(ctx, freq, start, config.duration, config.volume * userVolume, 0.01, 4);
           });
           break;
-          
         case 'single':
-          // Simple single beep
           playNote(ctx, config.frequencies[0], now, config.duration, config.volume * userVolume, 0.02, 5);
           break;
       }
@@ -381,8 +385,6 @@ export const useCallSounds = () => {
   // Play ringtone (main function)
   const playRingtone = useCallback(() => {
     const type = getRingtoneType();
-    console.log('[CallSounds] Playing ringtone type:', type);
-    
     const success = playRingtoneByType(type);
     if (!success) {
       playRingtoneHTML5(type);
@@ -393,7 +395,6 @@ export const useCallSounds = () => {
   const previewRingtone = useCallback((type: RingtoneType) => {
     console.log('[CallSounds] Previewing ringtone:', type);
     cleanupOscillators();
-    
     const success = playRingtoneByType(type);
     if (!success) {
       playRingtoneHTML5(type);
@@ -407,10 +408,7 @@ export const useCallSounds = () => {
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
-
-      if (ctx.state !== 'running') {
-        return false;
-      }
+      if (ctx.state === 'closed') return false;
 
       const config = DIAL_TONE_CONFIGS[type];
       const userVolume = getDialToneVolume();
@@ -465,69 +463,78 @@ export const useCallSounds = () => {
 
   const startDialingSound = useCallback(() => {
     console.log('[CallSounds] Starting dialing sound');
-    if (isPlayingRef.current) return;
-    isPlayingRef.current = true;
+    if (globalIsPlaying) return;
+    globalIsPlaying = true;
     
     unlockAudioContext();
     
     playDialTone();
     
-    dialingIntervalRef.current = window.setInterval(() => {
-      // Guard: if stopAllSounds was called between intervals, don't play
-      if (!isPlayingRef.current) {
-        if (dialingIntervalRef.current) {
-          window.clearInterval(dialingIntervalRef.current);
-          dialingIntervalRef.current = null;
-        }
+    const id = window.setInterval(() => {
+      if (!globalIsPlaying) {
+        window.clearInterval(id);
+        globalIntervals.delete(id);
         return;
       }
       playDialTone();
     }, 3000);
+    dialingIntervalRef.current = id;
+    registerInterval(id);
   }, [playDialTone]);
 
   const startRingtoneSound = useCallback(() => {
-    console.log('[CallSounds] startRingtoneSound called, isPlaying:', isPlayingRef.current);
-    if (isPlayingRef.current) return;
-    isPlayingRef.current = true;
+    console.log('[CallSounds] startRingtoneSound called, globalIsPlaying:', globalIsPlaying);
+    if (globalIsPlaying) return;
+    globalIsPlaying = true;
     
     unlockAudioContext().then(() => {
-      // Check again after async unlock - stopAllSounds may have been called
-      if (!isPlayingRef.current) return;
+      if (!globalIsPlaying) return;
       
       console.log('[CallSounds] Starting ringtone');
       playRingtone();
       
-      ringtoneIntervalRef.current = window.setInterval(() => {
-        if (!isPlayingRef.current) {
-          if (ringtoneIntervalRef.current) {
-            window.clearInterval(ringtoneIntervalRef.current);
-            ringtoneIntervalRef.current = null;
-          }
+      const id = window.setInterval(() => {
+        if (!globalIsPlaying) {
+          window.clearInterval(id);
+          globalIntervals.delete(id);
           return;
         }
         playRingtone();
       }, 2000);
+      ringtoneIntervalRef.current = id;
+      registerInterval(id);
     });
   }, [playRingtone]);
 
+  /**
+   * Stop all looping sounds (dialing/ringtone intervals) and kill active oscillators.
+   * Does NOT close the AudioContext — one-shot sounds (connected/ended) can still play.
+   */
   const stopAllSounds = useCallback(() => {
     console.log('[CallSounds] Stopping all sounds');
     
-    // Set flag FIRST to prevent interval callbacks from creating new oscillators
-    isPlayingRef.current = false;
+    // Set global flag to prevent any interval callback from creating new oscillators
+    globalIsPlaying = false;
     
+    // Clear this instance's refs
     if (dialingIntervalRef.current) {
       window.clearInterval(dialingIntervalRef.current);
+      globalIntervals.delete(dialingIntervalRef.current);
       dialingIntervalRef.current = null;
     }
-    
     if (ringtoneIntervalRef.current) {
       window.clearInterval(ringtoneIntervalRef.current);
+      globalIntervals.delete(ringtoneIntervalRef.current);
       ringtoneIntervalRef.current = null;
     }
     
+    // Clear ALL intervals from any hook instance (cross-instance safety)
+    clearAllGlobalIntervals();
+    
+    // Kill oscillators
     cleanupOscillators();
     
+    // Kill fallback HTML5 audio
     if (fallbackAudioRef.current) {
       try {
         fallbackAudioRef.current.pause();
@@ -537,17 +544,25 @@ export const useCallSounds = () => {
       } catch (e) {}
     }
 
-    // Close and recreate the AudioContext to guarantee all scheduled
-    // oscillators are killed (suspend/resume had race conditions)
+    // Suspend AudioContext to immediately silence everything, but keep it alive
+    // so playConnectedSound / playEndedSound can resume & use it
     try {
-      if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
-        sharedAudioContext.close().catch(() => {});
-        sharedAudioContext = null;
-        audioContextUnlocked = false;
-        console.log('[CallSounds] AudioContext closed for clean shutdown');
+      if (sharedAudioContext && sharedAudioContext.state === 'running') {
+        sharedAudioContext.suspend().catch(() => {});
+        console.log('[CallSounds] AudioContext suspended');
       }
     } catch (e) {}
   }, [cleanupOscillators]);
+
+  /**
+   * Final shutdown — closes AudioContext entirely.
+   * Call this when no more sounds will ever be needed (component tree fully unmounted).
+   */
+  const shutdown = useCallback(() => {
+    stopAllSounds();
+    destroySharedAudioContext();
+    console.log('[CallSounds] Full shutdown — AudioContext destroyed');
+  }, [stopAllSounds]);
 
   const playConnectedSound = useCallback(() => {
     try {
@@ -555,30 +570,13 @@ export const useCallSounds = () => {
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
+      if (ctx.state === 'closed') return;
 
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-      
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.15);
-      
-      oscillator.onended = () => {
-        oscillator.disconnect();
-        gainNode.disconnect();
-      };
+      playNote(ctx, 523.25, ctx.currentTime, 0.15, 0.2, 0.01, 10);
     } catch (e) {
       console.error('Error playing connected sound:', e);
     }
-  }, []);
+  }, [playNote]);
 
   const playEndedSound = useCallback(() => {
     try {
@@ -586,36 +584,28 @@ export const useCallSounds = () => {
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
+      if (ctx.state === 'closed') return;
 
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      oscillator.frequency.setValueAtTime(349.23, ctx.currentTime);
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-      
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.25);
-      
-      oscillator.onended = () => {
-        oscillator.disconnect();
-        gainNode.disconnect();
-      };
+      playNote(ctx, 349.23, ctx.currentTime, 0.25, 0.2, 0.01, 5);
     } catch (e) {
       console.error('Error playing ended sound:', e);
     }
-  }, []);
+  }, [playNote]);
 
+  // Cleanup on hook unmount — destroy AudioContext
   useEffect(() => {
     return () => {
-      stopAllSounds();
+      // Use shutdown to ensure AudioContext is fully closed when the last
+      // consumer unmounts. Since sharedAudioContext is module-level,
+      // closing it is idempotent and safe across multiple instances.
+      globalIsPlaying = false;
+      clearAllGlobalIntervals();
+      cleanupOscillators();
+      // Don't destroy context here — let CallScreen's unmount effect
+      // play the ended sound first. The setTimeout in CallScreen
+      // will call shutdown().
     };
-  }, [stopAllSounds]);
+  }, [cleanupOscillators]);
 
   return {
     startDialingSound,
@@ -625,5 +615,6 @@ export const useCallSounds = () => {
     playEndedSound,
     previewRingtone,
     previewDialTone,
+    shutdown,
   };
 };

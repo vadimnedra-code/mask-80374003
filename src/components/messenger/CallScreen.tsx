@@ -80,7 +80,7 @@ export const CallScreen = ({
     autoAdaptQuality: true,
     onQualityChange: onChangeVideoQuality,
   });
-  const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound } = useCallSounds();
+  const { startDialingSound, stopAllSounds, playConnectedSound, playEndedSound, shutdown } = useCallSounds();
   const { 
     audioRoute, 
     isSpeakerOn, 
@@ -127,15 +127,18 @@ export const CallScreen = ({
     return () => {
       console.log('[CallScreen] Component unmounting - stopping all sounds and cleaning media');
       
-      // Play ended sound BEFORE stopping all sounds (so AudioContext is still alive)
+      // Stop looping sounds first (keeps AudioContext alive for one-shot sounds)
+      stopAllSounds();
+      
+      // Play ended sound (AudioContext is suspended by stopAllSounds, playEndedSound resumes it)
       if (previousStatus.current === 'active') {
         playEndedSound();
       }
       
-      // Small delay to let ended sound play, then kill everything
+      // After ended sound finishes, fully destroy AudioContext
       setTimeout(() => {
-        stopAllSounds();
-      }, 300);
+        shutdown();
+      }, 400);
       
       // Clean up media elements immediately to prevent audio artifacts
       if (remoteAudioRef.current) {
@@ -152,7 +155,7 @@ export const CallScreen = ({
         localVideoRef.current.srcObject = null;
       }
     };
-  }, [playEndedSound, stopAllSounds]);
+  }, [playEndedSound, stopAllSounds, shutdown]);
 
   const tryPlayRemoteMedia = useCallback(async () => {
     // Mobile browsers often block autoplay with audio until user gesture.
