@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
-import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw, Archive, VolumeX, Volume2, ArchiveRestore } from 'lucide-react';
+import { Search, Settings, Edit, Menu, UserPlus, Trash2, Pin, PinOff, RefreshCw, Archive, VolumeX, Volume2, ArchiveRestore, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import maskLogo from '@/assets/mask-logo.png';
 import { ChatWithDetails } from '@/hooks/useChats';
@@ -17,6 +17,7 @@ import { useChatsTypingStatus } from '@/hooks/useChatsTypingStatus';
 import { useArchiveMute } from '@/hooks/useArchiveMute';
 import { MuteDurationSelector, MutedBadge } from './MuteSelector';
 import { toast } from 'sonner';
+import { InviteFriendDialog } from './InviteFriendDialog';
 
 interface ChatListProps {
   chats: ChatWithDetails[];
@@ -57,6 +58,7 @@ export const ChatList = ({
   const [pinningChatId, setPinningChatId] = useState<string | null>(null);
   const [archivingChatId, setArchivingChatId] = useState<string | null>(null);
   const [muteDialogChatId, setMuteDialogChatId] = useState<string | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const { user } = useAuth();
@@ -250,6 +252,7 @@ export const ChatList = ({
   const currentUserDisplayName = currentUserProfile?.display_name || 'Вы';
 
   return (
+    <>
     <div className="flex flex-col h-full bg-gradient-to-b from-background via-background to-background/95">
       {/* Header - Premium Gold Style */}
       <div className="relative flex items-center justify-between px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
@@ -302,17 +305,24 @@ export const ChatList = ({
         </div>
       </div>
 
-      {/* Search - Premium Style */}
-      <div className="px-3 py-3">
+      {/* Search + Share - Premium Style */}
+      <div className="px-3 py-3 flex items-center gap-2">
         <button
           onClick={onOpenSearch}
-          className="w-full relative group"
+          className="flex-1 relative group"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative flex items-center gap-3 px-4 py-3.5 bg-muted/60 rounded-2xl border border-primary/10 group-hover:border-primary/20 transition-all duration-300">
             <Search className="w-[18px] h-[18px] text-primary/50 group-hover:text-primary/70 transition-colors" />
             <span className="text-[15px] text-muted-foreground/70">Поиск или новый чат</span>
           </div>
+        </button>
+        <button
+          onClick={() => setShowInvite(true)}
+          className="shrink-0 p-3.5 rounded-2xl bg-primary/10 border border-primary/15 hover:bg-primary/20 hover:border-primary/30 transition-all duration-300 active:scale-95 group"
+          aria-label="Поделиться MASK"
+        >
+          <Share2 className="w-[18px] h-[18px] text-primary/70 group-hover:text-primary transition-colors" />
         </button>
       </div>
 
@@ -556,6 +566,8 @@ export const ChatList = ({
         />
       )}
     </div>
+    <InviteFriendDialog isOpen={showInvite} onClose={() => setShowInvite(false)} />
+    </>
   );
   
   function renderChatItem(chat: ChatWithDetails) {
@@ -783,4 +795,5 @@ export const ChatList = ({
       </div>
     );
   }
+
 };
