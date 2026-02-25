@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Trash2, Brain, HardDrive, Cloud, Loader2, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Trash2, Brain, HardDrive, Cloud, Loader2, AlertTriangle, MessageSquare, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -145,6 +145,31 @@ export const AIMemoryManager = ({ memoryMode }: AIMemoryManagerProps) => {
     }
   };
 
+  const handleExport = useCallback(() => {
+    if (memories.length === 0) {
+      toast.error('Нет воспоминаний для экспорта');
+      return;
+    }
+
+    const lines = memories.map(item => {
+      const source = item.type === 'local' ? '[Local]' : '[Cloud]';
+      const role = item.role === 'user' ? 'Пользователь' : item.role === 'assistant' ? 'AI' : item.role;
+      const date = formatDate(item.createdAt);
+      return `${source} ${date} | ${role}:\n${item.content}\n`;
+    });
+
+    const text = `MASK AI — Экспорт воспоминаний\nДата: ${new Date().toLocaleString('ru-RU')}\nВсего: ${memories.length}\n${'─'.repeat(40)}\n\n${lines.join('\n')}`;
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mask-ai-memories-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Воспоминания экспортированы');
+  }, [memories]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -219,9 +244,13 @@ export const AIMemoryManager = ({ memoryMode }: AIMemoryManagerProps) => {
         </ScrollArea>
       )}
 
-      {/* Clear all buttons */}
+      {/* Export & Clear buttons */}
       {totalCount > 0 && (
-        <div className="flex gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Экспорт ({totalCount})
+          </Button>
           {localCount > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
