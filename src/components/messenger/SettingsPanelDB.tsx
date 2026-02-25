@@ -13,7 +13,8 @@ import {
   Trash2,
   FileText,
   ScrollText,
-  ShieldCheck
+  ShieldCheck,
+  UserPlus
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
@@ -21,6 +22,7 @@ import { PrivacySettingsPanel } from './PrivacySettingsPanel';
 import { NotificationSettingsPanel } from './NotificationSettingsPanel';
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
+import { InviteFriendDialog } from './InviteFriendDialog';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,6 +48,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
@@ -214,6 +217,23 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
           ))}
         </div>
 
+        {/* Invite Friend */}
+        <div className="p-4 border-t border-border">
+          <button
+            onClick={() => setShowInvite(true)}
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/15 hover:border-primary/30 transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <UserPlus className="w-5 h-5 text-primary" />
+              <div className="text-left">
+                <p className="font-medium">Пригласить друга</p>
+                <p className="text-xs text-muted-foreground">Поделиться ссылкой на MASK</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-primary/60 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
         {/* Legal Links */}
         <div className="p-4 border-t border-border space-y-1">
           {legalItems.map((item) => (
@@ -282,6 +302,10 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
         isOpen={showDeleteAccount}
         onClose={() => setShowDeleteAccount(false)}
         userEmail={user?.email || ''}
+      />
+      <InviteFriendDialog
+        isOpen={showInvite}
+        onClose={() => setShowInvite(false)}
       />
     </div>
   );
