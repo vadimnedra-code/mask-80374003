@@ -134,6 +134,18 @@ export async function clearAllMessages(): Promise<void> {
   });
 }
 
+export async function deleteMessage(id: string): Promise<void> {
+  const db = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MESSAGES, 'readwrite');
+    const store = tx.objectStore(STORE_MESSAGES);
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function getMessageCount(): Promise<number> {
   const db = await getDB();
   return new Promise((resolve, reject) => {
