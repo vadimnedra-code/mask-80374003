@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Copy, Check, Share2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface InviteFriendDialogProps {
   isOpen: boolean;
@@ -12,8 +13,6 @@ const INVITE_TEXT = 'Попробуй MASK — приватный мессенд
 
 export const InviteFriendDialog = ({ isOpen, onClose }: InviteFriendDialogProps) => {
   const [copied, setCopied] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleCopy = async () => {
     try {
@@ -60,60 +59,89 @@ export const InviteFriendDialog = ({ isOpen, onClose }: InviteFriendDialogProps)
   ];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="w-full max-w-md bg-card rounded-t-2xl sm:rounded-2xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-slide-in-bottom shadow-xl border border-border"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-display font-semibold">Пригласить друга</h2>
-          <button onClick={onClose} className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
 
-        {/* Link preview */}
-        <div className="bg-muted/50 rounded-xl p-4 mb-5 border border-border">
-          <p className="text-sm text-muted-foreground mb-2">{INVITE_TEXT}</p>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-primary truncate flex-1">{INVITE_URL}</span>
-            <button
-              onClick={handleCopy}
-              className="shrink-0 p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
-            >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Native share (mobile) */}
-        {'share' in navigator && (
-          <button
-            onClick={handleNativeShare}
-            className="w-full flex items-center justify-center gap-2 p-3 mb-4 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+          <motion.div
+            className="relative w-full max-w-md bg-card rounded-t-2xl sm:rounded-2xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl border border-border"
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            onClick={e => e.stopPropagation()}
           >
-            <Share2 className="w-5 h-5" />
-            Поделиться
-          </button>
-        )}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-display font-semibold">Пригласить друга</h2>
+              <button onClick={onClose} className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-        {/* Social links */}
-        <div className="grid grid-cols-2 gap-2">
-          {shareLinks.map(link => (
-            <a
-              key={link.name}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex items-center justify-center gap-2 p-3 rounded-xl font-medium text-sm transition-colors ${link.color}`}
+            <motion.div
+              className="bg-muted/50 rounded-xl p-4 mb-5 border border-border"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
             >
-              <MessageCircle className="w-4 h-4" />
-              {link.name}
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
+              <p className="text-sm text-muted-foreground mb-2">{INVITE_TEXT}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-primary truncate flex-1">{INVITE_URL}</span>
+                <button
+                  onClick={handleCopy}
+                  className="shrink-0 p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </motion.div>
+
+            {'share' in navigator && (
+              <motion.button
+                onClick={handleNativeShare}
+                className="w-full flex items-center justify-center gap-2 p-3 mb-4 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Share2 className="w-5 h-5" />
+                Поделиться
+              </motion.button>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              {shareLinks.map((link, i) => (
+                <motion.a
+                  key={link.name}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl font-medium text-sm transition-colors ${link.color}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.05 }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {link.name}
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
