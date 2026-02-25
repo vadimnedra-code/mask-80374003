@@ -1,3 +1,4 @@
+import React from 'react';
 import { Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -7,7 +8,7 @@ interface E2EEIndicatorProps {
   className?: string;
 }
 
-export const E2EEIndicator = ({ isEnabled, recipientHasE2EE, className = '' }: E2EEIndicatorProps) => {
+export const E2EEIndicator = React.forwardRef<HTMLDivElement, E2EEIndicatorProps>(({ isEnabled, recipientHasE2EE, className = '' }, ref) => {
   const getStatus = () => {
     if (isEnabled) {
       return {
@@ -39,7 +40,7 @@ export const E2EEIndicator = ({ isEnabled, recipientHasE2EE, className = '' }: E
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`flex items-center gap-1 ${className}`}>
+          <div ref={ref} className={`flex items-center gap-1 ${className}`}>
             <Icon className={`h-4 w-4 ${color}`} />
             {label && (
               <span className={`text-xs ${color}`}>{label}</span>
@@ -52,4 +53,6 @@ export const E2EEIndicator = ({ isEnabled, recipientHasE2EE, className = '' }: E
       </Tooltip>
     </TooltipProvider>
   );
-};
+});
+
+E2EEIndicator.displayName = 'E2EEIndicator';
