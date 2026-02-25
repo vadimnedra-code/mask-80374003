@@ -9,7 +9,7 @@ const corsHeaders = {
 interface ChatRequest {
   messages: Array<{ role: string; content: string }>;
   action?: 'chat' | 'summarise' | 'extract_tasks' | 'draft_reply' | 'translate' | 'privacy_check' | 'custom_query';
-  chatContent?: string; // For actions on chat content
+  chatContent?: string;
   targetLanguage?: string;
   toneStyle?: string;
   incognito?: boolean;
@@ -46,6 +46,9 @@ const SYSTEM_PROMPTS = {
 - Не отказывайся обсуждать темы без причины
 - Не перегружай ответ списками, если можно ответить парой предложений
 - Не повторяй вопрос пользователя в ответе
+
+## ПАМЯТЬ
+Ты запоминаешь важные факты о пользователе между сессиями. Если тебе предоставлена секция "ВОСПОМИНАНИЯ О ПОЛЬЗОВАТЕЛЕ" — используй эти знания естественно в разговоре. Не перечисляй факты, а просто учитывай их. Например, если ты знаешь имя — обращайся по имени иногда.
 
 ## MASK-СПЕЦИФИЧНОЕ
 Если спрашивают про MASK — рассказывай:
@@ -124,6 +127,121 @@ SMS и звонки — скажи что в разработке.
 Язык: используй язык запроса.`
 };
 
+const MEMORY_EXTRACTION_PROMPT = `Проанализируй последнее сообщение пользователя и ответ ассистента. Извлеки НОВЫЕ факты о пользователе, которые стоит запомнить для будущих разговоров.
+
+Извлекай ТОЛЬКО:
+- Имя пользователя (если представился)
+- Профессию, работу, учёбу
+- Хобби и увлечения
+- Предпочтения (еда, музыка, фильмы и т.д.)
+- Важные жизненные обстоятельства (город, семья, питомцы)
+- Технические предпочтения (языки программирования, OS и т.д.)
+
+НЕ извлекай:
+- Общие вопросы без личной информации
+- Факты которые уже известны (см. существующую память если есть)
+- Временные/ситуативные вещи
+
+Ответь СТРОГО в JSON формате. Если нет новых фактов — верни пустой массив.
+{"facts": [{"category": "name|profession|hobby|preference|life|tech", "fact": "краткий факт на русском"}]}`;
+
+// Extract memorable facts from conversation using a quick AI call
+async function extractMemoryFacts(
+  userMessage: string,
+  assistantResponse: string,
+  existingMemories: string[],
+  apiKey: string
+): Promise<Array<{ category: string; fact: string }>> {
+  try {
+    const prompt = existingMemories.length > 0
+      ? `Существующая память: ${existingMemories.join('; ')}\n\nСообщение пользователя: "${userMessage}"\nОтвет ассистента: "${assistantResponse.substring(0, 500)}"`
+      : `Сообщение пользователя: "${userMessage}"\nОтвет ассистента: "${assistantResponse.substring(0, 500)}"`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: MEMORY_EXTRACTION_PROMPT },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    
+    // Parse JSON from response (handle markdown code blocks)
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return [];
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    return Array.isArray(parsed.facts) ? parsed.facts : [];
+  } catch (e) {
+    console.error('Memory extraction failed:', e);
+    return [];
+  }
+}
+
+// Store facts to database
+async function storeMemoryFacts(
+  supabase: any,
+  userId: string,
+  facts: Array<{ category: string; fact: string }>
+) {
+  for (const item of facts) {
+    const encoder = new TextEncoder();
+    const blob = encoder.encode(item.fact);
+    
+    // Convert Uint8Array to hex string for bytea
+    const hexString = '\\x' + Array.from(blob).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    await supabase.from('ai_memory_items').insert({
+      user_id: userId,
+      type: item.category,
+      encrypted_blob: hexString,
+      metadata: { extracted_at: new Date().toISOString() },
+    });
+  }
+}
+
+// Load user memories from database
+async function loadUserMemories(supabase: any, userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('ai_memory_items')
+    .select('type, encrypted_blob')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error || !data) return [];
+
+  return data.map((item: any) => {
+    try {
+      // encrypted_blob comes as a string from Supabase
+      // For simple text storage, decode from hex/base64
+      if (typeof item.encrypted_blob === 'string') {
+        // Handle hex-encoded bytea (starts with \x)
+        if (item.encrypted_blob.startsWith('\\x')) {
+          const hex = item.encrypted_blob.slice(2);
+          const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16)));
+          return new TextDecoder().decode(bytes);
+        }
+        return item.encrypted_blob;
+      }
+      return String(item.encrypted_blob);
+    } catch {
+      return null;
+    }
+  }).filter(Boolean) as string[];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -138,42 +256,51 @@ serve(async (req) => {
       });
     }
 
-    // Verify user
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (claimsError || !claimsData?.claims) {
+    if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
     console.log(`AI chat request from user: ${userId}`);
 
     const { messages, action = 'chat', chatContent, targetLanguage, toneStyle, incognito } = await req.json() as ChatRequest;
 
-    // Get user AI settings for personalization
+    // Get user AI settings
     const { data: aiSettings } = await supabase
       .from('user_ai_settings')
-      .select('preferred_language, tone_style')
+      .select('preferred_language, tone_style, memory_mode')
       .eq('user_id', userId)
       .maybeSingle();
 
-    // Build system prompt based on action
     let systemPrompt = SYSTEM_PROMPTS[action] || SYSTEM_PROMPTS.chat;
 
-    // Inject current date so the model never hallucinates it
+    // Inject current date
     const now = new Date();
     const dateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     systemPrompt += `\n\nСегодняшняя дата: ${dateStr}.`;
+
+    // Load and inject user memories for chat action (if memory mode is not 'none')
+    const memoryMode = aiSettings?.memory_mode || 'none';
+    let existingMemories: string[] = [];
+    
+    if (action === 'chat' && memoryMode !== 'none' && !incognito) {
+      existingMemories = await loadUserMemories(supabase, userId);
+      if (existingMemories.length > 0) {
+        systemPrompt += `\n\n## ВОСПОМИНАНИЯ О ПОЛЬЗОВАТЕЛЕ\n${existingMemories.map(m => `- ${m}`).join('\n')}\n\nИспользуй эти знания естественно. Не перечисляй их. Просто учитывай в разговоре.`;
+      }
+    }
 
     // Add personalization
     if (aiSettings?.preferred_language) {
@@ -186,12 +313,10 @@ serve(async (req) => {
       systemPrompt += `\n\nЦелевой язык перевода: ${targetLanguage}`;
     }
 
-    // Build messages array
     const aiMessages = [
       { role: "system", content: systemPrompt },
     ];
 
-    // For utility actions, add chat content as context
     if (chatContent && action !== 'chat') {
       const contextLabel = action === 'custom_query' 
         ? 'Контекст переписки:'
@@ -202,7 +327,6 @@ serve(async (req) => {
       });
     }
 
-    // Add conversation messages
     aiMessages.push(...messages);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -210,7 +334,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log(`Processing ${action} request with ${aiMessages.length} messages`);
+    console.log(`Processing ${action} request with ${aiMessages.length} messages, memories: ${existingMemories.length}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -252,6 +376,54 @@ serve(async (req) => {
         user_id: userId,
         action_type: action,
         input_metadata: { message_count: messages.length }
+      });
+    }
+
+    // For chat action with memory enabled: collect the full response, then extract memories in background
+    if (action === 'chat' && memoryMode !== 'none' && !incognito && response.body) {
+      const [streamForClient, streamForMemory] = response.body.tee();
+      
+      // Process memory extraction in the background (don't block the response)
+      const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
+      
+      // Use EdgeRuntime.waitUntil-like pattern — fire and forget
+      (async () => {
+        try {
+          const reader = streamForMemory.getReader();
+          const decoder = new TextDecoder();
+          let fullResponse = '';
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const text = decoder.decode(value, { stream: true });
+            
+            for (const line of text.split('\n')) {
+              if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+              try {
+                const parsed = JSON.parse(line.slice(6));
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) fullResponse += content;
+              } catch { /* skip */ }
+            }
+          }
+          
+          if (fullResponse && lastUserMessage) {
+            const facts = await extractMemoryFacts(lastUserMessage, fullResponse, existingMemories, LOVABLE_API_KEY);
+            if (facts.length > 0) {
+              // Use service role to bypass RLS for memory storage
+              const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+              await storeMemoryFacts(serviceSupabase, userId, facts);
+              console.log(`Stored ${facts.length} memory facts for user ${userId}`);
+            }
+          }
+        } catch (e) {
+          console.error('Background memory extraction error:', e);
+        }
+      })();
+
+      return new Response(streamForClient, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 
