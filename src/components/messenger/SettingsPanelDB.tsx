@@ -14,7 +14,8 @@ import {
   FileText,
   ScrollText,
   ShieldCheck,
-  UserPlus
+  UserPlus,
+  BookOpen
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
@@ -22,6 +23,7 @@ import { PrivacySettingsPanel } from './PrivacySettingsPanel';
 import { NotificationSettingsPanel } from './NotificationSettingsPanel';
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
+import { FeatureDescriptionDialog } from './FeatureDescriptionDialog';
 import { InviteFriendDialog } from './InviteFriendDialog';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -49,6 +51,7 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   const [showAppearance, setShowAppearance] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
@@ -253,7 +256,20 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
 
         {/* Admin Panel Link (only for admins) */}
         {isAdmin && (
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
+            <button 
+              onClick={() => setShowFeatures(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-accent/30 border border-accent/20 hover:border-accent/40 transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Описание функционала</p>
+                  <p className="text-xs text-muted-foreground">Все возможности платформы</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-primary/60 group-hover:translate-x-1 transition-transform" />
+            </button>
             <button 
               onClick={() => {
                 onClose();
@@ -306,6 +322,10 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
       <InviteFriendDialog
         isOpen={showInvite}
         onClose={() => setShowInvite(false)}
+      />
+      <FeatureDescriptionDialog
+        isOpen={showFeatures}
+        onClose={() => setShowFeatures(false)}
       />
     </div>
   );
