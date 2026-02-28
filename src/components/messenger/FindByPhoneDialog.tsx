@@ -24,6 +24,7 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
   const [hash, setHash] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<DiscoveredContact[]>([]);
+  const [searched, setSearched] = useState(false);
   const { createChat } = useChats();
   const [starting, setStarting] = useState<string | null>(null);
 
@@ -37,6 +38,7 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
     }
     setLoading(true);
     setResults([]);
+    setSearched(false);
     try {
       const { data, error } = await supabase.rpc('find_contacts_by_hash', {
         _hashes: [trimmed],
@@ -46,6 +48,7 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
       }
     } finally {
       setLoading(false);
+      setSearched(true);
     }
   };
 
@@ -133,7 +136,7 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
           </div>
         )}
 
-        {!loading && results.length === 0 && hash.length > 7 && (
+        {!loading && searched && results.length === 0 && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             Контакт не найден. Возможно, пользователь не зарегистрирован или не добавил номер.
           </div>
