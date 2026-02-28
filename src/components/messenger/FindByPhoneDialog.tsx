@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { X, Search, Hash, UserPlus, Loader2 } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { X, Search, Hash, UserPlus, Loader2, ScanLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar } from './Avatar';
+import { QRScannerDialog } from './QRScannerDialog';
 import { useChats } from '@/hooks/useChats';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,6 +28,28 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
   const [searched, setSearched] = useState(false);
   const { createChat } = useChats();
   const [starting, setStarting] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+
+  const handleQRScan = useCallback((value: string) => {
+    setHash(value);
+    setShowScanner(false);
+    toast.success('QR-код отсканирован');
+    // Auto-search after scan
+    setTimeout(() => {
+      const trimmed = value.trim();
+      if (trimmed.length >= 8) {
+        setLoading(true);
+        setResults([]);
+        setSearched(false);
+        supabase.rpc('find_contacts_by_hash', { _hashes: [trimmed] })
+          .then(({ data, error }) => {
+            if (!error && data) setResults(data as DiscoveredContact[]);
+            setLoading(false);
+            setSearched(true);
+          });
+      }
+    }, 100);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -92,6 +115,9 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
           <Button onClick={handleSearch} disabled={loading} size="default">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </Button>
+          <Button onClick={() => setShowScanner(true)} variant="outline" size="default" title="Сканировать QR">
+            <ScanLine className="w-4 h-4" />
+          </Button>
         </div>
 
         <p className="text-xs text-muted-foreground">
@@ -142,6 +168,12 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
           </div>
         )}
       </div>
+
+      <QRScannerDialog
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScan={handleQRScan}
+      />
     </div>
   );
 };
