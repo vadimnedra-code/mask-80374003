@@ -15,7 +15,9 @@ import {
   ScrollText,
   ShieldCheck,
   UserPlus,
-  BookOpen
+  BookOpen,
+  Phone,
+  Monitor
 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { ProfileEditPanel } from './ProfileEditPanel';
@@ -25,6 +27,8 @@ import { AppearanceSettingsPanel } from './AppearanceSettingsPanel';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { FeatureDescriptionDialog } from './FeatureDescriptionDialog';
 import { InviteFriendDialog } from './InviteFriendDialog';
+import { FindByPhoneDialog } from './FindByPhoneDialog';
+import { ActiveSessionsPanel } from './ActiveSessionsPanel';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -52,6 +56,8 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
+  const [showFindByPhone, setShowFindByPhone] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useProfile(user?.id);
@@ -120,6 +126,14 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
 
   if (showAppearance) {
     return <AppearanceSettingsPanel onClose={() => setShowAppearance(false)} />;
+  }
+
+  if (showFindByPhone) {
+    return <FindByPhoneDialog isOpen onClose={() => setShowFindByPhone(false)} />;
+  }
+
+  if (showSessions) {
+    return <ActiveSessionsPanel onClose={() => setShowSessions(false)} />;
   }
 
   return (
@@ -234,6 +248,36 @@ export const SettingsPanelDB = ({ onClose }: SettingsPanelProps) => {
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-primary/60 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        {/* Find by Phone */}
+        <div className="p-4 border-t border-border space-y-2">
+          <button
+            onClick={() => setShowFindByPhone(true)}
+            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <Phone className="w-5 h-5 text-primary" />
+              <div className="text-left">
+                <p className="font-medium">Поиск по номеру</p>
+                <p className="text-xs text-muted-foreground">Найти контакт по хешу телефона</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+          </button>
+          <button
+            onClick={() => setShowSessions(true)}
+            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <Monitor className="w-5 h-5 text-primary" />
+              <div className="text-left">
+                <p className="font-medium">Активные сессии</p>
+                <p className="text-xs text-muted-foreground">Устройства с доступом</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
 

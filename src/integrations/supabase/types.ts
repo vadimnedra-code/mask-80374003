@@ -919,6 +919,27 @@ export type Database = {
           },
         ]
       }
+      phone_hashes: {
+        Row: {
+          created_at: string
+          id: string
+          phone_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1334,6 +1355,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_name: string | null
+          id: string
+          ip_address: string | null
+          is_current: boolean
+          last_active_at: string
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean
+          last_active_at?: string
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean
+          last_active_at?: string
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       voip_tokens: {
         Row: {
           created_at: string
@@ -1394,6 +1451,16 @@ export type Database = {
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
       cleanup_expired_messages: { Args: never; Returns: undefined }
       cleanup_expired_studio_items: { Args: never; Returns: undefined }
+      find_contacts_by_hash: {
+        Args: { _hashes: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          phone_hash: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_users: { Args: never; Returns: Json }
       has_completed_ai_onboarding: {
