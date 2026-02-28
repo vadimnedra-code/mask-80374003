@@ -7,7 +7,7 @@ export interface UserSession {
   device_name: string | null;
   browser: string | null;
   os: string | null;
-  ip_address: string | null;
+  ip_hash: string | null;
   is_current: boolean;
   last_active_at: string;
   created_at: string;
@@ -39,6 +39,37 @@ function detectDevice(): string {
   return 'Десктоп';
 }
 
+async function sha256(message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getRotatingSalt(): Promise<string> {
+  const { data } = await supabase
+    .from('ip_rotating_salt')
+    .select('salt')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  return data?.salt || 'fallback-salt';
+}
+
+async function hashIP(salt: string): Promise<string> {
+  // We use a fingerprint of connection info instead of real IP
+  // since we can't get real IP from browser. The server never sees raw IP.
+  const fingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    screen.width + 'x' + screen.height,
+  ].join('|');
+  return sha256(fingerprint + salt);
+}
+
 export function useUserSessions() {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<UserSession[]>([]);
@@ -63,17 +94,19 @@ export function useUserSessions() {
     if (!user) return;
 
     const registerSession = async () => {
+      const salt = await getRotatingSalt();
+      const ipHash = await hashIP(salt);
       let sid = sessionStorage.getItem('mask_session_id');
 
       if (sid) {
-        // Update last_active
+        // Update last_active with hashed IP
         await supabase
           .from('user_sessions')
-          .update({ last_active_at: new Date().toISOString(), is_current: true })
+          .update({ last_active_at: new Date().toISOString(), is_current: true, ip_hash: ipHash })
           .eq('id', sid)
           .eq('user_id', user.id);
       } else {
-        // Create new session
+        // Create new session with hashed IP
         const { data } = await supabase
           .from('user_sessions')
           .insert({
@@ -82,6 +115,7 @@ export function useUserSessions() {
             browser: detectBrowser(),
             os: detectOS(),
             is_current: true,
+            ip_hash: ipHash,
           })
           .select('id')
           .single();

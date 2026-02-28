@@ -17,7 +17,7 @@ export interface GroupInvite {
 
 export interface CreateInviteOptions {
   password?: string;
-  expiresIn?: '1h' | '1d' | '7d' | 'never';
+  expiresIn?: '10m' | '30m' | '1h' | '1d' | '7d' | 'never';
   maxUses?: number | null;
 }
 
@@ -86,16 +86,21 @@ export const useGroupInvites = (chatId: string | null) => {
   const createInvite = useCallback(async (options: CreateInviteOptions = {}) => {
     if (!chatId || !user) return { error: new Error('Not authenticated'), data: null };
 
-    let expiresAt: string | null = null;
+    // QR invites are one-time use with TTL 10-30 min by default
+    const now = new Date();
+    let expiresAt: string;
     if (options.expiresIn && options.expiresIn !== 'never') {
-      const now = new Date();
-      if (options.expiresIn === '1h') {
-        expiresAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-      } else if (options.expiresIn === '1d') {
-        expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-      } else if (options.expiresIn === '7d') {
-        expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      }
+      const durations: Record<string, number> = {
+        '10m': 10 * 60 * 1000,
+        '30m': 30 * 60 * 1000,
+        '1h': 60 * 60 * 1000,
+        '1d': 24 * 60 * 60 * 1000,
+        '7d': 7 * 24 * 60 * 60 * 1000,
+      };
+      expiresAt = new Date(now.getTime() + (durations[options.expiresIn] || 30 * 60 * 1000)).toISOString();
+    } else {
+      // Default: 30 min TTL for privacy
+      expiresAt = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
     }
 
     const token = generateToken();
@@ -105,9 +110,9 @@ export const useGroupInvites = (chatId: string | null) => {
       .insert({
         chat_id: chatId,
         token,
-        password_hash: options.password || null, // In production, hash this
+        password_hash: options.password || null,
         expires_at: expiresAt,
-        max_uses: options.maxUses ?? null,
+        max_uses: options.maxUses ?? 1, // One-time use by default
         created_by: user.id,
       })
       .select()

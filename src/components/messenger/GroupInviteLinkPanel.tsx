@@ -21,7 +21,7 @@ export const GroupInviteLinkPanel = ({ chatId, groupName, onClose }: GroupInvite
   const [creating, setCreating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [password, setPassword] = useState('');
-  const [expiresIn, setExpiresIn] = useState<'1h' | '1d' | '7d' | 'never'>('never');
+  const [expiresIn, setExpiresIn] = useState<'10m' | '30m' | '1h' | '1d' | '7d' | 'never'>('30m');
   const [maxUses, setMaxUses] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
@@ -189,15 +189,16 @@ export const GroupInviteLinkPanel = ({ chatId, groupName, onClose }: GroupInvite
 
               <div>
                 <Label htmlFor="expiry" className="text-sm">Срок действия</Label>
-                <Select value={expiresIn} onValueChange={(v) => setExpiresIn(v as typeof expiresIn)}>
+              <Select value={expiresIn} onValueChange={(v) => setExpiresIn(v as typeof expiresIn)}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="10m">10 минут</SelectItem>
+                    <SelectItem value="30m">30 минут (рекомендуется)</SelectItem>
                     <SelectItem value="1h">1 час</SelectItem>
                     <SelectItem value="1d">1 день</SelectItem>
                     <SelectItem value="7d">7 дней</SelectItem>
-                    <SelectItem value="never">Без срока</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
