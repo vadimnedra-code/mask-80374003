@@ -81,6 +81,19 @@ export const useProfile = (userId?: string) => {
       .update(updates)
       .eq('user_id', currentUserId);
 
+    // Auto-register phone hash for contact discovery
+    if (!error && updates.phone) {
+      try {
+        const normalized = updates.phone.replace(/[^\d+]/g, '');
+        const encoder = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(normalized.startsWith('+') ? normalized : '+' + normalized));
+        const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        await supabase.from('phone_hashes').upsert({ user_id: currentUserId, phone_hash: hash }, { onConflict: 'user_id' });
+      } catch (e) {
+        console.warn('[useProfile] Phone hash registration failed:', e);
+      }
+    }
+
     return { error };
   }, []);
 
