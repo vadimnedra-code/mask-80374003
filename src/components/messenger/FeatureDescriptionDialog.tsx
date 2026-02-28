@@ -1,5 +1,12 @@
-import { X, MessageSquare, Shield, Phone, Users, Bot, Palette, Bell, Search, Lock, FileText, Image, Mic, Star, Clock, UserPlus, BarChart3, Ban, Zap, Globe } from 'lucide-react';
+import { X, MessageSquare, Shield, Phone, Users, Bot, Palette, Bell, Search, Lock, FileText, Image, Mic, Star, Clock, UserPlus, BarChart3, Ban, Zap, Globe, Download } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface FeatureDescriptionDialogProps {
   isOpen: boolean;
@@ -202,8 +209,58 @@ const featureSections = [
   },
 ];
 
+function generateText(): string {
+  const lines: string[] = ['MASK MESSENGER — ОПИСАНИЕ ФУНКЦИОНАЛА', '='.repeat(50), ''];
+  featureSections.forEach((s) => {
+    lines.push(s.title.toUpperCase());
+    lines.push('-'.repeat(s.title.length));
+    s.features.forEach((f) => lines.push(`  • ${f}`));
+    lines.push('');
+  });
+  lines.push(`Всего функций: ${featureSections.reduce((a, s) => a + s.features.length, 0)}`);
+  return lines.join('\n');
+}
+
+function downloadFile(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function generateHTML(): string {
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Mask — Функционал</title>
+<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#222}
+h1{text-align:center}section{margin:24px 0;border:1px solid #ddd;border-radius:12px;overflow:hidden}
+.sh{background:#f5f5f5;padding:12px 16px;font-weight:600;border-bottom:1px solid #ddd}
+ul{padding:8px 16px 12px 32px;margin:0}li{margin:4px 0;font-size:14px}
+.footer{text-align:center;color:#888;font-size:12px;margin-top:32px}</style></head><body>
+<h1>Mask Messenger — Функционал</h1>`;
+  featureSections.forEach((s) => {
+    html += `<section><div class="sh">${s.title} (${s.features.length})</div><ul>`;
+    s.features.forEach((f) => { html += `<li>${f}</li>`; });
+    html += `</ul></section>`;
+  });
+  html += `<p class="footer">Всего: ${featureSections.reduce((a, s) => a + s.features.length, 0)} функций</p></body></html>`;
+  return html;
+}
+
 export const FeatureDescriptionDialog = ({ isOpen, onClose }: FeatureDescriptionDialogProps) => {
   if (!isOpen) return null;
+
+  const handleExportTxt = () => downloadFile(generateText(), 'mask-features.txt', 'text/plain;charset=utf-8');
+  const handleExportPdf = () => {
+    // Use print-to-PDF via a new window with styled HTML
+    const html = generateHTML();
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { w.print(); }, 300);
+  };
 
   return (
     <div className="fixed inset-0 z-[60] bg-background animate-slide-in-right lg:relative lg:animate-none">
@@ -215,10 +272,28 @@ export const FeatureDescriptionDialog = ({ isOpen, onClose }: FeatureDescription
         >
           <X className="w-5 h-5" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-semibold">Функционал Mask</h1>
           <p className="text-xs text-muted-foreground">Полное описание возможностей платформы</p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Download className="w-4 h-4" />
+              Экспорт
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportPdf}>
+              <FileText className="w-4 h-4 mr-2" />
+              Сохранить как PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportTxt}>
+              <FileText className="w-4 h-4 mr-2" />
+              Сохранить как TXT
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <ScrollArea className="h-[calc(100%-65px)]">
