@@ -1,7 +1,7 @@
-import { X, Monitor, Smartphone, Globe, Clock, Loader2 } from 'lucide-react';
+import { X, Monitor, Smartphone, Clock, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUserSessions } from '@/hooks/useUserSessions';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -86,6 +86,9 @@ export const ActiveSessionsPanel = ({ onClose }: ActiveSessionsPanelProps) => {
 
           <p className="text-xs text-muted-foreground text-center pt-4">
             {sessions.length} {sessions.length === 1 ? 'сессия' : sessions.length < 5 ? 'сессии' : 'сессий'}
+          </p>
+          <p className="text-[10px] text-muted-foreground/60 text-center">
+            IP-адреса хешируются с ротационной солью (24ч) — сервер не хранит сырые IP
           </p>
         </div>
       </ScrollArea>

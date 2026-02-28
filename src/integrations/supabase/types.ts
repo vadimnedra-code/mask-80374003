@@ -699,6 +699,27 @@ export type Database = {
           },
         ]
       }
+      ip_rotating_salt: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          salt: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          salt?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          salt?: string
+        }
+        Relationships: []
+      }
       locked_chats: {
         Row: {
           chat_id: string
@@ -1361,7 +1382,7 @@ export type Database = {
           created_at: string
           device_name: string | null
           id: string
-          ip_address: string | null
+          ip_hash: string | null
           is_current: boolean
           last_active_at: string
           os: string | null
@@ -1372,7 +1393,7 @@ export type Database = {
           created_at?: string
           device_name?: string | null
           id?: string
-          ip_address?: string | null
+          ip_hash?: string | null
           is_current?: boolean
           last_active_at?: string
           os?: string | null
@@ -1383,7 +1404,7 @@ export type Database = {
           created_at?: string
           device_name?: string | null
           id?: string
-          ip_address?: string | null
+          ip_hash?: string | null
           is_current?: boolean
           last_active_at?: string
           os?: string | null
@@ -1449,7 +1470,9 @@ export type Database = {
         Returns: undefined
       }
       chat_has_participants: { Args: { _chat_id: string }; Returns: boolean }
+      check_search_rate_limit: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_messages: { Args: never; Returns: undefined }
+      cleanup_expired_salts: { Args: never; Returns: undefined }
       cleanup_expired_studio_items: { Args: never; Returns: undefined }
       find_contacts_by_hash: {
         Args: { _hashes: string[] }

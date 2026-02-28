@@ -579,18 +579,15 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     }
     
     if (chat.is_group) {
-      const onlineCount = chat.participants.filter(p => p.status === 'online').length;
       const totalCount = chat.participants.length;
-      if (onlineCount > 0) {
-        return `${totalCount} участников, ${onlineCount} в сети`;
-      }
       return `${totalCount} участников`;
     }
-    if (otherParticipant?.status === 'online') {
-      return 'в сети';
-    }
+    // Privacy-first: show "recently" instead of exact online status
     if (otherParticipant?.last_seen) {
-      return `был(а) ${formatDistanceToNow(new Date(otherParticipant.last_seen), { addSuffix: true, locale: ru })}`;
+      const lastSeenDate = new Date(otherParticipant.last_seen);
+      const hoursAgo = (Date.now() - lastSeenDate.getTime()) / (1000 * 60 * 60);
+      if (hoursAgo < 1) return 'был(а) недавно';
+      return `был(а) ${formatDistanceToNow(lastSeenDate, { addSuffix: true, locale: ru })}`;
     }
     return 'не в сети';
   };
@@ -757,9 +754,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
             'text-[11px] sm:text-[13px] truncate leading-tight',
             typingText 
               ? 'text-amber-300 animate-pulse' 
-              : !chat.is_group && otherParticipant?.status === 'online' 
-                ? 'text-emerald-300' 
-                : 'text-amber-100/50'
+              : 'text-amber-100/50'
           )}>
             {getStatusText()}
           </p>
