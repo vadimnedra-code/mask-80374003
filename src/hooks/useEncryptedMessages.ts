@@ -18,6 +18,7 @@ export interface EncryptedMessage {
   media_url: string | null;
   reply_to: string | null;
   is_read: boolean;
+  is_delivered: boolean;
   is_encrypted: boolean;
   encrypted_content: string | null;
   created_at: string;
@@ -26,6 +27,8 @@ export interface EncryptedMessage {
   decryptedContent?: string;
   decryptionFailed?: boolean;
 }
+
+const PAGE_SIZE = 50;
 
 interface UseEncryptedMessagesOptions {
   recipientId?: string; // For direct chats
@@ -44,6 +47,8 @@ export const useEncryptedMessages = (
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [recipientHasE2EE, setRecipientHasE2EE] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   const initialLoadRef = useRef(true);
   const { recipientId, enableE2EE = true } = options;
@@ -110,7 +115,7 @@ export const useEncryptedMessages = (
     };
   }, [user?.id, decrypt]);
 
-  // Fetch and decrypt messages
+  // Fetch messages with pagination (latest PAGE_SIZE)
   const fetchMessages = useCallback(async () => {
     if (!chatId || !user) {
       setMessages([]);
@@ -119,13 +124,12 @@ export const useEncryptedMessages = (
     }
 
     try {
-      console.log('[useEncryptedMessages] Fetching messages for chat:', chatId);
-      
       const { data, error } = await supabase
         .from('messages')
-        .select('*, encrypted_content, is_encrypted')
+        .select('*, encrypted_content, is_encrypted, is_delivered')
         .eq('chat_id', chatId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE);
 
       if (error) {
         console.error('[useEncryptedMessages] Error fetching messages:', error);
@@ -133,15 +137,27 @@ export const useEncryptedMessages = (
         return;
       }
 
-      console.log('[useEncryptedMessages] Fetched', data?.length || 0, 'messages');
+      // Reverse to get ascending order for display
+      const sorted = (data as EncryptedMessage[]).reverse();
+      setHasMore(data.length === PAGE_SIZE);
 
-      // Decrypt encrypted messages (with error handling for each)
+      // Mark undelivered messages from others as delivered
+      const undeliveredIds = sorted
+        .filter(m => m.sender_id !== user.id && !m.is_delivered)
+        .map(m => m.id);
+      if (undeliveredIds.length > 0) {
+        supabase
+          .from('messages')
+          .update({ is_delivered: true })
+          .in('id', undeliveredIds)
+          .then(() => {});
+      }
+
       const decryptedMessages = await Promise.all(
-        (data as EncryptedMessage[]).map(async (msg) => {
+        sorted.map(async (msg) => {
           try {
             return await decryptMessageContent(msg);
           } catch (e) {
-            console.warn('[useEncryptedMessages] Failed to decrypt message:', msg.id, e);
             return {
               ...msg,
               decryptionFailed: true,
@@ -158,6 +174,49 @@ export const useEncryptedMessages = (
       setLoading(false);
     }
   }, [chatId, user, decryptMessageContent]);
+
+  // Load older messages (pagination)
+  const loadMoreMessages = useCallback(async () => {
+    if (!chatId || !user || !hasMore || loadingMore) return;
+    
+    const oldestMessage = messages[0];
+    if (!oldestMessage) return;
+
+    setLoadingMore(true);
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*, encrypted_content, is_encrypted, is_delivered')
+        .eq('chat_id', chatId)
+        .lt('created_at', oldestMessage.created_at)
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (error) {
+        console.error('[useEncryptedMessages] Error loading more:', error);
+        return;
+      }
+
+      if (data.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
+
+      const sorted = (data as EncryptedMessage[]).reverse();
+      const decrypted = await Promise.all(
+        sorted.map(async (msg) => {
+          try {
+            return await decryptMessageContent(msg);
+          } catch (e) {
+            return { ...msg, decryptionFailed: true, decryptedContent: msg.content || '🔒' };
+          }
+        })
+      );
+
+      setMessages(prev => [...decrypted, ...prev]);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [chatId, user, hasMore, loadingMore, messages, decryptMessageContent]);
 
   // Set up realtime subscription
   useEffect(() => {
@@ -283,6 +342,7 @@ export const useEncryptedMessages = (
       media_url: mediaUrl || null,
       reply_to: null,
       is_read: false,
+      is_delivered: false,
       is_encrypted: isEncrypted,
       encrypted_content: encryptedContent,
       created_at: new Date().toISOString(),
@@ -456,6 +516,9 @@ export const useEncryptedMessages = (
     messages,
     loading,
     uploading,
+    loadingMore,
+    hasMore,
+    loadMoreMessages,
     sendMessage,
     sendMediaMessage,
     sendVoiceMessage,

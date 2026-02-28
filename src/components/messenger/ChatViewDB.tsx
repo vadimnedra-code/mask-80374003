@@ -121,6 +121,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showAddToChatDialog, setShowAddToChatDialog] = useState(false);
   const prevMessagesLengthRef = useRef(0);
+  const prevFirstMessageIdRef = useRef<string | null>(null);
   const isAtBottomRef = useRef(true);
   
   const isMobile = useIsMobile();
@@ -145,6 +146,9 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     messages, 
     loading, 
     uploading, 
+    loadingMore,
+    hasMore,
+    loadMoreMessages,
     sendMessage, 
     sendMediaMessage, 
     sendVoiceMessage, 
@@ -295,47 +299,52 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     if (isBottom) {
       setNewMessagesCount(0);
     }
-  }, []);
+
+    // Load more messages when scrolled near top
+    if (container.scrollTop < 200 && hasMore && !loadingMore) {
+      loadMoreMessages();
+    }
+  }, [hasMore, loadingMore, loadMoreMessages]);
 
   const scrollToTop = useCallback(() => {
     messagesStartRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
-    // Only auto-scroll when NEW messages are appended.
-    // Otherwise (e.g. reactions, read flags, re-fetch) we can accidentally
-    // fight the user's manual scroll and "snap" them back down.
     const prevLen = prevMessagesLengthRef.current;
+    const prevFirstId = prevFirstMessageIdRef.current;
     const didAppend = messages.length > prevLen;
+    const firstId = messages[0]?.id ?? null;
+    const wasPrepend = didAppend && prevFirstId && firstId !== prevFirstId;
 
     const lastMessage = messages[messages.length - 1];
-    const isOwnNewMessage = didAppend && lastMessage?.sender_id === user?.id;
+    const isOwnNewMessage = didAppend && !wasPrepend && lastMessage?.sender_id === user?.id;
 
-    // Compute bottom state from the DOM to avoid stale refs when scroll events
-    // don't fire reliably on some mobile WebViews.
     const container = messagesContainerRef.current;
     const threshold = 100;
     const atBottomNow = container
       ? container.scrollHeight - container.scrollTop - container.clientHeight < threshold
       : isAtBottomRef.current;
 
-    // Keep ref in sync for other effects/UI
     isAtBottomRef.current = atBottomNow;
 
-    if (didAppend) {
+    if (wasPrepend && container) {
+      // Preserve scroll position after prepending older messages
+      // The browser will shift scroll automatically since content was added above
+      // No action needed — the scroll offset stays correct relative to old content
+    } else if (didAppend) {
       if (atBottomNow || isOwnNewMessage) {
         scrollToBottomInstant();
       } else {
-        // New message arrived while scrolled up
         const newCount = messages.length - prevLen;
         setNewMessagesCount(prev => prev + newCount);
       }
     }
 
     prevMessagesLengthRef.current = messages.length;
+    prevFirstMessageIdRef.current = firstId;
     markAsRead();
     
-    // Fetch reactions for visible messages
     if (messages.length > 0) {
       fetchReactions(messages.map(m => m.id));
     }
@@ -1010,6 +1019,17 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           </div>
         ) : (
           <>
+            {loadingMore && (
+              <div className="flex items-center justify-center py-3">
+                <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                <span className="ml-2 text-xs text-muted-foreground">Загрузка...</span>
+              </div>
+            )}
+            {!hasMore && messages.length >= 50 && (
+              <div className="text-center py-2 text-xs text-muted-foreground">
+                Начало беседы
+              </div>
+            )}
             <div ref={messagesStartRef} />
             {messages.map((msg, index) => {
             const currentDate = new Date(msg.created_at);
@@ -1046,7 +1066,7 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
                         type: msg.message_type as 'text' | 'image' | 'video' | 'voice' | 'file',
                         mediaUrl: msg.media_url || undefined,
                         isRead: msg.is_read,
-                        isDelivered: !msg.id.startsWith('temp-'),
+                        isDelivered: msg.is_delivered,
                         isEncrypted: msg.is_encrypted,
                       }}
                       isOwn={msg.sender_id === user?.id}
