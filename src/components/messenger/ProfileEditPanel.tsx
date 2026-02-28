@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, Loader2, Check, Trash2, Settings, Copy, Hash } from 'lucide-react';
+import { X, Camera, Loader2, Check, Trash2, Settings, Copy, Hash, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Avatar } from './Avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
   const [initialized, setInitialized] = useState(false);
   const [phoneHash, setPhoneHash] = useState<string | null>(null);
   const [copiedHash, setCopiedHash] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -326,10 +328,38 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
                     <Copy className="w-4 h-4" />
                   )}
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 shrink-0 rounded-xl"
+                  onClick={() => setShowQR(true)}
+                  title="QR-код"
+                >
+                  <QrCode className="w-4 h-4" />
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Поделитесь этим кодом, чтобы вас могли найти через «Поиск по хеш-коду». Ваш номер телефона не раскрывается.
+                Поделитесь этим кодом или QR, чтобы вас могли найти через «Поиск по хеш-коду». Ваш номер телефона не раскрывается.
               </p>
+
+              {/* QR Modal */}
+              {showQR && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setShowQR(false)}>
+                  <div className="bg-card rounded-2xl p-6 shadow-xl flex flex-col items-center gap-4 max-w-xs w-full mx-4" onClick={e => e.stopPropagation()}>
+                    <h3 className="text-lg font-semibold">Ваш QR-код</h3>
+                    <div className="bg-white p-4 rounded-xl">
+                      <QRCodeSVG value={phoneHash} size={200} />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Покажите этот QR-код, чтобы вас могли найти
+                    </p>
+                    <Button variant="outline" className="w-full rounded-xl" onClick={() => setShowQR(false)}>
+                      Закрыть
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
