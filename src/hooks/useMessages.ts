@@ -12,6 +12,7 @@ export interface Message {
   media_url: string | null;
   reply_to: string | null;
   is_read: boolean;
+  is_delivered: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -40,7 +41,20 @@ export const useMessages = (chatId: string | null) => {
     if (error) {
       console.error('Error fetching messages:', error);
     } else {
-      setMessages(data as Message[]);
+      const msgs = data as Message[];
+      setMessages(msgs);
+      
+      // Mark undelivered messages from others as delivered
+      const undeliveredIds = msgs
+        .filter(m => m.sender_id !== user?.id && !m.is_delivered)
+        .map(m => m.id);
+      if (undeliveredIds.length > 0) {
+        supabase
+          .from('messages')
+          .update({ is_delivered: true })
+          .in('id', undeliveredIds)
+          .then(() => {});
+      }
     }
     setLoading(false);
   }, [chatId, user]);
@@ -187,6 +201,7 @@ export const useMessages = (chatId: string | null) => {
       media_url: mediaUrl || null,
       reply_to: null,
       is_read: false,
+      is_delivered: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
