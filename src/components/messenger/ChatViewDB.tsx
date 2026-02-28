@@ -25,7 +25,8 @@ import {
   Timer,
   UserPen,
   UserPlus,
-  Leaf
+  Leaf,
+  WifiOff
 } from 'lucide-react';
 import { useEnergySavingContext } from '@/hooks/useEnergySaving';
 import maskLogo from '@/assets/mask-logo.png';
@@ -158,7 +159,9 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
     refetch,
     isE2EEEnabled,
     recipientHasE2EE,
-    getDisplayContent
+    getDisplayContent,
+    isOnline,
+    pendingCount,
   } = useEncryptedMessages(chat.id, {
     recipientId: otherParticipant?.user_id,
     enableE2EE: !chat.is_group // E2EE only for direct chats
@@ -975,6 +978,13 @@ export const ChatViewDB = ({ chat, chats, onBack, onStartCall, onStartGroupCall,
           onTouchEnd={handlePullEnd}
           onScroll={handleScroll}
         >
+        {/* Offline banner */}
+        {!isOnline && (
+          <div className="sticky top-0 z-10 flex items-center justify-center gap-2 py-1.5 px-3 bg-destructive/10 border-b border-destructive/20 text-destructive text-xs font-medium">
+            <WifiOff className="w-3.5 h-3.5" />
+            Нет подключения{pendingCount > 0 && ` • ${pendingCount} в очереди`}
+          </div>
+        )}
         {loading ? (
           <div className="flex flex-col gap-3 p-4 animate-fade-in">
             {/* Loading skeleton messages */}
