@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { useE2EEncryption } from '@/hooks/useE2EEncryption';
+import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 
 export interface EncryptedMessage {
   id: string;
@@ -42,6 +43,7 @@ export const useEncryptedMessages = (
   const { user } = useAuth();
   const { playMessageSound } = useNotificationSound();
   const { isInitialized, encrypt, decrypt, hasE2EEKeys } = useE2EEncryption();
+  const { isOnline, pendingCount, enqueue, flushQueue } = useOfflineQueue();
   
   const [messages, setMessages] = useState<EncryptedMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -369,7 +371,24 @@ export const useEncryptedMessages = (
 
     if (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => prev.filter(m => m.id !== tempId));
+      
+      // If offline, queue instead of discarding
+      if (!navigator.onLine) {
+        await enqueue({
+          id: tempId,
+          chat_id: chatId,
+          sender_id: user.id,
+          content: isEncrypted ? '🔒 Зашифрованное сообщение' : content,
+          message_type: type,
+          media_url: mediaUrl || null,
+          is_encrypted: isEncrypted,
+          encrypted_content: isEncrypted && encryptedContent ? encryptedContent : null,
+          created_at: new Date().toISOString(),
+        });
+        // Keep optimistic message but mark as queued (pending icon)
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+      }
     } else if (data) {
       setMessages(prev => prev.map(m => 
         m.id === tempId 
@@ -529,6 +548,10 @@ export const useEncryptedMessages = (
     // E2EE status
     isE2EEEnabled: enableE2EE && isInitialized && recipientHasE2EE,
     recipientHasE2EE,
-    getDisplayContent
+    getDisplayContent,
+    // Offline queue
+    isOnline,
+    pendingCount,
+    flushQueue,
   };
 };
