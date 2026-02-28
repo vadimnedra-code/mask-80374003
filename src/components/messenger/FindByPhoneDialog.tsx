@@ -1,11 +1,19 @@
 import { useState } from 'react';
-import { X, Search, Phone, UserPlus, Loader2 } from 'lucide-react';
+import { X, Search, Hash, UserPlus, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar } from './Avatar';
-import { useContactDiscovery } from '@/hooks/useContactDiscovery';
 import { useChats } from '@/hooks/useChats';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface DiscoveredContact {
+  phone_hash: string;
+  user_id: string;
+  display_name: string;
+  username: string | null;
+  avatar_url: string | null;
+}
 
 interface FindByPhoneDialogProps {
   isOpen: boolean;
@@ -13,19 +21,32 @@ interface FindByPhoneDialogProps {
 }
 
 export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) => {
-  const [phone, setPhone] = useState('');
-  const { loading, results, findByPhone } = useContactDiscovery();
+  const [hash, setHash] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<DiscoveredContact[]>([]);
   const { createChat } = useChats();
   const [starting, setStarting] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSearch = async () => {
-    if (phone.trim().length < 5) {
-      toast.error('Введите корректный номер телефона');
+    const trimmed = hash.trim();
+    if (trimmed.length < 8) {
+      toast.error('Введите корректный хеш-код (минимум 8 символов)');
       return;
     }
-    await findByPhone(phone.trim());
+    setLoading(true);
+    setResults([]);
+    try {
+      const { data, error } = await supabase.rpc('find_contacts_by_hash', {
+        _hashes: [trimmed],
+      });
+      if (!error && data) {
+        setResults(data as DiscoveredContact[]);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStartChat = async (userId: string) => {
@@ -48,20 +69,20 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
           <X className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-lg font-semibold">Поиск по номеру</h1>
-          <p className="text-xs text-muted-foreground">Найти контакт по хешу телефона</p>
+          <h1 className="text-lg font-semibold">Поиск по хеш-коду</h1>
+          <p className="text-xs text-muted-foreground">Найти контакт по SHA-256 хешу</p>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+7 999 123 45 67"
-              className="pl-9"
+              value={hash}
+              onChange={(e) => setHash(e.target.value)}
+              placeholder="Вставьте хеш-код контакта..."
+              className="pl-9 font-mono text-xs"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
@@ -71,7 +92,7 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Номер хешируется (SHA-256) на вашем устройстве — сервер никогда не видит настоящий номер.
+          Попросите контакт отправить вам свой хеш-код из профиля. Сервер никогда не видит настоящий номер телефона.
         </p>
 
         {results.length > 0 && (
@@ -112,7 +133,7 @@ export const FindByPhoneDialog = ({ isOpen, onClose }: FindByPhoneDialogProps) =
           </div>
         )}
 
-        {!loading && results.length === 0 && phone.length > 4 && (
+        {!loading && results.length === 0 && hash.length > 7 && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             Контакт не найден. Возможно, пользователь не зарегистрирован или не добавил номер.
           </div>
