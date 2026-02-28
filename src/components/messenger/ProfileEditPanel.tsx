@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, Loader2, Check, Trash2, Settings } from 'lucide-react';
+import { X, Camera, Loader2, Check, Trash2, Settings, Copy, Hash } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,8 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [phoneHash, setPhoneHash] = useState<string | null>(null);
+  const [copiedHash, setCopiedHash] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +41,28 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
       setInitialized(true);
     }
   }, [profile, initialized]);
+
+  // Fetch user's phone hash
+  useEffect(() => {
+    if (!user) return;
+    const fetchHash = async () => {
+      const { data } = await supabase
+        .from('phone_hashes')
+        .select('phone_hash')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) setPhoneHash(data.phone_hash);
+    };
+    fetchHash();
+  }, [user]);
+
+  const handleCopyHash = async () => {
+    if (!phoneHash) return;
+    await navigator.clipboard.writeText(phoneHash);
+    setCopiedHash(true);
+    toast.success('Хеш-код скопирован');
+    setTimeout(() => setCopiedHash(false), 2000);
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -275,6 +299,45 @@ export const ProfileEditPanel = ({ onClose, onOpenSettings }: ProfileEditPanelPr
               Email нельзя изменить
             </p>
           </div>
+
+          {/* Phone Hash Code */}
+          {phoneHash && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5" />
+                Ваш хеш-код
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  value={phoneHash}
+                  readOnly
+                  className="h-12 rounded-xl bg-muted font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 shrink-0 rounded-xl"
+                  onClick={handleCopyHash}
+                >
+                  {copiedHash ? (
+                    <Check className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Поделитесь этим кодом, чтобы вас могли найти через «Поиск по хеш-коду». Ваш номер телефона не раскрывается.
+              </p>
+            </div>
+          )}
+
+          {!phoneHash && profile?.phone && (
+            <div className="p-3 rounded-xl border border-border bg-muted/50 text-xs text-muted-foreground">
+              <p>Хеш-код генерируется автоматически при сохранении номера телефона в профиле.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
