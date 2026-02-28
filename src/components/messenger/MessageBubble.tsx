@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { Check, CheckCheck, FileText, Download, MoreVertical, Pencil, Trash2, X, Forward, Loader2, Lock, Star, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { VoicePlayer } from './VoicePlayer';
+import { LinkPreview } from './LinkPreview';
+import { useLinkPreview } from '@/hooks/useLinkPreview';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +76,7 @@ export const MessageBubble = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const { url: resolvedMediaUrl } = useSignedMediaUrl(message.mediaUrl);
+  const { preview: linkPreview } = useLinkPreview(message.type === 'text' ? message.content : null);
 
   // Find the index of this message's media in the gallery
   const currentMediaIndex = useMemo(() => {
@@ -385,6 +388,7 @@ export const MessageBubble = ({
         )}
       >
         {renderMedia()}
+        {linkPreview && <LinkPreview data={linkPreview} isOwn={isOwn} />}
         
         {isEditing ? (
           <div className="flex flex-col gap-2">
