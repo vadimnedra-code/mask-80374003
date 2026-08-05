@@ -59,7 +59,7 @@ export const useProfile = (userId?: string) => {
 
     // Subscribe to profile changes
     const channel = supabase
-      .channel(`profile-${userId}`)
+      .channel(`profile-${userId}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
