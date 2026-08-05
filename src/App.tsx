@@ -92,14 +92,8 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => (
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Messenger />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<RootRoute />} />
+
       <Route
         path="/auth"
         element={
