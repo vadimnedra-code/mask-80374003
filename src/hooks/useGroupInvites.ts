@@ -6,7 +6,7 @@ export interface GroupInvite {
   id: string;
   chat_id: string;
   token: string;
-  password_hash: string | null;
+  password_hash?: string | null;
   expires_at: string | null;
   max_uses: number | null;
   use_count: number;
