@@ -103,7 +103,8 @@ const handler = async (req: Request): Promise<Response> => {
           .join('');
       }
 
-      console.log("Token to store (first 10 chars):", tokenToStore.substring(0, 10) + "...");
+      // Never store the raw token — persist only a SHA-256 hash
+      const tokenHash = await hashToken(tokenToStore);
 
       // Delete any existing tokens for this user first
       const { error: deleteError } = await supabase
@@ -115,14 +116,14 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error deleting old tokens:", deleteError);
       }
 
-      // Store the token
+      // Store the token hash
       const { data: insertData, error: insertError } = await supabase
         .from('login_tokens')
         .insert({
           user_id: userId,
-          token: tokenToStore
+          token: tokenHash
         })
-        .select();
+        .select('id, user_id, created_at');
 
       if (insertError) {
         console.error("Error inserting token:", insertError);
