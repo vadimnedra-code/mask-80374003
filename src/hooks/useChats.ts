@@ -195,7 +195,7 @@ export const useChats = () => {
     };
 
     const channel = supabase
-      .channel('chats-updates')
+      .channel(`chats-updates-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
