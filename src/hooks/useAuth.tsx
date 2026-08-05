@@ -186,21 +186,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     // После успешной верификации обновляем профиль с displayName
-    if (!error && data.user && displayName) {
-      await supabase.auth.updateUser({
-        data: { display_name: displayName }
-      });
-      // Также обновляем профиль в таблице profiles
+    if (!error && data.user) {
+      if (displayName) {
+        await supabase.auth.updateUser({
+          data: { display_name: displayName }
+        });
+        await supabase
+          .from('profiles')
+          .update({ display_name: displayName })
+          .eq('user_id', data.user.id);
+      }
+      // Телефон храним в приватной таблице, доступной только владельцу
       await supabase
-        .from('profiles')
-        .update({ display_name: displayName, phone })
-        .eq('user_id', data.user.id);
-    } else if (!error && data.user) {
-      // Сохраняем номер телефона в профиле
-      await supabase
-        .from('profiles')
-        .update({ phone })
-        .eq('user_id', data.user.id);
+        .from('user_private_data')
+        .upsert({ user_id: data.user.id, phone }, { onConflict: 'user_id' });
     }
     
     return { error };
