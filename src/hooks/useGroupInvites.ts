@@ -110,12 +110,13 @@ export const useGroupInvites = (chatId: string | null) => {
       .insert({
         chat_id: chatId,
         token,
+        // Hashed with bcrypt server-side by a database trigger before storage
         password_hash: options.password || null,
         expires_at: expiresAt,
         max_uses: options.maxUses ?? 1, // One-time use by default
         created_by: user.id,
       })
-      .select()
+      .select('id, chat_id, token, expires_at, max_uses, use_count, created_by, created_at, revoked_at')
       .single();
 
     if (error) {
