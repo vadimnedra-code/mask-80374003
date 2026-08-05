@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("Token inserted successfully:", insertData);
+      console.log("Token hash stored for user:", userId);
 
       return new Response(
         JSON.stringify({ token: tokenToStore, success: true }),
@@ -152,11 +152,13 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("Login attempt from IP:", clientIP);
 
-      // Find the token
+      const secretHash = await hashToken(secretKey);
+
+      // Find the token by hash
       const { data: tokenData, error: fetchError } = await supabase
         .from('login_tokens')
         .select('user_id')
-        .eq('token', secretKey)
+        .eq('token', secretHash)
         .maybeSingle();
 
       if (fetchError) {
@@ -175,13 +177,11 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("Found user for token:", tokenData.user_id);
-
       // Update last_used_at
       await supabase
         .from('login_tokens')
         .update({ last_used_at: new Date().toISOString() })
-        .eq('token', secretKey);
+        .eq('token', secretHash);
 
       // Get user info
       const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
