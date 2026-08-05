@@ -263,10 +263,12 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      const verifyHash = await hashToken(token);
+
       const { data: tokenData, error: fetchError } = await supabase
         .from('login_tokens')
         .select('user_id')
-        .eq('token', token)
+        .eq('token', verifyHash)
         .maybeSingle();
 
       if (fetchError || !tokenData) {
@@ -279,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       await supabase
         .from('login_tokens')
         .update({ last_used_at: new Date().toISOString() })
-        .eq('token', token);
+        .eq('token', verifyHash);
 
       const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
         tokenData.user_id
