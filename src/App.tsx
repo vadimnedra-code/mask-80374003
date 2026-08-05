@@ -89,6 +89,22 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => (
   <PublicRouteContent>{children}</PublicRouteContent>
 );
 
+// Root: signed-in users get the messenger, visitors (and crawlers) get the landing page.
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return user ? <Messenger /> : <Landing />;
+};
+
+
 const AppRoutes = () => {
   return (
     <Routes>
