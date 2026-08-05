@@ -8,6 +8,8 @@ import { MaskProvider } from "@/hooks/useMask";
 import { WallpaperProvider } from "@/providers/WallpaperProvider";
 import { EnergySavingProvider } from "@/hooks/useEnergySaving";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
+
 import Messenger from "./pages/Messenger";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -89,17 +91,27 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => (
   <PublicRouteContent>{children}</PublicRouteContent>
 );
 
+// Root: signed-in users get the messenger, visitors (and crawlers) get the landing page.
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return user ? <Messenger /> : <Landing />;
+};
+
+
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Messenger />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<RootRoute />} />
+
       <Route
         path="/auth"
         element={
