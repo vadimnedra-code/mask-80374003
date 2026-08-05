@@ -37,8 +37,17 @@ export const useProfile = (userId?: string) => {
 
     if (error) {
       console.error('Error fetching profile:', error);
+    } else if (data) {
+      // Phone lives in a private, owner-only table
+      const { data: privateData } = await supabase
+        .from('user_private_data')
+        .select('phone')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      setProfile({ ...data, phone: privateData?.phone ?? null } as Profile);
     } else {
-      setProfile(data as Profile);
+      setProfile(null);
     }
     setLoading(false);
   }, [userId]);
@@ -76,15 +85,30 @@ export const useProfile = (userId?: string) => {
     const currentUserId = userIdRef.current;
     if (!currentUserId) return { error: new Error('No user ID') };
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('user_id', currentUserId);
+    const { phone, ...profileUpdates } = updates;
+
+    let error: Error | null = null;
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const res = await supabase
+        .from('profiles')
+        .update(profileUpdates)
+        .eq('user_id', currentUserId);
+      error = res.error;
+    }
+
+    // Phone is stored in a private, owner-only table
+    if (!error && phone !== undefined) {
+      const res = await supabase
+        .from('user_private_data')
+        .upsert({ user_id: currentUserId, phone }, { onConflict: 'user_id' });
+      error = res.error;
+    }
 
     // Auto-register phone hash for contact discovery
-    if (!error && updates.phone) {
+    if (!error && phone) {
       try {
-        const normalized = updates.phone.replace(/[^\d+]/g, '');
+        const normalized = phone.replace(/[^\d+]/g, '');
         const encoder = new TextEncoder();
         const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(normalized.startsWith('+') ? normalized : '+' + normalized));
         const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');

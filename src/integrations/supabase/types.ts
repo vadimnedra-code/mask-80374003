@@ -969,7 +969,6 @@ export type Database = {
           display_name: string
           id: string
           last_seen: string | null
-          phone: string | null
           show_last_seen: boolean
           show_online_status: boolean
           status: string | null
@@ -984,7 +983,6 @@ export type Database = {
           display_name: string
           id?: string
           last_seen?: string | null
-          phone?: string | null
           show_last_seen?: boolean
           show_online_status?: boolean
           status?: string | null
@@ -999,7 +997,6 @@ export type Database = {
           display_name?: string
           id?: string
           last_seen?: string | null
-          phone?: string | null
           show_last_seen?: boolean
           show_online_status?: boolean
           status?: string | null
@@ -1350,6 +1347,27 @@ export type Database = {
           preferred_language?: string | null
           privacy_preset?: string | null
           tone_style?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_private_data: {
+        Row: {
+          created_at: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          phone?: string | null
           updated_at?: string
           user_id?: string
         }

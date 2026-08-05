@@ -34,6 +34,13 @@ function getClientIP(req: Request): string {
     || "unknown";
 }
 
+async function hashToken(raw: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 interface TokenRequest {
   action: 'generate' | 'verify' | 'login';
   token?: string;
@@ -96,7 +103,8 @@ const handler = async (req: Request): Promise<Response> => {
           .join('');
       }
 
-      console.log("Token to store (first 10 chars):", tokenToStore.substring(0, 10) + "...");
+      // Never store the raw token — persist only a SHA-256 hash
+      const tokenHash = await hashToken(tokenToStore);
 
       // Delete any existing tokens for this user first
       const { error: deleteError } = await supabase
@@ -108,14 +116,14 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error deleting old tokens:", deleteError);
       }
 
-      // Store the token
+      // Store the token hash
       const { data: insertData, error: insertError } = await supabase
         .from('login_tokens')
         .insert({
           user_id: userId,
-          token: tokenToStore
+          token: tokenHash
         })
-        .select();
+        .select('id, user_id, created_at');
 
       if (insertError) {
         console.error("Error inserting token:", insertError);
@@ -125,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("Token inserted successfully:", insertData);
+      console.log("Token hash stored for user:", userId);
 
       return new Response(
         JSON.stringify({ token: tokenToStore, success: true }),
@@ -144,11 +152,13 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("Login attempt from IP:", clientIP);
 
-      // Find the token
+      const secretHash = await hashToken(secretKey);
+
+      // Find the token by hash
       const { data: tokenData, error: fetchError } = await supabase
         .from('login_tokens')
         .select('user_id')
-        .eq('token', secretKey)
+        .eq('token', secretHash)
         .maybeSingle();
 
       if (fetchError) {
@@ -167,13 +177,11 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log("Found user for token:", tokenData.user_id);
-
       // Update last_used_at
       await supabase
         .from('login_tokens')
         .update({ last_used_at: new Date().toISOString() })
-        .eq('token', secretKey);
+        .eq('token', secretHash);
 
       // Get user info
       const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
@@ -255,10 +263,12 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      const verifyHash = await hashToken(token);
+
       const { data: tokenData, error: fetchError } = await supabase
         .from('login_tokens')
         .select('user_id')
-        .eq('token', token)
+        .eq('token', verifyHash)
         .maybeSingle();
 
       if (fetchError || !tokenData) {
@@ -271,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       await supabase
         .from('login_tokens')
         .update({ last_used_at: new Date().toISOString() })
-        .eq('token', token);
+        .eq('token', verifyHash);
 
       const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
         tokenData.user_id

@@ -46,9 +46,12 @@ export const PrivacySettingsPanel = ({ onClose }: PrivacySettingsPanelProps) => 
 
     setSaving(true);
     try {
+      const payload = field === 'show_last_seen'
+        ? { show_last_seen: value, updated_at: new Date().toISOString() }
+        : { show_online_status: value, updated_at: new Date().toISOString() };
       const { error } = await supabase
         .from('profiles')
-        .update({ [field]: value, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq('user_id', user.id);
 
       if (error) {
