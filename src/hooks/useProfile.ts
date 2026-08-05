@@ -37,8 +37,17 @@ export const useProfile = (userId?: string) => {
 
     if (error) {
       console.error('Error fetching profile:', error);
+    } else if (data) {
+      // Phone lives in a private, owner-only table
+      const { data: privateData } = await supabase
+        .from('user_private_data')
+        .select('phone')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      setProfile({ ...data, phone: privateData?.phone ?? null } as Profile);
     } else {
-      setProfile(data as Profile);
+      setProfile(null);
     }
     setLoading(false);
   }, [userId]);
