@@ -8,6 +8,8 @@ import { MaskProvider } from "@/hooks/useMask";
 import { WallpaperProvider } from "@/providers/WallpaperProvider";
 import { EnergySavingProvider } from "@/hooks/useEnergySaving";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
+
 import Messenger from "./pages/Messenger";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
